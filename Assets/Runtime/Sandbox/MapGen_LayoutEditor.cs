@@ -11,7 +11,7 @@ class MapGen_LayoutEditor : Editor
         var instance = target as MapGen_Layout;
         GUI.enabled = instance.done;
         {
-            if(Application.isPlaying && GUILayout.Button("Reset")) { instance.init(); }
+            if(Application.isPlaying && GUILayout.Button("Reset")) { instance.reset(); }
         }
         GUI.enabled = true;
     }
