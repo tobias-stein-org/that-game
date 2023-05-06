@@ -430,7 +430,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tilemap: {fileID: 1987836347}
   tile: {fileID: 11400000, guid: 3a299309065c64c49a7416f356098bb5, type: 2}
+  wall: {fileID: 11400000, guid: 90f4a6dfe7b664e91a11d095508f572a, type: 2}
   step1Settings: {fileID: 11400000, guid: 44c854105489a4b5d91463c875329a4d, type: 2}
+  step2Settings: {fileID: 11400000, guid: 93d5aaac935aa46dfb5b6292607b7543, type: 2}
+  done: 0
 --- !u!1 &1987836344
 GameObject:
   m_ObjectHideFlags: 0

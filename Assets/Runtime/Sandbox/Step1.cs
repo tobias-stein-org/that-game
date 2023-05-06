@@ -49,7 +49,7 @@ public class Step1 : MapGenStep<Step1Settings>
 
     public override void initialize(ref MapGenContext context)
     {
-        context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength, Allocator.Persistent);
+        context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
     }
 
     public override void release(ref MapGenContext context)

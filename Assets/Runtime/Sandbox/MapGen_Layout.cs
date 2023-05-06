@@ -250,8 +250,10 @@ public class MapGen_Layout : MonoBehaviour
 {
     public Tilemap          tilemap;
     public Tile             tile;
+    public Tile             wall;
 
     public Step1Settings    step1Settings;
+    public Step2Settings    step2Settings;
 
     private MapGenerator    executor;
 
@@ -263,6 +265,7 @@ public class MapGen_Layout : MonoBehaviour
         var pipeline = MapGenPipeline
                 .create()
                     .add<Step1, Step1Settings>(this.step1Settings)
+                    .add<Step2, Step2Settings>(this.step2Settings)
                 .build();
 
         this.executor = pipeline.createExecutor();
@@ -306,6 +309,36 @@ public class MapGen_Layout : MonoBehaviour
                 tilemap.SetTile((Vector3Int)s, this.tile);
             }
         }
+        else if(typeof(Step2) == step.GetType())
+        {
+            tilemap.ClearAllTiles();
+
+            Vector2Int p = this.step1Settings.pathStart;
+
+
+            var chunkSize = this.step2Settings.mapChunckDimensions.x * this.step2Settings.mapChunckDimensions.y;
+
+            for(int c = 0; c < data.pathSteps.Length + 1; c++)
+            {
+                for(int y = 0; y < this.step2Settings.mapChunckDimensions.y; y++)
+                {
+                    for(int x = 0; x < this.step2Settings.mapChunckDimensions.x; x++)
+                    {
+                        int i = (y * this.step2Settings.mapChunckDimensions.x) + x;
+                        var mask = data.walkableTilemapMask[c][i];
+                        Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
+                        tilemap.SetTile(tp, mask == TileMask.Wall ? this.wall : this.tile);
+                    }
+                }
+
+                if(c < data.pathSteps.Length)
+                {
+                    p += new Vector2Int(
+                        data.pathSteps[c].x * this.step2Settings.mapChunckDimensions.x,
+                        data.pathSteps[c].y * this.step2Settings.mapChunckDimensions.y);
+                }
+            }
+        }
     }
 
     private void OnDestroy()
@@ -321,28 +354,6 @@ public class MapGen_Layout : MonoBehaviour
         if(!this.done)
         {
             this.executor.update();
-
-            //tilemap.ClearAllTiles();
-
-            //Vector2Int s = this.step1Settings.pathStart;
-
-            //// start tile
-            //tilemap.SetTile((Vector3Int)s, this.tile);
-
-            //// path
-            //for(int i = 1; i < this.executor.data.pathSteps.Length - 1; i++)
-            //{
-            //    s += this.executor.data.pathSteps[i];
-            //    tilemap.SetTile((Vector3Int)s, this.tile);
-            //}
-
-            //// end tile
-            //if(this.executor.data.pathSteps.Length > 1)
-            //{
-            //    s += this.executor.data.pathSteps[this.executor.data.pathSteps.Length - 1];
-
-            //    tilemap.SetTile((Vector3Int)s, this.tile);
-            //}
         }
     }
 

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Step1
   m_EditorClassIdentifier: 
   pathStart: {x: 0, y: 0}
-  pathLength: 10
+  pathLength: 20
   pathStraightness: 0.2921212
   pathCurvature: 0.5030303
   pathDensity: 0.20484848
