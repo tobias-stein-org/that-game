@@ -32,9 +32,13 @@ public class Step2 : MapGenStep<Step2Settings>
     {
         public Vector2Int                           mapChunkDimensions;
         public int                                  mapChunkWallSize;
+        public int                                  mapPathThickness;
 
         [ReadOnly]
         public NativeArray<Vector2Int>              pathSteps;
+
+        [ReadOnly]
+        public NativeArray<float>                   pathDisplacements;
 
         [NativeDisableParallelForRestriction] 
         public NativeArray<TileMask>                walkableTilemapMask;
@@ -52,6 +56,7 @@ public class Step2 : MapGenStep<Step2Settings>
             var chunkSize   = this.mapChunkDimensions.x * this.mapChunkDimensions.y;
             var chunk = this.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize);
 
+            // draw walls
             for(int y = 0; y < this.mapChunkDimensions.y; y++)
             {
                 for(int x = 0; x < this.mapChunkDimensions.x; x++)
@@ -83,23 +88,74 @@ public class Step2 : MapGenStep<Step2Settings>
                     }
                 }
             }
+
+            // draw path
+
+            var displacement = this.pathDisplacements[chunkId];
+            if(to == Vector2Int.left)
+            {
+
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);;
+                for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
+                {
+                    var tileId = y * this.mapChunkDimensions.x;
+                    chunk[tileId] = TileMask.Walkable;
+                }
+            }
+            else if(to == Vector2Int.right)
+            {
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
+                {
+                    var tileId = (y * this.mapChunkDimensions.x) + (this.mapChunkDimensions.x - 1);
+                    chunk[tileId] = TileMask.Walkable;
+                }
+            }
+            else if(to == Vector2Int.up)
+            {
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
+                {
+                    var tileId = ((this.mapChunkDimensions.y - 1) * this.mapChunkDimensions.x) + x;
+                    chunk[tileId] = TileMask.Walkable;
+                }
+            }
+            else if(to == Vector2Int.down)
+            {
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
+                {
+                    var tileId = x;
+                    chunk[tileId] = TileMask.Walkable;
+                }
+            }
         }
     }
 
     public override IEnumerator<MapGenStepState> execute(MapGenContext context)
     {
+        var numChunks           = context.data.pathSteps.Length + 1;
 
-        var jobHandle = new CreateMapChunkMaskJob
+        var rng                 = new System.Random();
+        
+
+        var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (float)rng.NextDouble()).ToArray(), Allocator.Persistent);
+
+        var jobHandle           = new CreateMapChunkMaskJob
         {
-            mapChunkDimensions = this.settings.mapChunkDimensions,
+            mapChunkDimensions  = this.settings.mapChunkDimensions,
             mapChunkWallSize    = this.settings.mapChunkWallSize,
+            mapPathThickness    = this.settings.walkablePathThickness,
+            pathDisplacements   = pathDisplacements,
             pathSteps           = context.data.pathSteps,
             walkableTilemapMask = context.data.walkableTilemapMask
 
-        }.Schedule(context.data.pathSteps.Length + 1, 8);
+        }.Schedule(numChunks, 8);
 
         while(!jobHandle.IsCompleted) { yield return new MapGenStepState {}; }
         jobHandle.Complete();
+
+        pathDisplacements.Dispose();
     }
 
     public override void initialize(MapGenContext context)

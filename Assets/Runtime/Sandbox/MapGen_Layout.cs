@@ -309,6 +309,7 @@ public class MapGen_Layout : MonoBehaviour
     public Tilemap          tilemap;
     public Tile             tile;
     public Tile             wall;
+    public Tile             path;
 
     public Step1Settings    step1Settings;
     public Step2Settings    step2Settings;
@@ -384,10 +385,16 @@ public class MapGen_Layout : MonoBehaviour
                     for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
                     {
                         int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
-                        var mask = chunk[i];
-                        //var mask = data.walkableTilemapMask[c][i];
                         Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
-                        tilemap.SetTile(tp, mask == TileMask.Wall ? this.wall : this.tile);
+
+                        switch(chunk[i])
+                        {
+                            case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
+                            case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
+
+                            default:
+                                this.tilemap.SetTile(tp, this.tile); break;
+                        }
                     }
                 }
 
