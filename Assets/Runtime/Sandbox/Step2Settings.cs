@@ -5,7 +5,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "MapGen/Step2")]
 public class Step2Settings : MapGenStepSettings
 {
-    public Vector2Int   mapChunckDimensions         = new Vector2Int(20, 20);
+    public Vector2Int   mapChunkDimensions         = new Vector2Int(20, 20);
 
     public int          mapChunkWallSize            = 1;
 

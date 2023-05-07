@@ -8,12 +8,13 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Collections;
+using System;
 
 public partial struct MapGenData
 {
 }
 
-public struct MapGenContext : System.IDisposable
+public class MapGenContext : System.IDisposable
 {
     private NativeList<MapGenData> wrapper;
 
@@ -37,15 +38,50 @@ public struct MapGenContext : System.IDisposable
         }
     }
 
-    public readonly ref MapGenData data { get { return ref this.wrapper.ElementAt(0); } }
+    public ref MapGenData data { get { return ref this.wrapper.ElementAt(0); } }
+}
+
+public class MapGenStepState
+{
+
+}
+
+public class MapGeneratorState
+{
+    public enum State
+    {
+        Initialized,
+        Running,
+        Completed
+    }
+
+    public State state { get; internal set; }
+
+    public float pipeStart { get; internal set; }
+    public float stepStart { get; internal set; }
+
+    /// <summary>
+    /// Current map gen step in progress.
+    /// </summary>
+    internal IEnumerator<MapGenStepState> step { get; set; }
+
+    public static MapGeneratorState CreateInitial()
+    {
+        return new MapGeneratorState
+        {
+            state       = State.Initialized,
+            step        = null,
+            pipeStart   = UnityEngine.Time.time,
+            stepStart   = UnityEngine.Time.time,
+        };
+    }
 }
 
 public interface IMapGenStep : System.IDisposable
 {
-    void initialize(ref MapGenContext context);
-    void execute(ref MapGenContext context);
-    void release(ref MapGenContext context);
-
+    IEnumerator<MapGenStepState> execute(MapGenContext context);
+    void initialize(MapGenContext context);
+    void release(MapGenContext context);
 }
 
 public class MapGenStepSettings: ScriptableObject
@@ -63,11 +99,10 @@ public abstract class MapGenStep<TStepSettings> : IMapGenStep
     {
         this.settings = settings;
     }
-
    
-    public abstract void initialize(ref MapGenContext context);
-    public abstract void execute(ref MapGenContext context);
-    public abstract void release(ref MapGenContext context);
+    public abstract IEnumerator<MapGenStepState> execute(MapGenContext context);
+    public abstract void initialize(MapGenContext context);
+    public abstract void release(MapGenContext context);
 
     public abstract void Dispose();
 }
@@ -126,63 +161,31 @@ public class MapGenPipelineBuilder
 }
 
 
-public class MapGenerator : System.IDisposable
+public class MapGenerator : IEnumerator<MapGeneratorState>
 {
     public delegate void OnMapGenStepStart(in IMapGenStep step, in MapGenData mapGenData);
+    public delegate void OnMapGenStepUpdate(in IMapGenStep step, in MapGenData mapGenData);
     public delegate void OnMapGenStepFinish(in IMapGenStep step, in MapGenData mapGenData);
     public delegate void OnMapGenReset();
+    public delegate void OnMapGenStart();
     public delegate void OnMapGenFinish(in MapGenData mapGenData);
 
     public event OnMapGenStepStart  OnMapGenStepStarted;
+    public event OnMapGenStepUpdate OnMapGenStepUpdated;
     public event OnMapGenStepFinish OnMapGenStepFinished;
     public event OnMapGenReset      OnMapGenReseted;
+    public event OnMapGenStart      OnMapGenStarted;
     public event OnMapGenFinish     OnMapGenFinished;
 
-    internal struct ExecutionContext : System.IDisposable
-    {
-        private GCHandle                memHandle;
-
-        public IMapGenStep              step;
-        public MapGenContext            mapGenContext;
-
-        public static implicit operator GCHandle(ExecutionContext ctx) => ctx.memHandle;
-
-        public static ExecutionContext Create(IMapGenStep step, MapGenContext mapGenContext)
-        {
-            var instance = new ExecutionContext
-            {
-                step            = step,
-                mapGenContext   = mapGenContext
-            };
-
-            instance.memHandle  = GCHandle.Alloc(instance);
-            return instance;
-        }
-
-        public void Dispose()
-        {
-            if(this.memHandle.IsAllocated) { this.memHandle.Free(); }
-        }
-    }
-
-    private struct MapGenJob : IJob
-    {
-        public GCHandle executionContext;
-
-        public void Execute()
-        {
-            var executionContext = (ExecutionContext)this.executionContext.Target;
-            executionContext.step.execute(ref executionContext.mapGenContext);
-        }
-    }
 
     private readonly IEnumerator<IMapGenStep> steps;
-    private JobHandle jobHandle;
-
     private MapGenContext mapGenContext;
-    private ExecutionContext exeContext;
 
     public  ref MapGenData data { get { return ref this.mapGenContext.data; } }
+
+    public MapGeneratorState Current { get; private set; } = MapGeneratorState.CreateInitial();
+
+    object IEnumerator.Current => (MapGeneratorState)this.Current;
 
     internal MapGenerator(in IEnumerator<IMapGenStep> steps)
     {
@@ -190,58 +193,113 @@ public class MapGenerator : System.IDisposable
         this.mapGenContext = MapGenContext.Create();
     }
 
-    public void update()
+    public void Dispose()
     {
-        // is previous step completed?
-        if(this.jobHandle.IsCompleted)
-        {
-            // any previous step?
-            if(this.steps.Current != null)
-            {
-                this.OnMapGenStepFinished?.Invoke(this.steps.Current, this.mapGenContext.data);
-            }
+        // allow each map gen step to release its previously initialized resources.
+        this.steps.Reset();
+        while(this.steps.MoveNext()) { this.steps.Current.release(this.mapGenContext); }
 
-            // continue with next step
-            if(this.steps.MoveNext())
-            {
-                var nextStep            = this.steps.Current;
-                nextStep.initialize(ref this.mapGenContext);
-
-                // dispose old and create new execution context
-                this.exeContext.Dispose();
-                this.exeContext = ExecutionContext.Create(nextStep, this.mapGenContext);
-
-                // schedule step to be run immediately
-                this.OnMapGenStepStarted?.Invoke(nextStep, this.mapGenContext.data);
-                this.jobHandle = new MapGenJob { executionContext = this.exeContext }.Schedule();
-            }
-            else
-            {
-                // no more steps to process
-                this.OnMapGenFinished?.Invoke(this.mapGenContext.data);
-            }
-        }
+        this.mapGenContext.Dispose();
     }
 
-    public void reset()
+    public bool MoveNext()
+    {
+        switch(this.Current.state)
+        {
+            case MapGeneratorState.State.Initialized:
+            {
+                this.Current.pipeStart = UnityEngine.Time.time;
+
+                this.OnMapGenStarted?.Invoke();
+
+                // initialize map generate state
+
+                // move to first pipeline step
+                if(this.steps.MoveNext())
+                {
+                    this.steps.Current.initialize(this.mapGenContext);
+                    this.Current.step = this.steps.Current.execute(this.mapGenContext);
+
+                    this.Current.stepStart = UnityEngine.Time.time;
+                    this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                }
+
+                this.Current.state = this.steps.Current != null
+                        ? MapGeneratorState.State.Running
+                        : MapGeneratorState.State.Completed;
+
+                return true;
+            }
+
+            case MapGeneratorState.State.Running:
+            {
+                // update current map gen step
+                if(this.Current.step != null)
+                {
+                    // update current pipeline step
+                    if(this.Current.step.MoveNext())
+                    {
+                        var stepState = this.Current.step.Current;
+                        this.OnMapGenStepUpdated?.Invoke(this.steps.Current, this.mapGenContext.data);
+                    }
+                    // map gen step completed
+                    else
+                    {
+                        var duration = UnityEngine.Time.time - this.Current.stepStart;
+                        Debug.Log($"Map generator step {this.steps.Current} finished in: {TimeSpan.FromSeconds(duration).ToString()}");
+
+                        this.OnMapGenStepFinished?.Invoke(this.steps.Current, this.mapGenContext.data);
+
+                        // move on to next step in the pipeline
+                        if(this.steps.MoveNext())
+                        {
+                            this.steps.Current.initialize(this.mapGenContext);
+                            this.Current.step = this.steps.Current.execute(this.mapGenContext);
+
+                            this.Current.stepStart = UnityEngine.Time.time;
+                            this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                        }
+                        // no more steps to process
+                        else
+                        {
+                            this.Current.step = null;
+                        }
+                    }
+                }
+                // if there are no steps to process, set map generator state to complete.
+                else
+                {
+                    this.Current.state = MapGeneratorState.State.Completed;
+                }
+
+                return true;
+            }
+
+            case MapGeneratorState.State.Completed:
+            {
+                var duration = UnityEngine.Time.time - this.Current.pipeStart;
+                Debug.Log($"Map generator finished in: {TimeSpan.FromSeconds(duration).ToString()}");
+
+                this.OnMapGenFinished?.Invoke(this.mapGenContext.data);
+                break;
+            }
+        }
+
+        return false;
+    }
+
+    public void Reset()
     {
         this.Dispose();
 
-        this.mapGenContext = MapGenContext.Create();
+        // create new context
+        this.mapGenContext  = MapGenContext.Create();
 
+        // reset mep generator state
+        this.Current        = MapGeneratorState.CreateInitial();
         this.steps.Reset();
+
         this.OnMapGenReseted?.Invoke();
-    }
-
-    public void Dispose()
-    {
-        this.exeContext.Dispose();
-
-        // allow each map gen step to release its previously initialized resources.
-        this.steps.Reset();
-        while(this.steps.MoveNext()) { this.steps.Current.release(ref this.mapGenContext); }
-
-        this.mapGenContext.Dispose();
     }
 }
 
@@ -271,20 +329,20 @@ public class MapGen_Layout : MonoBehaviour
         this.executor = pipeline.createExecutor();
 
         this.executor.OnMapGenStepStarted += OnMapGenStepStarted;
+        //this.executor.OnMapGenStepUpdated += OnMapGenStepFinished;
         this.executor.OnMapGenStepFinished += OnMapGenStepFinished;
         this.executor.OnMapGenReseted += () => this.done = false;
         this.executor.OnMapGenFinished += (in MapGenData data) => this.done = true;
+
+        this.reset();
     }
 
     private void OnMapGenStepStarted(in IMapGenStep step, in MapGenData data)
     {
-        Debug.Log($"{step.GetType()} started");
     }
 
     private void OnMapGenStepFinished(in IMapGenStep step, in MapGenData data)
     {
-        Debug.Log($"{step.GetType()} finsihed");
-
         if(typeof(Step1) == step.GetType())
         {
             tilemap.ClearAllTiles();
@@ -316,16 +374,18 @@ public class MapGen_Layout : MonoBehaviour
             Vector2Int p = this.step1Settings.pathStart;
 
 
-            var chunkSize = this.step2Settings.mapChunckDimensions.x * this.step2Settings.mapChunckDimensions.y;
+            var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
 
             for(int c = 0; c < data.pathSteps.Length + 1; c++)
             {
-                for(int y = 0; y < this.step2Settings.mapChunckDimensions.y; y++)
+                var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
+                for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
                 {
-                    for(int x = 0; x < this.step2Settings.mapChunckDimensions.x; x++)
+                    for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
                     {
-                        int i = (y * this.step2Settings.mapChunckDimensions.x) + x;
-                        var mask = data.walkableTilemapMask[c][i];
+                        int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
+                        var mask = chunk[i];
+                        //var mask = data.walkableTilemapMask[c][i];
                         Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
                         tilemap.SetTile(tp, mask == TileMask.Wall ? this.wall : this.tile);
                     }
@@ -334,8 +394,8 @@ public class MapGen_Layout : MonoBehaviour
                 if(c < data.pathSteps.Length)
                 {
                     p += new Vector2Int(
-                        data.pathSteps[c].x * this.step2Settings.mapChunckDimensions.x,
-                        data.pathSteps[c].y * this.step2Settings.mapChunckDimensions.y);
+                        data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
+                        data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
                 }
             }
         }
@@ -347,18 +407,9 @@ public class MapGen_Layout : MonoBehaviour
         this.executor?.Dispose();
     }
 
-
-    // Update is called once per frame
-    void Update()
-    {
-        if(!this.done)
-        {
-            this.executor.update();
-        }
-    }
-
     public void reset()
     {
-        this.executor.reset();
+        this.executor.Reset();
+        StartCoroutine(this.executor);
     }
 }

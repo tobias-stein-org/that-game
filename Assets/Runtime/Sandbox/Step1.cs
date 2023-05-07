@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 
 using UnityEngine;
 using Unity.Collections;
@@ -5,7 +6,7 @@ using Unity.Collections;
 using PathStep          = UnityEngine.Vector2Int;
 using Path              = Unity.Collections.NativeList<UnityEngine.Vector2Int>;
 using PathStepStack     = Unity.Collections.NativeList<Unity.Collections.NativeList<Step1.PathStepChoice>>;
-
+using Unity.Jobs;
 
 public partial struct MapGenData
 {
@@ -35,8 +36,6 @@ public class Step1 : MapGenStep<Step1Settings>
         public int CompareTo(PathStepChoice other) { return other.score.CompareTo(this.score); }
     }
 
-
-
     private Path            path;
 
     private PathStepStack   stack;
@@ -47,17 +46,126 @@ public class Step1 : MapGenStep<Step1Settings>
 
     private System.Random   random;
 
-    public override void initialize(ref MapGenContext context)
+    public override void initialize(MapGenContext context)
     {
         context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
     }
 
-    public override void release(ref MapGenContext context)
+    public override void release(MapGenContext context)
     {
         if(context.data.pathSteps.IsCreated) { context.data.pathSteps.Dispose(); }
     }
 
-    public override void execute(ref MapGenContext context)
+    private struct ComputeNextPossibleStepsJob : IJob
+    {
+        [ReadOnly] public Path path;
+
+        public NativeList<PathStepChoice> steps;
+
+        public bool pathIntersection;
+
+        public float pathStraightness;
+        public float pathCurvature;
+        public float pathDensity;
+
+        public void Execute()
+        {
+            PathStep thisPath = this.path[this.path.Length - 1];
+            PathStep? lastPath = this.path.Length > 1 ? this.path[this.path.Length - 2] : null;
+
+            // update score weighting
+            foreach(var direction in Direction)
+            {
+                var nextStep = thisPath + direction;
+
+                // do not step-back
+                if(lastPath.HasValue && nextStep == lastPath.Value) { continue; }
+
+                // prevent path intersections, if disabled
+                if(!this.pathIntersection && this.path.Contains(nextStep)) { continue; }
+
+                steps.Add(new PathStepChoice { direction = direction, score = this.computeNextStepScore(ref nextStep) });
+            }
+
+            // sort by score, highest first
+            steps.Sort();
+            for(int i = 0; i < steps.Length; i++) { steps.ElementAt(i).score -= steps[steps.Length - 1].score; }
+        }
+
+        
+        private float computeNextStepScore([ReadOnly] ref PathStep nextStep)
+        {
+            float distance      = this.euclideanDistance(this.path[0], ref nextStep);
+            float curvature     = this.manhattenCurvature(ref this.path, ref nextStep);
+            float area          = this.area(ref this.path, ref nextStep);
+
+            // values between 0.0 and 1.0
+            float density       = (float)(this.path.Length + 1) / area;
+            float straightness  = distance / (float)(this.path.Length);
+            float curvature01   = this.path.Length < 2 ? 0.0f : (curvature / (float)(this.path.Length - 1));
+
+            return (straightness - this.pathStraightness) * (curvature01 - this.pathCurvature) * (density - this.pathDensity);
+        }
+
+        private float euclideanDistance([ReadOnly] PathStep start, [ReadOnly] ref PathStep end)
+        {
+            return (end - start).magnitude;
+        }
+
+        private float manhattenCurvature([ReadOnly] ref Path path, [ReadOnly] ref PathStep next)
+        {
+            int curvature = 0;
+
+            for (int i = 0; i < path.Length - 2; i++)
+            {
+                Vector2Int stepA = path[i];
+                Vector2Int stepB = path[i + 1];
+                Vector2Int stepC = path[i + 2];
+
+                Vector2Int dirAB = stepB - stepA;
+                Vector2Int dirBC = stepC - stepB;
+
+                curvature += 1 - ((dirBC.x * dirAB.x) + (dirBC.y * dirAB.y));
+            }
+
+            // add curvature for the next step
+            if(path.Length > 1)
+            {
+                Vector2Int stepX = path[path.Length - 2];
+                Vector2Int stepY = path[path.Length - 1];
+
+                Vector2Int dirXY = stepY - stepX;
+                Vector2Int dirYZ = next - stepY;
+
+                curvature += 1 - ((dirYZ.x * dirXY.x) + (dirYZ.y * dirXY.y));
+            }
+
+            return curvature;
+        }
+
+        private float area([ReadOnly] ref Path path, [ReadOnly] ref PathStep next)
+        {
+            int xMin = next.x, xMax = next.x;
+            int yMin = next.y, yMax = next.y;
+
+            for(int i = 0; i < path.Length; i++)
+            {
+                var step = path[i];
+
+                xMin = Mathf.Min(xMin, step.x);
+                yMin = Mathf.Min(yMin, step.y);
+                xMax = Mathf.Max(xMax, step.x);
+                yMax = Mathf.Max(yMax, step.y);
+            }
+
+            var width  = xMax - xMin + 1;
+            var height = yMax - yMin + 1;
+
+            return width * height;
+        }
+    }
+
+    public override IEnumerator<MapGenStepState> execute(MapGenContext context)
     {
         this.reset();
 
@@ -65,9 +173,28 @@ public class Step1 : MapGenStep<Step1Settings>
         while(this.currentStep < this.settings.pathLength)
         {
             // generate new possible next steps, if needed
-            if(this.stack.Length < this.currentStep) { this.stack.Add(this.computePossibleSteps()); }
+            if(this.stack.Length < this.currentStep)
+            {
+                var steps       = new NativeList<PathStepChoice>(4, Allocator.Persistent);
+                var jobHandle   = new ComputeNextPossibleStepsJob
+                {
+                    path                = this.path,
+                    steps               = steps,
 
-            ref NativeList<PathStepChoice> nextSteps = ref this.stack.ElementAt(this.stack.Length - 1);
+                    pathIntersection    = this.settings.pathIntersection,
+                    pathStraightness    = this.settings.pathStraightness,
+                    pathCurvature       = this.settings.pathCurvature,
+                    pathDensity         = this.settings.pathDensity
+                    
+                }.Schedule();
+
+                while(!jobHandle.IsCompleted) { yield return new MapGenStepState {}; }
+                jobHandle.Complete();
+
+                this.stack.Add(steps);
+            }
+
+            NativeList<PathStepChoice> nextSteps = this.stack.ElementAt(this.stack.Length - 1);
 
             // there are no possible next steps? Try backtracking
             if(nextSteps.IsEmpty)
@@ -79,7 +206,9 @@ public class Step1 : MapGenStep<Step1Settings>
                 else
                 {
                     // remove previously added path step and stack element
+                    this.stack[this.stack.Length - 1].Dispose();
                     this.stack.RemoveAt(this.stack.Length - 1);
+
                     // also remove previous path element, since it caused a deadend
                     this.path.RemoveAt(this.path.Length - 1);
 
@@ -97,6 +226,9 @@ public class Step1 : MapGenStep<Step1Settings>
                 // add next path step
                 this.path.Add(nextStep);
             }
+
+            for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
+            yield return new MapGenStepState {};
         }
 
         for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
