@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
-using static UnityEngine.Rendering.DebugUI.Table;
 using Unity.Entities.UniversalDelegates;
 using UnityEngine.UIElements;
 using UnityEngine.Tilemaps;
@@ -95,7 +94,7 @@ public class Step2 : MapGenStep<Step2Settings>
             if(to == Vector2Int.left)
             {
 
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);;
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
                     var tileId = y * this.mapChunkDimensions.x;
@@ -104,7 +103,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.right)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
                     var tileId = (y * this.mapChunkDimensions.x) + (this.mapChunkDimensions.x - 1);
@@ -113,7 +112,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.up)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
                     var tileId = ((this.mapChunkDimensions.y - 1) * this.mapChunkDimensions.x) + x;
@@ -122,7 +121,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.down)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement);
+                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
                     var tileId = x;
@@ -139,7 +138,7 @@ public class Step2 : MapGenStep<Step2Settings>
         var rng                 = new System.Random();
         
 
-        var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (float)rng.NextDouble()).ToArray(), Allocator.Persistent);
+        var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)rng.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
 
         var jobHandle           = new CreateMapChunkMaskJob
         {

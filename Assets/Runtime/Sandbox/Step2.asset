@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8b828b4147e04585ab8869e967e39e0, type: 3}
   m_Name: Step2
   m_EditorClassIdentifier: 
-  mapChunkDimensions: {x: 20, y: 20}
+  mapChunkDimensions: {x: 20, y: 15}
   mapChunkWallSize: 1
-  walkablePathThickness: 3
+  walkablePathThickness: 1
   walkablePathDisplacement: 1
