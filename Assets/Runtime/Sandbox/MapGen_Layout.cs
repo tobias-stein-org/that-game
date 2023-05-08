@@ -18,14 +18,17 @@ public class MapGenContext : System.IDisposable
 {
     private NativeList<MapGenData> wrapper;
 
-    internal static MapGenContext Create()
+    private System.Random rng;
+
+    internal static MapGenContext Create(int seed = 0)
     {
         var wrapper = new NativeList<MapGenData>(1, Allocator.Persistent);
         wrapper.AddNoResize(new MapGenData());
 
         return new MapGenContext
         {
-            wrapper = wrapper
+            wrapper = wrapper,
+            rng = seed != 0 ? new System.Random(seed) : new System.Random()
         };
     }
 
@@ -39,6 +42,8 @@ public class MapGenContext : System.IDisposable
     }
 
     public ref MapGenData data { get { return ref this.wrapper.ElementAt(0); } }
+
+    public System.Random random { get { return this.rng; } }
 }
 
 public class MapGenStepState
@@ -57,8 +62,8 @@ public class MapGeneratorState
 
     public State state { get; internal set; }
 
-    public float pipeStart { get; internal set; }
-    public float stepStart { get; internal set; }
+    public DateTime pipeStart { get; internal set; }
+    public DateTime stepStart { get; internal set; }
 
     /// <summary>
     /// Current map gen step in progress.
@@ -71,8 +76,8 @@ public class MapGeneratorState
         {
             state       = State.Initialized,
             step        = null,
-            pipeStart   = UnityEngine.Time.time,
-            stepStart   = UnityEngine.Time.time,
+            pipeStart   = DateTime.Now,
+            stepStart   = DateTime.Now,
         };
     }
 }
@@ -208,7 +213,7 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
         {
             case MapGeneratorState.State.Initialized:
             {
-                this.Current.pipeStart = UnityEngine.Time.time;
+                this.Current.pipeStart = DateTime.Now;
 
                 this.OnMapGenStarted?.Invoke();
 
@@ -220,7 +225,7 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                     this.steps.Current.initialize(this.mapGenContext);
                     this.Current.step = this.steps.Current.execute(this.mapGenContext);
 
-                    this.Current.stepStart = UnityEngine.Time.time;
+                    this.Current.stepStart = DateTime.Now;
                     this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
                 }
 
@@ -237,34 +242,44 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                 if(this.Current.step != null)
                 {
                     // update current pipeline step
-                    if(this.Current.step.MoveNext())
+                    var maxSubSteps = 15000;
+                    var t0 = System.DateTime.Now;
+                    for(int subStep = 0; subStep < maxSubSteps; subStep++)
                     {
-                        var stepState = this.Current.step.Current;
-                        this.OnMapGenStepUpdated?.Invoke(this.steps.Current, this.mapGenContext.data);
-                    }
-                    // map gen step completed
-                    else
-                    {
-                        var duration = UnityEngine.Time.time - this.Current.stepStart;
-                        Debug.Log($"Map generator step {this.steps.Current} finished in: {TimeSpan.FromSeconds(duration).ToString()}");
-
-                        this.OnMapGenStepFinished?.Invoke(this.steps.Current, this.mapGenContext.data);
-
-                        // move on to next step in the pipeline
-                        if(this.steps.MoveNext())
+                        if(this.Current.step.MoveNext())
                         {
-                            this.steps.Current.initialize(this.mapGenContext);
-                            this.Current.step = this.steps.Current.execute(this.mapGenContext);
-
-                            this.Current.stepStart = UnityEngine.Time.time;
-                            this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                            var stepState = this.Current.step.Current;
+                            this.OnMapGenStepUpdated?.Invoke(this.steps.Current, this.mapGenContext.data);
                         }
-                        // no more steps to process
+                        // map gen step completed
                         else
                         {
-                            this.Current.step = null;
+                            var duration = DateTime.Now - this.Current.stepStart;
+                            Debug.Log($"Map generator step {this.steps.Current} finished in: {duration}");
+
+                            this.OnMapGenStepFinished?.Invoke(this.steps.Current, this.mapGenContext.data);
+
+                            // move on to next step in the pipeline
+                            if(this.steps.MoveNext())
+                            {
+                                this.steps.Current.initialize(this.mapGenContext);
+                                this.Current.step = this.steps.Current.execute(this.mapGenContext);
+
+                                this.Current.stepStart = DateTime.Now;
+                                this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                            }
+                            // no more steps to process
+                            else
+                            {
+                                this.Current.step = null;
+                            }
+
+                            // force exit sub-step loop
+                            break;
                         }
                     }
+
+                    //Debug.Log((System.DateTime.Now - t0));
                 }
                 // if there are no steps to process, set map generator state to complete.
                 else
@@ -277,8 +292,8 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
             case MapGeneratorState.State.Completed:
             {
-                var duration = UnityEngine.Time.time - this.Current.pipeStart;
-                Debug.Log($"Map generator finished in: {TimeSpan.FromSeconds(duration).ToString()}");
+                var duration = DateTime.Now - this.Current.pipeStart;
+                Debug.Log($"Map generator finished in: {duration}");
 
                 this.OnMapGenFinished?.Invoke(this.mapGenContext.data);
                 break;
@@ -313,6 +328,7 @@ public class MapGen_Layout : MonoBehaviour
 
     public Step1Settings    step1Settings;
     public Step2Settings    step2Settings;
+    public Step3Settings    step3Settings;
 
     private MapGenerator    executor;
 
@@ -325,6 +341,7 @@ public class MapGen_Layout : MonoBehaviour
                 .create()
                     .add<Step1, Step1Settings>(this.step1Settings)
                     .add<Step2, Step2Settings>(this.step2Settings)
+                    .add<Step3, Step3Settings>(this.step3Settings)
                 .build();
 
         this.executor = pipeline.createExecutor();
@@ -368,43 +385,43 @@ public class MapGen_Layout : MonoBehaviour
                 tilemap.SetTile((Vector3Int)s, this.tile);
             }
         }
-        else if(typeof(Step2) == step.GetType())
+        else if(typeof(Step2) == step.GetType() || typeof(Step3) == step.GetType())
         {
-            tilemap.ClearAllTiles();
+            //tilemap.ClearAllTiles();
 
-            Vector2Int p = this.step1Settings.pathStart;
+            //Vector2Int p = this.step1Settings.pathStart;
 
 
-            var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
+            //var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
 
-            for(int c = 0; c < data.pathSteps.Length + 1; c++)
-            {
-                var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
-                for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
-                {
-                    for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
-                    {
-                        int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
-                        Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
+            //for(int c = 0; c < data.pathSteps.Length + 1; c++)
+            //{
+            //    var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
+            //    for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
+            //    {
+            //        for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
+            //        {
+            //            int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
+            //            Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
 
-                        switch(chunk[i])
-                        {
-                            case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
-                            case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
+            //            switch(chunk[i])
+            //            {
+            //                case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
+            //                case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
 
-                            default:
-                                this.tilemap.SetTile(tp, this.tile); break;
-                        }
-                    }
-                }
+            //                default:
+            //                    this.tilemap.SetTile(tp, this.tile); break;
+            //            }
+            //        }
+            //    }
 
-                if(c < data.pathSteps.Length)
-                {
-                    p += new Vector2Int(
-                        data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
-                        data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
-                }
-            }
+            //    if(c < data.pathSteps.Length)
+            //    {
+            //        p += new Vector2Int(
+            //            data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
+            //            data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
+            //    }
+            //}
         }
     }
 
