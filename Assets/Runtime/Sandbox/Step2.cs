@@ -14,9 +14,22 @@ public enum TileMask
     Walkable,
     Wall
 }
+
+public struct MapChunkInfo
+{
+    public Vector2Int   size;
+
+    public int          width { get { return this.size.x; } }
+    public int          height { get { return this.size.y; } }
+}
+
 public partial struct MapGenData
 {
     public NativeArray<TileMask> walkableTilemapMask;
+
+    public NativeArray<MapChunkInfo> mapChunkInfos;
+
+    public int numMapChunks { get { return this.mapChunkInfos.Length; } }
 }
 
 public class Step2 : MapGenStep<Step2Settings>
@@ -42,6 +55,9 @@ public class Step2 : MapGenStep<Step2Settings>
         [NativeDisableParallelForRestriction] 
         public NativeArray<TileMask>                walkableTilemapMask;
 
+        [NativeDisableParallelForRestriction] 
+        public NativeArray<MapChunkInfo>            mapChunkInfos;
+
         public void Execute(int chunkId)
         {
             var from = chunkId > 0
@@ -53,7 +69,10 @@ public class Step2 : MapGenStep<Step2Settings>
                 : Vector2Int.zero;
 
             var chunkSize   = this.mapChunkDimensions.x * this.mapChunkDimensions.y;
-            var chunk = this.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize);
+            var chunk       = this.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize);
+            var chunkInfo   = this.mapChunkInfos[chunkId];
+
+            chunkInfo.size  = this.mapChunkDimensions;
 
             // draw walls
             for(int y = 0; y < this.mapChunkDimensions.y; y++)
@@ -128,17 +147,18 @@ public class Step2 : MapGenStep<Step2Settings>
                     chunk[tileId] = TileMask.Walkable;
                 }
             }
+
+            // update chunk info
+            this.mapChunkInfos[chunkId] = chunkInfo;
         }
     }
 
     public override IEnumerator<MapGenStepState> execute(MapGenContext context)
     {
-        var numChunks           = context.data.pathSteps.Length + 1;
-
-        var rng                 = new System.Random();
+        var numChunks           = context.data.numMapChunks;
         
 
-        var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)rng.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
+        var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)context.random.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
 
         var jobHandle           = new CreateMapChunkMaskJob
         {
@@ -147,7 +167,8 @@ public class Step2 : MapGenStep<Step2Settings>
             mapPathThickness    = this.settings.walkablePathThickness,
             pathDisplacements   = pathDisplacements,
             pathSteps           = context.data.pathSteps,
-            walkableTilemapMask = context.data.walkableTilemapMask
+            walkableTilemapMask = context.data.walkableTilemapMask,
+            mapChunkInfos       = context.data.mapChunkInfos
 
         }.Schedule(numChunks, 8);
 
@@ -163,13 +184,12 @@ public class Step2 : MapGenStep<Step2Settings>
         int chunkSize = this.settings.mapChunkDimensions.x * this.settings.mapChunkDimensions.y;
 
         context.data.walkableTilemapMask = new NativeArray<TileMask>(Enumerable.Range(0, chunkSize * numChunks).Select(x => TileMask.Undefined).ToArray(), Allocator.Persistent);
+        context.data.mapChunkInfos = new NativeArray<MapChunkInfo>(numChunks, Allocator.Persistent);
     }
 
     public override void release(MapGenContext context)
     {
-        if(context.data.walkableTilemapMask.IsCreated)
-        {
-            context.data.walkableTilemapMask.Dispose();
-        }
+        if(context.data.walkableTilemapMask.IsCreated) { context.data.walkableTilemapMask.Dispose(); }
+        if(context.data.mapChunkInfos.IsCreated) { context.data.mapChunkInfos.Dispose(); }
     }
 }

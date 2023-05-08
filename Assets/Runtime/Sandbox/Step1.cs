@@ -44,8 +44,6 @@ public class Step1 : MapGenStep<Step1Settings>
 
     private int             currentStep         { get { return this.path.Length; } }
 
-    private System.Random   random;
-
     public override void initialize(MapGenContext context)
     {
         context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
@@ -221,7 +219,7 @@ public class Step1 : MapGenStep<Step1Settings>
             else
             {
                 // select a move by chance
-                var nextStep = this.path.ElementAt(this.path.Length - 1) + this.takeNextStep(ref nextSteps);
+                var nextStep = this.path.ElementAt(this.path.Length - 1) + this.takeNextStep(ref nextSteps, context.random);
 
                 // add next path step
                 this.path.Add(nextStep);
@@ -247,7 +245,6 @@ public class Step1 : MapGenStep<Step1Settings>
         this.stack          = new PathStepStack(this.settings.pathLength, Allocator.Persistent);
 
         this.backtracks     = 0;
-        this.random         = new System.Random();
 
         this.path.Add(this.settings.pathStart);
 
@@ -264,22 +261,22 @@ public class Step1 : MapGenStep<Step1Settings>
     /// </summary>
     /// <param name="nextSteps"></param>
     /// <returns></returns>
-    private PathStep takeNextStep(ref NativeList<PathStepChoice> nextSteps)
+    private PathStep takeNextStep(ref NativeList<PathStepChoice> nextSteps, in System.Random random)
     {
         int choice = 0;
 
         
         // do a random move, if all scores were zero or specified path randomness value wins
-        if(this.settings.pathRandomness > this.random.NextDouble())
+        if(this.settings.pathRandomness > random.NextDouble())
         {
-            choice = this.random.Next(0, nextSteps.Length);
+            choice = random.Next(0, nextSteps.Length);
         }
         else
         {
             float sum = 0.0f;
             for(int i = 0; i < nextSteps.Length; i++) { sum += nextSteps[i].score; }
 
-            float rnd = sum * (float)this.random.NextDouble();
+            float rnd = sum * (float)random.NextDouble();
             float cumsum = 0.0f;
             for(choice = 0; choice < nextSteps.Length - 1; choice++) { cumsum += nextSteps[choice].score; if(cumsum >= rnd) { break; } }
 
