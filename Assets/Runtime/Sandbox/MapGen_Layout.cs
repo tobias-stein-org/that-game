@@ -65,16 +65,19 @@ public class MapGeneratorState
     public DateTime pipeStart { get; internal set; }
     public DateTime stepStart { get; internal set; }
 
+    internal IEnumerator<IMapGenStep> pipe { get; private set; }
+
     /// <summary>
-    /// Current map gen step in progress.
+    /// Current map gen step state.
     /// </summary>
     internal IEnumerator<MapGenStepState> step { get; set; }
 
-    public static MapGeneratorState CreateInitial()
+    public static MapGeneratorState CreateInitial(IEnumerable<IMapGenStep> pipe)
     {
         return new MapGeneratorState
         {
             state       = State.Initialized,
+            pipe        = pipe.GetEnumerator(),
             step        = null,
             pipeStart   = DateTime.Now,
             stepStart   = DateTime.Now,
@@ -112,7 +115,7 @@ public abstract class MapGenStep<TStepSettings> : IMapGenStep
     public abstract void Dispose();
 }
 
-public class MapGenPipeline : System.IDisposable
+public class MapGenPipeline : System.IDisposable, IEnumerable<IMapGenStep>
 {
     private readonly List<IMapGenStep> steps;
 
@@ -133,15 +136,15 @@ public class MapGenPipeline : System.IDisposable
         this.steps.Clear();
     }
 
-    public static MapGenPipelineBuilder create()
-    {
-        return new MapGenPipelineBuilder();
-    }
+    public IReadOnlyList<IMapGenStep> getSteps { get { return this.steps; } }
 
-    public MapGenerator createExecutor()
-    {
-        return new MapGenerator(this.steps.GetEnumerator());
-    }
+    public static MapGenPipelineBuilder create() { return new MapGenPipelineBuilder(); }
+
+    public MapGenerator createExecutor() { return new MapGenerator(this); }
+
+    public IEnumerator<IMapGenStep> GetEnumerator() { return this.steps.GetEnumerator(); }
+
+    IEnumerator IEnumerable.GetEnumerator() { return this.steps.GetEnumerator(); }
 }
 
 public class MapGenPipelineBuilder
@@ -183,28 +186,19 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     public event OnMapGenFinish     OnMapGenFinished;
 
 
-    private readonly IEnumerator<IMapGenStep> steps;
+    private readonly MapGenPipeline pipeline;
     private MapGenContext mapGenContext;
 
     public  ref MapGenData data { get { return ref this.mapGenContext.data; } }
 
-    public MapGeneratorState Current { get; private set; } = MapGeneratorState.CreateInitial();
+    public MapGeneratorState Current { get; private set; } = null;
 
     object IEnumerator.Current => (MapGeneratorState)this.Current;
 
-    internal MapGenerator(in IEnumerator<IMapGenStep> steps)
+    internal MapGenerator(in MapGenPipeline pipeline)
     {
-        this.steps = steps;
+        this.pipeline = pipeline;
         this.mapGenContext = MapGenContext.Create();
-    }
-
-    public void Dispose()
-    {
-        // allow each map gen step to release its previously initialized resources.
-        this.steps.Reset();
-        while(this.steps.MoveNext()) { this.steps.Current.release(this.mapGenContext); }
-
-        this.mapGenContext.Dispose();
     }
 
     public bool MoveNext()
@@ -220,16 +214,16 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                 // initialize map generate state
 
                 // move to first pipeline step
-                if(this.steps.MoveNext())
+                if(this.Current.pipe.MoveNext())
                 {
-                    this.steps.Current.initialize(this.mapGenContext);
-                    this.Current.step = this.steps.Current.execute(this.mapGenContext);
+                    this.Current.pipe.Current.initialize(this.mapGenContext);
+                    this.Current.step = this.Current.pipe.Current.execute(this.mapGenContext);
 
                     this.Current.stepStart = DateTime.Now;
-                    this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                    this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.mapGenContext.data);
                 }
 
-                this.Current.state = this.steps.Current != null
+                this.Current.state = this.Current.pipe.Current != null
                         ? MapGeneratorState.State.Running
                         : MapGeneratorState.State.Completed;
 
@@ -242,31 +236,31 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                 if(this.Current.step != null)
                 {
                     // update current pipeline step
-                    var maxSubSteps = 15000;
+                    var maxSubStepDuration = TimeSpan.FromMilliseconds(5);
                     var t0 = System.DateTime.Now;
-                    for(int subStep = 0; subStep < maxSubSteps; subStep++)
+                    while(System.DateTime.Now - t0 < maxSubStepDuration)
                     {
                         if(this.Current.step.MoveNext())
                         {
                             var stepState = this.Current.step.Current;
-                            this.OnMapGenStepUpdated?.Invoke(this.steps.Current, this.mapGenContext.data);
+                            this.OnMapGenStepUpdated?.Invoke(this.Current.pipe.Current, this.mapGenContext.data);
                         }
                         // map gen step completed
                         else
                         {
                             var duration = DateTime.Now - this.Current.stepStart;
-                            Debug.Log($"Map generator step {this.steps.Current} finished in: {duration}");
+                            Debug.Log($"Map generator step {this.Current.pipe.Current} finished in: {duration}");
 
-                            this.OnMapGenStepFinished?.Invoke(this.steps.Current, this.mapGenContext.data);
+                            this.OnMapGenStepFinished?.Invoke(this.Current.pipe.Current, this.mapGenContext.data);
 
                             // move on to next step in the pipeline
-                            if(this.steps.MoveNext())
+                            if(this.Current.pipe.MoveNext())
                             {
-                                this.steps.Current.initialize(this.mapGenContext);
-                                this.Current.step = this.steps.Current.execute(this.mapGenContext);
+                                this.Current.pipe.Current.initialize(this.mapGenContext);
+                                this.Current.step = this.Current.pipe.Current.execute(this.mapGenContext);
 
                                 this.Current.stepStart = DateTime.Now;
-                                this.OnMapGenStepStarted?.Invoke(this.steps.Current, this.mapGenContext.data);
+                                this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.mapGenContext.data);
                             }
                             // no more steps to process
                             else
@@ -278,8 +272,6 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                             break;
                         }
                     }
-
-                    //Debug.Log((System.DateTime.Now - t0));
                 }
                 // if there are no steps to process, set map generator state to complete.
                 else
@@ -305,16 +297,25 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
     public void Reset()
     {
-        this.Dispose();
+        // allow each map gen step to release its previously initialized resources.
+        foreach(var step in this.pipeline.getSteps) { step.release(this.mapGenContext); }
 
         // create new context
         this.mapGenContext  = MapGenContext.Create();
 
         // reset mep generator state
-        this.Current        = MapGeneratorState.CreateInitial();
-        this.steps.Reset();
+        this.Current        = MapGeneratorState.CreateInitial(this.pipeline);
 
         this.OnMapGenReseted?.Invoke();
+    }
+
+    public void Dispose()
+    {
+        // allow each map gen step to release its previously initialized resources.
+        foreach(var step in this.pipeline.getSteps) { step.release(this.mapGenContext); }
+
+        this.pipeline.Dispose();
+        this.mapGenContext.Dispose();
     }
 }
 
