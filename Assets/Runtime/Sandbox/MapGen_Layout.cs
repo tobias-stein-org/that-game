@@ -151,16 +151,23 @@ public class MapGenPipelineBuilder
 {
     internal readonly List<IMapGenStep> steps = new List<IMapGenStep>();
 
-    public MapGenPipelineBuilder add<TStep, TStepSettings>(in TStepSettings settings)
+    public MapGenPipelineBuilder add<TStep, TStepSettings>(in TStepSettings settings = null)
         where TStep : MapGenStep<TStepSettings>, new()
         where TStepSettings : MapGenStepSettings
     {
-        // create new instance of step
-        var newStep = new TStep();
-        // configure step
-        newStep.configure(settings);
-        // add step to pipeline
-        this.steps.Add(newStep);
+        return this.add(new TStep(), settings);
+    }
+
+    public MapGenPipelineBuilder add<TStep, TStepSettings>(TStep step, TStepSettings settings = null)
+        where TStep : MapGenStep<TStepSettings>, new()
+        where TStepSettings : MapGenStepSettings
+    {
+        if(settings)
+        {
+            step.configure(settings);
+        }
+
+        this.steps.Add(step);
 
         return this;
     }
@@ -338,11 +345,15 @@ public class MapGen_Layout : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        var step3 = new Step3();
+        //step3.OnProgress += OnStep3Progress;
+
         var pipeline = MapGenPipeline
                 .create()
                     .add<Step1, Step1Settings>(this.step1Settings)
                     .add<Step2, Step2Settings>(this.step2Settings)
-                    .add<Step3, Step3Settings>(this.step3Settings)
+                    //.add<Step3, Step3Settings>(this.step3Settings)
+                    .add(step3, this.step3Settings)
                 .build();
 
         this.executor = pipeline.createExecutor();
@@ -358,6 +369,46 @@ public class MapGen_Layout : MonoBehaviour
 
     private void OnMapGenStepStarted(in IMapGenStep step, in MapGenData data)
     {
+
+    }
+
+    private void OnStep3Progress(in MapGenData data)
+    {
+        tilemap.ClearAllTiles();
+
+        Vector2Int p = this.step1Settings.pathStart;
+
+
+        var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
+
+        for(int c = 0; c < data.pathSteps.Length + 1; c++)
+        {
+            var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
+            for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
+            {
+                for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
+                {
+                    int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
+                    Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
+
+                    switch(chunk[i])
+                    {
+                        case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
+                        case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
+
+                        default:
+                            this.tilemap.SetTile(tp, this.tile); break;
+                    }
+                }
+            }
+
+            if(c < data.pathSteps.Length)
+            {
+                p += new Vector2Int(
+                    data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
+                    data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
+            }
+        }
     }
 
     private void OnMapGenStepFinished(in IMapGenStep step, in MapGenData data)
@@ -388,41 +439,41 @@ public class MapGen_Layout : MonoBehaviour
         }
         else if(typeof(Step2) == step.GetType() || typeof(Step3) == step.GetType())
         {
-            //tilemap.ClearAllTiles();
+            tilemap.ClearAllTiles();
 
-            //Vector2Int p = this.step1Settings.pathStart;
+            Vector2Int p = this.step1Settings.pathStart;
 
 
-            //var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
+            var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
 
-            //for(int c = 0; c < data.pathSteps.Length + 1; c++)
-            //{
-            //    var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
-            //    for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
-            //    {
-            //        for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
-            //        {
-            //            int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
-            //            Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
+            for(int c = 0; c < data.pathSteps.Length + 1; c++)
+            {
+                var chunk = data.walkableTilemapMask.Slice(c * chunkSize, chunkSize);
+                for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
+                {
+                    for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
+                    {
+                        int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
+                        Vector3Int tp = new Vector3Int(x + p.x, y + p.y, 0);
 
-            //            switch(chunk[i])
-            //            {
-            //                case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
-            //                case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
+                        switch(chunk[i])
+                        {
+                            case TileMask.Wall: this.tilemap.SetTile(tp, this.wall); break;
+                            case TileMask.Walkable: this.tilemap.SetTile(tp, this.path); break;
 
-            //                default:
-            //                    this.tilemap.SetTile(tp, this.tile); break;
-            //            }
-            //        }
-            //    }
+                            default:
+                                this.tilemap.SetTile(tp, this.tile); break;
+                        }
+                    }
+                }
 
-            //    if(c < data.pathSteps.Length)
-            //    {
-            //        p += new Vector2Int(
-            //            data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
-            //            data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
-            //    }
-            //}
+                if(c < data.pathSteps.Length)
+                {
+                    p += new Vector2Int(
+                        data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
+                        data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
+                }
+            }
         }
     }
 
