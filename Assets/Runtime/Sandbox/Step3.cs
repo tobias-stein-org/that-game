@@ -3,24 +3,180 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Burst;
 using UnityEngine;
 using Unity.Mathematics;
+using UnityEngine.Rendering;
+using Unity.VisualScripting.Antlr3.Runtime;
+using Unity.VisualScripting;
+using UnityEngine.Tilemaps;
+using static Step3.ModuleConstraints;
 
 public partial struct MapGenData
 {
-
+    public NativeArray<int> moduleId;
 }
+
+
+public class ColorComparer
+{
+    public static float CalculateDeltaE(in Color c1, in Color c2)
+    {
+        //return 1f - (Vector3.Distance(new Vector3(c1.r, c1.g, c1.b), new Vector3(c2.r, c2.g, c2.b)) / Mathf.Sqrt(3f));
+
+        return CIEDE2000(RGBToLab(c1), RGBToLab(c2));
+    }
+
+    // Helper method to convert RGB to Lab color space using SIMD
+    private static float3 RGBToLab(in Color color)
+    {
+        float3 c = new float3(color.r, color.g, color.b);
+        float3 xyz = new float3(
+            math.dot(new float3(0.4124564f, 0.3575761f, 0.1804375f), c),
+            math.dot(new float3(0.2126729f, 0.7151522f, 0.0721750f), c),
+            math.dot(new float3(0.0193339f, 0.1191920f, 0.9503041f), c)
+        ) / 255f;
+
+        float3 fxyz = math.select(math.pow(xyz / 0.950456f, 1.0f / 3.0f), (xyz * 7.787f) + (16f / 116f), xyz > 0.008856f);
+        float3 lab = new float3((116f * fxyz.y) - 16f, 500f * (fxyz.x - fxyz.y), 200f * (fxyz.y - fxyz.z));
+
+        return lab;
+    }
+
+    private static float CIEDE2000(float3 lab1, float3 lab2)
+    {
+        float kL = 1f, kC = 1f, kH = 1f; // Set weighting factors
+        float deg2rad = math.PI / 180f;
+
+        float C1 = math.length(lab1.yz);
+        float C2 = math.length(lab2.yz);
+        float barC = (C1 + C2) * 0.5f;
+
+        float G = 0.5f * (1f - math.sqrt(math.pow(barC, 7f) / (math.pow(barC, 7f) + math.pow(25f, 7f))));
+
+        float2 a1Prime = (1f + G) * lab1.yz;
+        float2 a2Prime = (1f + G) * lab2.yz;
+
+        float C1Prime = math.length(a1Prime);
+        float C2Prime = math.length(a2Prime);
+
+        float2 h1Prime = math.atan2(lab1.z, a1Prime);
+        float2 h2Prime = math.atan2(lab2.z, a2Prime);
+
+        float deltaL = lab2.x - lab1.x;
+        float deltaC = C2Prime - C1Prime;
+
+        float2 hBarPrime = math.abs(h1Prime - h2Prime);
+        float deltaH = math.csum(2f * math.sqrt(C1Prime * C2Prime) * math.sin((hBarPrime * 0.5f) * deg2rad));
+
+        float LBarPrime = (lab1.x + lab2.x) * 0.5f;
+        float CBarPrime = (C1Prime + C2Prime) * 0.5f;
+
+        float2 hBarPrimeAbs = math.abs(h1Prime - h2Prime);
+        float2 hBarPrimeAbs2 = math.select(hBarPrimeAbs, 360f - hBarPrimeAbs, hBarPrimeAbs > 180f);
+
+        float HBarPrime = math.csum(math.select((h1Prime + h2Prime) * 0.5f, (h1Prime + h2Prime) * 0.5f + 180f, hBarPrimeAbs2 <= hBarPrimeAbs));
+
+        float T = 1f - 0.17f * math.cos((HBarPrime - 30f) * deg2rad) + 0.24f * math.cos((2f * HBarPrime) * deg2rad) + 0.32f * math.cos((3f * HBarPrime + 6f) * deg2rad) - 0.20f * math.cos((4.5f * HBarPrime - 63f) * deg2rad);
+
+        float dL = deltaL / kL;
+        float dC = deltaC / kC;
+        float dH = deltaH / kH;
+
+        float deltaE = math.sqrt(math.pow(dL, 2f) + math.pow(dC, 2f) + math.pow(dH, 2f) + T * (dC * dH));
+
+        return deltaE;
+    }
+}
+
 
 public class Step3 : MapGenStep<Step3Settings>
 {
-    private int numModules = 3;
+    public struct ModuleMeta : IDisposable
+    {
+        [ReadOnly]
+        public UnsafeList<Color>            pixels;
+
+        [ReadOnly]
+        public Vector2Int                   textureSize;
+
+        [ReadOnly]
+        public float                        weight;
+
+        [ReadOnly]
+        public UnsafeText                   name;
+
+        public bool IsCreated { get { return this.pixels.IsCreated || this.name.IsCreated; } }
+        public void Dispose()
+        {
+            if(this.pixels.IsCreated) { this.pixels.Dispose(); }
+            if(this.name.IsCreated) { this.name.Dispose(); }
+        }
+
+        public static implicit operator ModuleMeta(Module module)
+        {
+            unsafe
+            {
+                var x       = Mathf.FloorToInt(module.sprite.textureRect.x);
+                var y       = Mathf.FloorToInt(module.sprite.textureRect.y);
+                var width   = Mathf.FloorToInt(module.sprite.textureRect.width);
+                var height  = Mathf.FloorToInt(module.sprite.textureRect.height);
+                var pixels  = new UnsafeList<Color>(width * height, Allocator.Persistent);
+
+                foreach(var pixel in module.sprite.texture.GetPixels(x, y, width, height))
+                {
+                    pixels.AddNoResize(pixel);
+                }
+
+                //var t = new Texture2D(width, 1);
+                ////t.SetPixels(module.sprite.texture.GetPixels(x, y, width, height));
+                ////for(int py = 0; py < height; py++)
+                ////{
+                ////    var r  = pixels[py * width +  (width - 1)]; // moduleA's right border
+                ////    var l  = pixels[py * width];                // moduleB's left border
+
+                ////    //t.SetPixel(0, py, l);
+                ////    t.SetPixel(0, py, r);
+                ////}
+                //var bottomBorderOffset  = (height - 1) * width;
+
+                //for(int px = 0; px < width; px++)
+                //{
+                //    var tp  = pixels[px];                                         // moduleA's top border
+                //    var b   = pixels[px + bottomBorderOffset];                    // moduleB's bottom border
+
+                //    //t.SetPixel(px, 0, tp);
+                //    t.SetPixel(px, 0, b);
+                //}
+                //t.Apply();
+
+                //byte[] bytes = t.EncodeToPNG();
+                //var dirPath = Application.dataPath + "/RenderOutput/";
+                //if (!System.IO.Directory.Exists(dirPath))
+                //{
+                //    System.IO.Directory.CreateDirectory(dirPath);
+                //}
+                //System.IO.File.WriteAllBytes(dirPath + $"{module.name}-tb.png", bytes);
+
+                var name = new UnsafeText(module.name.Length, Allocator.Persistent);
+                name.CopyFrom(module.name);
+
+                return new ModuleMeta {
+                    pixels      = pixels,
+                    textureSize = new Vector2Int(width, height),
+                    weight      = module.weight,
+                    name        = name
+                };
+            }
+        }
+    }
 
     [BurstCompile]
-    private struct CellMeta : IComparable<CellMeta>
+    public struct CellMeta : IComparable<CellMeta>
     {
-        private enum CellMetaStates
+        public enum CellMetaStates
         {
             Collapsed = 0,
             Propagated
@@ -30,6 +186,8 @@ public class Step3 : MapGenStep<Step3Settings>
         public float        entropy;
 
         public BitField32   states;
+
+        
 
         public static CellMeta Create()
         {
@@ -56,19 +214,98 @@ public class Step3 : MapGenStep<Step3Settings>
         }
     }
 
-    public enum ModuleConstraintSide { Left = 0, Right, Top, Bottom }
+    [BurstCompile]
+    public struct ModuleConstraints : IDisposable
+    {
+        public enum Side { Left = 0, Right, Top, Bottom }
+
+        private UnsafeBitArray                          constraints;
+
+        private int                                     numModules;
+        private int                                     rowLength;
+
+        public ModuleConstraints([ReadOnly]NativeArray<ModuleMeta>.ReadOnly modules)
+        {
+            this.numModules  = modules.Length;
+            this.rowLength   = modules.Length * modules.Length;
+            this.constraints = new UnsafeBitArray(this.rowLength * 4, Allocator.Persistent, NativeArrayOptions.ClearMemory);
+        }
+
+
+        public bool IsCreated { get { return this.constraints.IsCreated; } }
+
+        public void Dispose()
+        {
+            if(this.constraints.IsCreated) { this.constraints.Dispose(); }
+        }
+
+
+        /// <summary>
+        /// Allow/disallow moduleA to be on the "side" of moduleB. This will automatically also allow the other way around, that is,
+        /// allow/disallow moduleB to be on the opposite-"side" of moduleA.
+        /// </summary>
+        /// <param name="moduleB"></param>
+        /// <param name="moduleA"></param>
+        /// <param name="side"></param>
+        public void set(int moduleA, Side side, int moduleB, bool allow = true)
+        {
+            var moduleARowStartIndex = moduleA * this.numModules;
+            var moduleBRowStartIndex = moduleB * this.numModules;
+
+            switch(side)
+            {
+                case Side.Left:
+                {
+                    this.constraints.Set((int)Side.Left   * this.rowLength + moduleBRowStartIndex + moduleA, allow);
+                    this.constraints.Set((int)Side.Right  * this.rowLength + moduleARowStartIndex + moduleB, allow);
+                    break;
+                }
+
+                case Side.Right:
+                {
+                    this.constraints.Set((int)Side.Right  * this.rowLength + moduleBRowStartIndex + moduleA, allow);
+                    this.constraints.Set((int)Side.Left   * this.rowLength + moduleARowStartIndex + moduleB, allow);
+                    break;
+                }
+
+                case Side.Top:
+                {
+                    this.constraints.Set((int)Side.Top    * this.rowLength + moduleBRowStartIndex + moduleA, allow);
+                    this.constraints.Set((int)Side.Bottom * this.rowLength + moduleARowStartIndex + moduleB, allow);
+                    break;
+                }
+
+                case Side.Bottom:
+                {
+                    this.constraints.Set((int)Side.Bottom * this.rowLength + moduleBRowStartIndex + moduleA, allow);
+                    this.constraints.Set((int)Side.Top    * this.rowLength + moduleARowStartIndex + moduleB, allow);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Is moduleA allowed to be on the side of moduleB?
+        /// </summary>
+        /// <param name="moduleA"></param>
+        /// <param name="side"></param>
+        /// <param name="moduleB"></param>
+        /// <returns></returns>
+        public ulong isSet(int moduleA, Side side, int moduleB)
+        {
+            return this.constraints.GetBits(((int)side * this.rowLength) + (moduleB * this.numModules) + moduleA);
+        }
+    }
+
 
     [BurstCompile]
-    private struct InitializeConstraintsJob : IJobParallelFor
+    private struct InitializeVisualConstraintsJob : IJobParallelFor
     {
-        // TODO
-        //[ReadOnly]
-        //public NativeArray<> modules;
-        public int numModules;
-
         [NativeDisableParallelForRestriction] 
-        public NativeBitArray constraints;
+        public ModuleConstraints        constraints;
 
+        [ReadOnly]
+        public NativeArray<ModuleMeta>  modules;
         /*
                     0               2 3               5 6               8
                     <-  M1 constr. -> <-  M2 constr. -> <-  M2 constr. ->
@@ -83,92 +320,111 @@ public class Step3 : MapGenStep<Step3Settings>
             x, y = {0, 1}
          */
 
-        /// <summary>
-        /// Allow moduleB to be on the "side" of moduleA. This will automatically also allow the other way around, that is,
-        /// allow moduleA to be on the opposite-"side" of moduleB.
-        /// </summary>
-        /// <param name="moduleA"></param>
-        /// <param name="moduleB"></param>
-        /// <param name="side"></param>
-        private void allow(int moduleB, ModuleConstraintSide side, int moduleA, int moduleAChunkStart, int moduleBChunkStart, int rowLength)
-        {
-            switch(side)
-            {
-                case ModuleConstraintSide.Left:
-                {
-                    this.constraints.Set((int)ModuleConstraintSide.Left     * rowLength + moduleAChunkStart + moduleB, true);
-                    this.constraints.Set((int)ModuleConstraintSide.Right    * rowLength + moduleBChunkStart + moduleA, true);
-                    break;
-                }
-
-                case ModuleConstraintSide.Right:
-                {
-                    this.constraints.Set((int)ModuleConstraintSide.Right    * rowLength + moduleAChunkStart + moduleB, true);
-                    this.constraints.Set((int)ModuleConstraintSide.Left     * rowLength + moduleBChunkStart + moduleA, true);
-                    break;
-                }
-
-                case ModuleConstraintSide.Top:
-                {
-                    this.constraints.Set((int)ModuleConstraintSide.Top      * rowLength + moduleAChunkStart + moduleB, true);
-                    this.constraints.Set((int)ModuleConstraintSide.Bottom   * rowLength + moduleBChunkStart + moduleA, true);
-                    break;
-                }
-
-                case ModuleConstraintSide.Bottom:
-                {
-                    this.constraints.Set((int)ModuleConstraintSide.Bottom   * rowLength + moduleAChunkStart + moduleB, true);
-                    this.constraints.Set((int)ModuleConstraintSide.Top      * rowLength + moduleBChunkStart + moduleA, true);
-                    break;
-                }
-            }
-        }
+        
 
         [BurstCompile]
         public void Execute(int moduleA)
         {
-            var moduleAChunkStart   = moduleA * this.numModules;
-            var rowLength           = this.numModules * this.numModules;
-
-            for(int moduleB = moduleA; moduleB < this.numModules; moduleB++)
+            for(int moduleB = moduleA; moduleB < this.modules.Length; moduleB++)
             {
-                var moduleBChunkStart   = moduleB * this.numModules;
+                this.check(moduleA, ModuleConstraints.Side.Left, moduleB);
+                this.check(moduleA, ModuleConstraints.Side.Top, moduleB);
 
-                // TODO: actually compute constraints
-                //this.allow(moduleB, ModuleConstraintSide.Left, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                //this.allow(moduleB, ModuleConstraintSide.Right, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                //this.allow(moduleB, ModuleConstraintSide.Top, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                //this.allow(moduleB, ModuleConstraintSide.Bottom, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-
-                if(moduleA == 0) // undefined
+                if(moduleA != moduleB)
                 {
-                    this.allow(moduleB, ModuleConstraintSide.Left, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Right, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Top, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Bottom, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                }
-                else if(moduleA == 1) // path
-                {
-                    this.allow(moduleB, ModuleConstraintSide.Left, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Right, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Top, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Bottom, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                }
-                else if(moduleA == 2 && !(moduleB == 1))
-                {
-                    this.allow(moduleB, ModuleConstraintSide.Left, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    this.allow(moduleB, ModuleConstraintSide.Right, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    //this.allow(moduleB, ModuleConstraintSide.Top, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
-                    //this.allow(moduleB, ModuleConstraintSide.Bottom, moduleA, moduleAChunkStart, moduleBChunkStart, rowLength);
+                    this.check(moduleA, ModuleConstraints.Side.Right, moduleB);
+                    this.check(moduleA, ModuleConstraints.Side.Bottom, moduleB);
                 }
             }
+        }
+
+        private void check(int moduleA, ModuleConstraints.Side side, int moduleB)
+        {
+            var mA          = this.modules[moduleA];
+            var mB          = this.modules[moduleB];
+
+            var similarity  = 0.0f;
+
+            switch(side)
+            {
+                case ModuleConstraints.Side.Left:
+                {
+                    var rightBorderOffset   = (mA.textureSize.x - 1);
+                    var Y                   = Mathf.Min(mA.textureSize.y, mB.textureSize.y);
+
+                    for(int py = 0; py < Y; py++)
+                    {
+                        var pixelA  = mA.pixels[py * mA.textureSize.x + rightBorderOffset]; // moduleA's right border
+                        var pixelB  = mB.pixels[py * mB.textureSize.x];                     // moduleB's left border
+                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                    }
+
+                    similarity /= Y;
+                    break;
+                }
+
+                case ModuleConstraints.Side.Right:
+                {
+                    var rightBorderOffset   = (mB.textureSize.x - 1);
+                    var Y                   = Mathf.Min(mA.textureSize.y, mB.textureSize.y);
+
+                    for(int py = 0; py < Y; py++)
+                    {
+                        var pixelA  = mA.pixels[py * mA.textureSize.x];                     // moduleA's left border
+                        var pixelB  = mB.pixels[py * mB.textureSize.x + rightBorderOffset]; // moduleB's right border
+                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+
+                    }
+
+                    similarity /= Y;
+                    break;
+                }
+
+                case ModuleConstraints.Side.Top:
+                {
+                    var topBorderOffset     = (mA.textureSize.y - 1) * mA.textureSize.x;
+                    var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
+
+                    for(int px = 0; px < X; px++)
+                    {
+                        var pixelA  = mA.pixels[px];                    // moduleA's bottom border
+                        var pixelB  = mB.pixels[px + topBorderOffset];  // moduleB's top border
+                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                    }
+
+                    similarity /= X;
+                    break;
+                }
+
+                case ModuleConstraints.Side.Bottom:
+                {
+                    var topBorderOffset     = (mB.textureSize.y - 1) * mB.textureSize.x;
+                    var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
+
+                    for(int px = 0; px < X; px++)
+                    {
+                        var pixelA  = mA.pixels[px + topBorderOffset];  // moduleA's top border
+                        var pixelB  = mB.pixels[px];                    // moduleB's bottom border
+                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                    }
+
+                    similarity /= X;
+                    break;
+                }
+            }
+
+            //Debug.Log($"{moduleA}-{side.ToString()[0]}-{moduleB}: {similarity}");
+            // note: lower CIEDE2000 values are more similar, values bellow one are considered hardly distigushable by the human eye
+            this.constraints.set(moduleA, side, moduleB, similarity < 1.0f);
         }
     }
   
     [BurstCompile]
     private struct InitializeWeightsJob : IJobParallelForBatch
     {
-        public int                      numModules;
+        [ReadOnly]
+        public NativeArray<ModuleMeta>  modules;
+
         public int                      maskHeight;
 
         [NativeDisableParallelForRestriction]
@@ -179,19 +435,18 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public void Execute(int maskStartIndex, int maskWidth)
         {
-            var weightChunkSize   = maskWidth       * this.numModules;
-            var weightChunkStart  = maskStartIndex  * this.numModules;
+            var weightChunkSize   = maskWidth       * this.modules.Length;
+            var weightChunkStart  = maskStartIndex  * this.modules.Length;
 
-            for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.numModules)
+            for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
             {
-                for(int moduleId = 0; moduleId < this.numModules; moduleId++)
+                for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
-                    this.weights[i + moduleId] = 1.0f;
+                    this.weights[i + moduleId] = this.modules[moduleId].weight;
                 }
             }
         }
     }
-
 
     [BurstCompile]
     private struct ComputeEntropiesJob : IJobParallelForBatch
@@ -317,7 +572,7 @@ public class Step3 : MapGenStep<Step3Settings>
         public NativeReference<int>             cellId;
 
         [NativeDisableParallelForRestriction]
-        public NativeSlice<TileMask>            tiles;
+        public NativeSlice<int>                 tiles;
 
         public void Execute()
         {
@@ -332,7 +587,7 @@ public class Step3 : MapGenStep<Step3Settings>
             // update cell meta data in array
             cellMetas[cellIdValue]  = meta;
 
-            this.tiles[this.cellId.Value] = (TileMask)Mathf.Clamp(meta.moduleId, 0, this.numModules - 1);
+            this.tiles[this.cellId.Value] = meta.moduleId;
         }
 
         private int pickRandomModule([ReadOnly]NativeSlice<float> distribution, float rng)
@@ -354,7 +609,7 @@ public class Step3 : MapGenStep<Step3Settings>
     private struct PropagateContraintsJob : IJob
     {
         [ReadOnly]
-        public NativeBitArray.ReadOnly          constraints;
+        public ModuleConstraints                constraints;
 
         [ReadOnly]
         public NativeReference<int>             collapsedCellId;
@@ -375,7 +630,13 @@ public class Step3 : MapGenStep<Step3Settings>
         private int                             moduleChunkSize;
 
 
-        private void propagate(int cellId, in int[] modules, ModuleConstraintSide side)
+        /// <summary>
+        /// Update cellId's cell possible modules that can be on the "side" of "modules".
+        /// </summary>
+        /// <param name="cellId"></param>
+        /// <param name="modules"></param>
+        /// <param name="side"></param>
+        private void propagate(int cellId, in int[] modules, ModuleConstraints.Side side)
         {
             var cell = this.cellMetas[cellId];
             if(!cell.isCollapsed && !cell.propagated)
@@ -390,8 +651,13 @@ public class Step3 : MapGenStep<Step3Settings>
 
                 for(int moduleB = 0; moduleB < this.numModules; moduleB++)
                 {
+                    if(weights[moduleB] <= 1e-5f) { continue; }
+
                     ulong allowed = 0;
-                    foreach(int moduleA in modules) { allowed |= this.constraints.GetBits(((int)side * this.moduleChunkSize) + (moduleA * this.numModules) + moduleB); }
+                    foreach(int moduleA in modules)
+                    {
+                        allowed |= this.constraints.isSet(moduleB, side, moduleA);
+                    }
 
                     w1 += weights[moduleB];
                     weights[moduleB] *= allowed;
@@ -434,28 +700,28 @@ public class Step3 : MapGenStep<Step3Settings>
                 var cellIdLeft = cellId - 1;
                 if((cellIdLeft % this.width) != (this.width - 1) && cellIdLeft >= 0)
                 {
-                    this.propagate(cellIdLeft, modules, ModuleConstraintSide.Left);
+                    this.propagate(cellIdLeft, modules, ModuleConstraints.Side.Left);
                 }
 
                 // RIGHT
                 var cellIdRight = cellId + 1;
                 if((cellIdRight % this.width) != 0)
                 {
-                    this.propagate(cellIdRight, modules, ModuleConstraintSide.Right);
+                    this.propagate(cellIdRight, modules, ModuleConstraints.Side.Right);
                 }
 
                 // TOP
                 var cellIdTop = cellId - this.width;
                 if(cellIdTop >= 0)
                 {
-                    this.propagate(cellIdTop, modules, ModuleConstraintSide.Top);
+                    this.propagate(cellIdTop, modules, ModuleConstraints.Side.Top);
                 }
 
                 // BOTTOM
                 var cellIdBottom = cellId + this.width;
                 if(cellIdBottom < this.cellMetas.Length)
                 {
-                    this.propagate(cellIdBottom, modules, ModuleConstraintSide.Bottom);
+                    this.propagate(cellIdBottom, modules, ModuleConstraints.Side.Bottom);
                 }
             }
         }
@@ -522,30 +788,36 @@ public class Step3 : MapGenStep<Step3Settings>
     }
 
 
-
     public delegate void Step3Progress(in MapGenData data);
     public event Step3Progress OnProgress;
 
 
-    private NativeBitArray          constraints;
+    private ModuleConstraints       constraints;
     private NativeReference<bool>   hasUncollapsedCells;
     private NativeReference<bool>   hasFailed;
     private NativeReference<bool>   hasSolution;
-    private NativeArray<CellMeta>   cellMetas;
+    private NativeArray<CellMeta>   cells;
+    private NativeArray<ModuleMeta> modules;
     private NativeArray<float>      weights;
 
     private NativeQueue<int>        minEntropyQueue;
     private NativeReference<int>    minEntropy;
     private NativeArray<int>        stack;
 
-    public override IEnumerator<MapGenStepState> execute(MapGenContext context)
+    private JobHandle               pendingJob;
+
+    private int                     numModules { get { return this.modules.Length; } }
+
+    public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
+        this.modules                                = new NativeArray<ModuleMeta>(context.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
+
         // initialize module contraints
-        this.constraints                            = new NativeBitArray(this.numModules * this.numModules * 4, Allocator.Persistent, NativeArrayOptions.ClearMemory);
-        var constraintJob                           = new InitializeConstraintsJob
+        this.constraints                            = new ModuleConstraints(this.modules.AsReadOnly());
+        var constraintJob                           = new InitializeVisualConstraintsJob
         {
-            numModules = this.numModules,
-            constraints = constraints
+            constraints                             = constraints,
+            modules                                 = this.modules
         }.Schedule(this.numModules, this.numModules);
 
         // reusable flags
@@ -563,21 +835,21 @@ public class Step3 : MapGenStep<Step3Settings>
 
             // TODO: account for a row/column overlap with previous map chunk
 
-            this.cellMetas                          = new NativeArray<CellMeta>(chunkSize, Allocator.Persistent);
+            this.cells                              = new NativeArray<CellMeta>(chunkSize, Allocator.Persistent);
             this.weights                            = new NativeArray<float>(chunkSize * this.numModules, Allocator.Persistent);
             this.stack                              = new NativeArray<int>(chunkSize, Allocator.Persistent);
            
             while(numFailedAttempts < this.settings.numAttemptsToSolveMapChunk)
             {
                 // reset cell meta
-                cellMetas.CopyFrom(Enumerable.Range(0, chunkSize).Select(_ => CellMeta.Create()).ToArray());
+                cells.CopyFrom(Enumerable.Range(0, chunkSize).Select(_ => CellMeta.Create()).ToArray());
 
                 // set initial weights acording to current map chunk mask
                 var initializeWeights               = new InitializeWeightsJob
                 {
                     weights                         = weights,
                     mask                            = context.data.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize),
-                    numModules                      = this.numModules,
+                    modules                         = this.modules,
                     maskHeight                      = chunkInfo.height
                 }.ScheduleBatch(chunkSize, chunkInfo.width, constraintJob);
 
@@ -589,32 +861,37 @@ public class Step3 : MapGenStep<Step3Settings>
                     var calculateEntropiesJob       = new ComputeEntropiesJob
                     {
                         weights                     = this.weights,
-                        cellMetas                   = this.cellMetas,
+                        cellMetas                   = this.cells,
                         numModules                  = this.numModules
                     }.ScheduleBatch(chunkSize, chunkInfo.width, initializeWeights);
 
-                    var findMinEntropyCellId1        = new FindMinEntropyCellPartialJob
+                    // find min entropy cell id
+                    JobHandle findMinEntropyCellId;
                     {
-                        cellMetas                   = this.cellMetas,
-                        minEntropy                  = this.minEntropyQueue.AsParallelWriter(),
-                    }.ScheduleBatch(this.cellMetas.Length, 1024, calculateEntropiesJob);
-                    var findMinEntropyCellId2        = new FindMinEntropyCellJob
-                    {
-                        cellMetas                   = this.cellMetas,
-                        minEntropies                = this.minEntropyQueue,
-                        cellId                      = this.minEntropy
-                    }.Schedule(findMinEntropyCellId1);
+                        findMinEntropyCellId        = new FindMinEntropyCellPartialJob
+                        {
+                            cellMetas               = this.cells,
+                            minEntropy              = this.minEntropyQueue.AsParallelWriter(),
+                        }.ScheduleBatch(this.cells.Length, 1024, calculateEntropiesJob);
+
+                        findMinEntropyCellId        = new FindMinEntropyCellJob
+                        {
+                            cellMetas               = this.cells,
+                            minEntropies            = this.minEntropyQueue,
+                            cellId                  = this.minEntropy
+                        }.Schedule(findMinEntropyCellId);
+                    }
 
                     var collapseCellJob             = new CollapseCellJob
                     {
                         weights                     = weights,
                         cellId                      = this.minEntropy,
-                        cellMetas                   = cellMetas,
+                        cellMetas                   = cells,
                         numModules                  = numModules,
                         rng                         = (float)context.random.NextDouble(),
 
-                        tiles                       = context.data.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize)
-                    }.Schedule(findMinEntropyCellId2);
+                        tiles                       = context.data.moduleId.Slice(chunkId * chunkSize, chunkSize)
+                    }.Schedule(findMinEntropyCellId);
 
                     var propagateJob                = new PropagateContraintsJob
                     {
@@ -622,9 +899,9 @@ public class Step3 : MapGenStep<Step3Settings>
                         width                       = chunkInfo.width,
                         height                      = chunkInfo.height,
                         collapsedCellId             = this.minEntropy,
-                        cellMetas                   = this.cellMetas,
+                        cellMetas                   = this.cells,
                         weights                     = this.weights,
-                        constraints                 = this.constraints.AsReadOnly(),
+                        constraints                 = this.constraints,
                         stack                       = this.stack,
                         hasFailed                   = this.hasFailed
                     }.Schedule(collapseCellJob);
@@ -633,10 +910,11 @@ public class Step3 : MapGenStep<Step3Settings>
                     this.hasUncollapsedCells.Value  = false;
                     var checkAllCollapsedJob        = new HasUncollapsedJob
                     {
-                        cellMetas                   = cellMetas,
+                        cellMetas                   = cells,
                         hasNotCollapsedCells        = hasUncollapsedCells
                     }.Schedule(propagateJob);
 
+                    this.pendingJob = checkAllCollapsedJob;
                     while(!checkAllCollapsedJob.IsCompleted) { yield return new MapGenStepState {}; }
                     checkAllCollapsedJob.Complete();
 
@@ -648,10 +926,11 @@ public class Step3 : MapGenStep<Step3Settings>
                 hasSolution.Value   = true;
                 var hasSolutionJob  = new HasSolutionJob
                 {
-                    cellMetas       = cellMetas,
+                    cellMetas       = cells,
                     hasSolution     = hasSolution
                 }.Schedule();
 
+                this.pendingJob = hasSolutionJob;
                 while(!hasSolutionJob.IsCompleted) { yield return new MapGenStepState {}; }
                 hasSolutionJob.Complete();
 
@@ -676,10 +955,52 @@ public class Step3 : MapGenStep<Step3Settings>
                 }
             }
 
+            if(hasSolution.Value)
+            {
+                Debug.Log($"Map generation successfull. [Attepts: {numFailedAttempts + 1}]");
+            }
+            else
+            {
+                Debug.LogWarning("Map generation failed.");
+            }
+
             this.weights.Dispose();
-            this.cellMetas.Dispose();
+            this.cells.Dispose();
             this.stack.Dispose();
         }
+
+        //string buf = "";
+        //for(int i = 0; i < this.modules.Length; i++)
+        //{
+        //    buf += $"ModuleId: {i} = {this.modules[i].name.ToString()}\n";
+        //}
+
+        //buf += "M |";
+        //for(int moduleA = 0; moduleA < this.modules.Length; moduleA++)
+        //{
+        //    for(int moduleB = 0; moduleB < this.modules.Length; moduleB++)
+        //    {
+        //        buf += $" {moduleB}";
+        //    }
+        //    buf += " |";
+        //}
+
+        //buf += "\n";
+        //for(int side = 0; side < 4; side++)
+        //{
+        //    buf += $"{((ModuleConstraints.Side)side).ToString()[0]} |";
+        //    for(int moduleA = 0; moduleA < this.modules.Length; moduleA++)
+        //    {
+        //        for(int moduleB = 0; moduleB < this.modules.Length; moduleB++)
+        //        {
+        //            buf += $" {this.constraints.isSet(moduleA, (ModuleConstraints.Side)side, moduleB)}";
+        //        }
+
+        //        buf += " |";
+        //    }
+        //    buf += "\n";
+        //}
+        //Debug.Log(buf);
 
         this.hasUncollapsedCells.Dispose();
         this.hasFailed.Dispose();
@@ -687,20 +1008,37 @@ public class Step3 : MapGenStep<Step3Settings>
         this.constraints.Dispose();
         this.minEntropyQueue.Dispose();
         this.minEntropy.Dispose();
+
+        foreach(var module in this.modules) { module.Dispose(); }
+        this.modules.Dispose();
     }
 
-    public override void initialize(MapGenContext context)
+    public override void initialize(MapGeneratorSettings context)
     {
+        context.data.moduleId = new NativeArray<int>(Enumerable.Range(0, context.data.walkableTilemapMask.Length).Select(x => 4).ToArray(), Allocator.Persistent);
     }
 
-    public override void release(MapGenContext context)
+    public override void release(MapGeneratorSettings context)
     {
+        if(!this.pendingJob.IsCompleted)
+        {
+            this.pendingJob.Complete();
+        }
+
+        if(context.data.moduleId.IsCreated) { context.data.moduleId.Dispose(); }
+
     }
 
     public override void Dispose()
     {
+        if(this.modules.IsCreated)
+        {
+            foreach(var module in this.modules) { module.Dispose(); }
+            this.modules.Dispose();
+        }
+
         if(this.weights.IsCreated) this.weights.Dispose();
-        if(this.cellMetas.IsCreated) this.cellMetas.Dispose();
+        if(this.cells.IsCreated) this.cells.Dispose();
         if(this.hasUncollapsedCells.IsCreated) this.hasUncollapsedCells.Dispose();
         if(this.hasFailed.IsCreated) this.hasFailed.Dispose();
         if(this.hasSolution.IsCreated) this.hasSolution.Dispose();
