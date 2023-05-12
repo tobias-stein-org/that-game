@@ -153,7 +153,7 @@ public class Step2 : MapGenStep<Step2Settings>
         }
     }
 
-    public override IEnumerator<MapGenStepState> execute(MapGenContext context)
+    public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
         var numChunks           = context.data.numMapChunks;
         
@@ -178,7 +178,7 @@ public class Step2 : MapGenStep<Step2Settings>
         pathDisplacements.Dispose();
     }
 
-    public override void initialize(MapGenContext context)
+    public override void initialize(MapGeneratorSettings context)
     {
         int numChunks = context.data.pathSteps.Length + 1;
         int chunkSize = this.settings.mapChunkDimensions.x * this.settings.mapChunkDimensions.y;
@@ -187,7 +187,7 @@ public class Step2 : MapGenStep<Step2Settings>
         context.data.mapChunkInfos = new NativeArray<MapChunkInfo>(numChunks, Allocator.Persistent);
     }
 
-    public override void release(MapGenContext context)
+    public override void release(MapGeneratorSettings context)
     {
         if(context.data.walkableTilemapMask.IsCreated) { context.data.walkableTilemapMask.Dispose(); }
         if(context.data.mapChunkInfos.IsCreated) { context.data.mapChunkInfos.Dispose(); }

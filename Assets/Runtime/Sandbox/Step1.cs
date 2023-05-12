@@ -44,12 +44,12 @@ public class Step1 : MapGenStep<Step1Settings>
 
     private int             currentStep         { get { return this.path.Length; } }
 
-    public override void initialize(MapGenContext context)
+    public override void initialize(MapGeneratorSettings context)
     {
         context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
     }
 
-    public override void release(MapGenContext context)
+    public override void release(MapGeneratorSettings context)
     {
         if(context.data.pathSteps.IsCreated) { context.data.pathSteps.Dispose(); }
     }
@@ -163,7 +163,7 @@ public class Step1 : MapGenStep<Step1Settings>
         }
     }
 
-    public override IEnumerator<MapGenStepState> execute(MapGenContext context)
+    public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
         this.reset();
 
