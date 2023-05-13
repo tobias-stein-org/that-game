@@ -272,15 +272,14 @@ public class Step3 : MapGenStep<Step3Settings>
                     break;
                 }
 
-                // note: Bottom and Top cases are swaped on purpose. This seems to fix the issue with different y-axis directions in the tilemap
-                case Side.Bottom:
+                case Side.Top:
                 {
                     this.constraints.Set((int)Side.Top    * this.rowLength + moduleBRowStartIndex + moduleA, allow);
                     this.constraints.Set((int)Side.Bottom * this.rowLength + moduleARowStartIndex + moduleB, allow);
                     break;
                 }
 
-                case Side.Top:
+                case Side.Bottom:
                 {
                     this.constraints.Set((int)Side.Bottom * this.rowLength + moduleBRowStartIndex + moduleA, allow);
                     this.constraints.Set((int)Side.Top    * this.rowLength + moduleARowStartIndex + moduleB, allow);
@@ -387,13 +386,13 @@ public class Step3 : MapGenStep<Step3Settings>
 
                 case ModuleConstraints.Side.Top:
                 {
-                    var topBorderOffset     = (mA.textureSize.y - 1) * mA.textureSize.x;
+                    var bottomBorderOffset  = (mA.textureSize.y - 1) * mA.textureSize.x;
                     var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
 
                     for(int px = 0; px < X; px++)
                     {
-                        var pixelA  = mA.pixels[px];                    // moduleA's bottom border
-                        var pixelB  = mB.pixels[px + topBorderOffset];  // moduleB's top border
+                        var pixelA  = mA.pixels[px + bottomBorderOffset];   // moduleA's bottom border
+                        var pixelB  = mB.pixels[px];                        // moduleB's top border
                         similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
                     }
 
@@ -403,13 +402,13 @@ public class Step3 : MapGenStep<Step3Settings>
 
                 case ModuleConstraints.Side.Bottom:
                 {
-                    var topBorderOffset     = (mB.textureSize.y - 1) * mB.textureSize.x;
+                    var bottomBorderOffset  = (mB.textureSize.y - 1) * mB.textureSize.x;
                     var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
 
                     for(int px = 0; px < X; px++)
                     {
-                        var pixelA  = mA.pixels[px + topBorderOffset];  // moduleA's top border
-                        var pixelB  = mB.pixels[px];                    // moduleB's bottom border
+                        var pixelA  = mA.pixels[px];                        // moduleA's top border
+                        var pixelB  = mB.pixels[px + bottomBorderOffset];   // moduleB's bottom border
                         similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
                     }
 
