@@ -10,7 +10,7 @@ using Unity.Jobs;
 
 public partial struct MapGenData
 {
-    public NativeArray<Vector2Int> pathSteps;
+    public NativeArray<Vector2Int>  pathSteps;
 }
 
 public class Step1 : MapGenStep<Step1Settings>

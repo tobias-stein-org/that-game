@@ -177,6 +177,9 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     {
         this.pipeline       = pipeline;
         this.settings       = settings;
+
+        this.settings.initialize();
+
     }
 
     public bool MoveNext()
@@ -309,7 +312,7 @@ public class MapGen_Layout : MonoBehaviour
     public Step2Settings    step2Settings;
     public Step3Settings    step3Settings;
 
-    private MapGenerator    executor;
+    public MapGenerator    executor;
 
     public bool done = false;
 
@@ -346,27 +349,16 @@ public class MapGen_Layout : MonoBehaviour
     private void OnStep3Progress(in MapGenData data)
     {
         tilemap.ClearAllTiles();
-
-        Vector2Int p = this.step1Settings.pathStart;
-
-
-        var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
-
         for(int c = 0; c < data.pathSteps.Length + 1; c++)
         {
-            var chunk = data.moduleId.Slice(c * chunkSize, chunkSize);
-            for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
-            for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
-            {
-                int i = ((this.step2Settings.mapChunkDimensions.y - y - 1) * this.step2Settings.mapChunkDimensions.x) + x;
-                this.tilemap.SetTile(new Vector3Int(x + p.x, y + p.y, 0), this.generatorSettings.modules[chunk[i]]);
-            }
+            var chunkInfo = data.getChunkInfo(c);
+            var chunkData = data.getChunkData(c);
 
-            if(c < data.pathSteps.Length)
+            for(int y = 0; y < chunkInfo.bounds.height; y++)
+            for(int x = 0; x < chunkInfo.bounds.width; x++)
             {
-                p += new Vector2Int(
-                    data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
-                    data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
+                int i = (y * chunkInfo.bounds.width) + x;
+                this.tilemap.SetTile(new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0), this.generatorSettings.modules[chunkData[i].moduleId]);
             }
         }
 
@@ -402,27 +394,16 @@ public class MapGen_Layout : MonoBehaviour
         else if(typeof(Step3) == step.GetType())
         {
             //tilemap.ClearAllTiles();
-
-            //Vector2Int p = this.step1Settings.pathStart;
-
-
-            //var chunkSize = this.step2Settings.mapChunkDimensions.x * this.step2Settings.mapChunkDimensions.y;
-
             //for(int c = 0; c < data.pathSteps.Length + 1; c++)
             //{
-            //    var chunk = data.moduleId.Slice(c * chunkSize, chunkSize);
-            //    for(int y = 0; y < this.step2Settings.mapChunkDimensions.y; y++)
-            //    for(int x = 0; x < this.step2Settings.mapChunkDimensions.x; x++)
-            //    {
-            //        int i = (y * this.step2Settings.mapChunkDimensions.x) + x;
-            //        this.tilemap.SetTile(new Vector3Int(x + p.x, y + p.y, 0), this.generatorSettings.modules[chunk[i]]);
-            //    }
+            //    var chunkInfo = data.getChunkInfo(c);
+            //    var chunkData = data.getChunkData(c);
 
-            //    if(c < data.pathSteps.Length)
+            //    for(int y = 0; y < chunkInfo.bounds.height; y++)
+            //    for(int x = 0; x < chunkInfo.bounds.width; x++)
             //    {
-            //        p += new Vector2Int(
-            //            data.pathSteps[c].x * this.step2Settings.mapChunkDimensions.x,
-            //            data.pathSteps[c].y * this.step2Settings.mapChunkDimensions.y);
+            //        int i = ((chunkInfo.bounds.height - y - 1) * chunkInfo.bounds.width) + x;
+            //        this.tilemap.SetTile(new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0), this.generatorSettings.modules[chunkData[i].moduleId]);
             //    }
             //}
         }

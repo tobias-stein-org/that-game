@@ -12,11 +12,9 @@ using UnityEngine.Rendering;
 using Unity.VisualScripting.Antlr3.Runtime;
 using Unity.VisualScripting;
 using UnityEngine.Tilemaps;
-using static Step3.ModuleConstraints;
 
 public partial struct MapGenData
 {
-    public NativeArray<int> moduleId;
 }
 
 
@@ -94,6 +92,8 @@ public class ColorComparer
 
 public class Step3 : MapGenStep<Step3Settings>
 {
+    public const float              EPSILONE = 1e-6f;
+
     public struct ModuleMeta : IDisposable
     {
         [ReadOnly]
@@ -107,6 +107,9 @@ public class Step3 : MapGenStep<Step3Settings>
 
         [ReadOnly]
         public UnsafeText                   name;
+
+        [ReadOnly]
+        public TileConstructionType         constructionType;
 
         public bool IsCreated { get { return this.pixels.IsCreated || this.name.IsCreated; } }
         public void Dispose()
@@ -164,10 +167,11 @@ public class Step3 : MapGenStep<Step3Settings>
                 name.CopyFrom(module.name);
 
                 return new ModuleMeta {
-                    pixels      = pixels,
-                    textureSize = new Vector2Int(width, height),
-                    weight      = module.weight,
-                    name        = name
+                    pixels              = pixels,
+                    textureSize         = new Vector2Int(width, height),
+                    weight              = module.weight,
+                    name                = name,
+                    constructionType    = module.constructionType
                 };
             }
         }
@@ -268,14 +272,15 @@ public class Step3 : MapGenStep<Step3Settings>
                     break;
                 }
 
-                case Side.Top:
+                // note: Bottom and Top cases are swaped on purpose. This seems to fix the issue with different y-axis directions in the tilemap
+                case Side.Bottom:
                 {
                     this.constraints.Set((int)Side.Top    * this.rowLength + moduleBRowStartIndex + moduleA, allow);
                     this.constraints.Set((int)Side.Bottom * this.rowLength + moduleARowStartIndex + moduleB, allow);
                     break;
                 }
 
-                case Side.Bottom:
+                case Side.Top:
                 {
                     this.constraints.Set((int)Side.Bottom * this.rowLength + moduleBRowStartIndex + moduleA, allow);
                     this.constraints.Set((int)Side.Top    * this.rowLength + moduleARowStartIndex + moduleB, allow);
@@ -423,26 +428,46 @@ public class Step3 : MapGenStep<Step3Settings>
     private struct InitializeWeightsJob : IJobParallelForBatch
     {
         [ReadOnly]
-        public NativeArray<ModuleMeta>  modules;
-
-        public int                      maskHeight;
+        public NativeArray<ModuleMeta>          modules;
 
         [NativeDisableParallelForRestriction]
-        public NativeArray<float>       weights;
+        public NativeArray<float>               weights;
 
         [ReadOnly]
-        public NativeSlice<TileMask>    mask;
+        public NativeSlice<MapChunkData>    mapChunkData;
 
-        public void Execute(int maskStartIndex, int maskWidth)
+        public void Execute(int start, int count)
         {
-            var weightChunkSize   = maskWidth       * this.modules.Length;
-            var weightChunkStart  = maskStartIndex  * this.modules.Length;
+            var weightChunkSize   = count * this.modules.Length;
+            var weightChunkStart  = start * this.modules.Length;
 
             for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
             {
+                var tileId      = Mathf.FloorToInt(i / this.modules.Length);
+                var tileData    = this.mapChunkData[tileId];
+
                 for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
-                    this.weights[i + moduleId] = this.modules[moduleId].weight;
+                    var moduleConstructionType = this.modules[moduleId].constructionType;
+
+                    switch(tileData.constructionType)
+                    {
+                        case TileConstructionType.Undefined:
+                        {
+                            this.weights[i + moduleId] = this.modules[moduleId].weight;
+                            break;
+                        }
+
+                        default:
+                        {
+                            this.weights[i + moduleId] = moduleConstructionType == tileData.constructionType
+                                ? this.modules[moduleId].weight
+                                : 0.0f;
+
+                            break;
+                        }
+                    }
+                    
                 }
             }
         }
@@ -458,8 +483,6 @@ public class Step3 : MapGenStep<Step3Settings>
         public NativeArray<float>       weights;
 
         public int                      numModules;
-
-        public const float              EPSILONE = 1e-6f;
 
         public void Execute(int startIndex, int count)
         {
@@ -483,7 +506,7 @@ public class Step3 : MapGenStep<Step3Settings>
                 }
 
                 // update cell
-                cell.entropy            = fastLog2(sum) - (logSum / sum + EPSILONE);
+                cell.entropy            = fastLog2(sum) - (logSum / sum + Step3.EPSILONE);
                 cell.propagated         = false;
                 this.cellMetas[cellId]  = cell;
             }
@@ -492,7 +515,7 @@ public class Step3 : MapGenStep<Step3Settings>
         private static float fastLog2(float value)
         {
             const float invLog2 = 1.442695f; // 1 / log(2)
-            return (float)(Mathf.Log(value + EPSILONE) * invLog2);
+            return (float)(Mathf.Log(value + Step3.EPSILONE) * invLog2);
         }
     }
 
@@ -572,7 +595,7 @@ public class Step3 : MapGenStep<Step3Settings>
         public NativeReference<int>             cellId;
 
         [NativeDisableParallelForRestriction]
-        public NativeSlice<int>                 tiles;
+        public NativeSlice<MapChunkData>    mapChunkData;
 
         public void Execute()
         {
@@ -587,7 +610,9 @@ public class Step3 : MapGenStep<Step3Settings>
             // update cell meta data in array
             cellMetas[cellIdValue]  = meta;
 
-            this.tiles[this.cellId.Value] = meta.moduleId;
+            var tile = this.mapChunkData[this.cellId.Value];
+            tile.moduleId = meta.moduleId;
+            this.mapChunkData[this.cellId.Value] = tile;
         }
 
         private int pickRandomModule([ReadOnly]NativeSlice<float> distribution, float rng)
@@ -596,7 +621,7 @@ public class Step3 : MapGenStep<Step3Settings>
             for(int moduleId = 0; moduleId < distribution.Length; moduleId++)
             {
                 // zero values must be ignored
-                if(distribution[moduleId] == 0.0) { continue; }
+                if(distribution[moduleId] <= Step3.EPSILONE) { continue; }
 
                 cumsum += distribution[moduleId];
                 if(cumsum >= rng) { return moduleId; }
@@ -651,7 +676,7 @@ public class Step3 : MapGenStep<Step3Settings>
 
                 for(int moduleB = 0; moduleB < this.numModules; moduleB++)
                 {
-                    if(weights[moduleB] <= 1e-5f) { continue; }
+                    if(weights[moduleB] <= Step3.EPSILONE) { continue; }
 
                     ulong allowed = 0;
                     foreach(int moduleA in modules)
@@ -664,7 +689,7 @@ public class Step3 : MapGenStep<Step3Settings>
                     w2 += weights[moduleB];
                 }
 
-                if((w1 - w2) > 1e-5f)
+                if((w1 - w2) > Step3.EPSILONE)
                 {
                     this.stack[stackPtr++] = cellId;
                 }
@@ -767,27 +792,6 @@ public class Step3 : MapGenStep<Step3Settings>
         }
     }
 
-    [BurstCompile]
-    private struct PaintTilesJob : IJobParallelForBatch
-    {
-        [NativeDisableParallelForRestriction]
-        public NativeSlice<TileMask> tiles;
-
-        [ReadOnly]
-        public NativeArray<CellMeta> cellMetas;
-
-        public int tilesHeight;
-
-        public void Execute(int tilesStartIndex, int tilesWidth)
-        {
-            for(int i = 0; i < tilesWidth; i++)
-            {
-                tiles[tilesStartIndex + i] = (TileMask)this.cellMetas[tilesStartIndex + i].moduleId;
-            }
-        }
-    }
-
-
     public delegate void Step3Progress(in MapGenData data);
     public event Step3Progress OnProgress;
 
@@ -830,28 +834,27 @@ public class Step3 : MapGenStep<Step3Settings>
         for(int chunkId = 0; chunkId < context.data.numMapChunks; chunkId++)
         {
             var numFailedAttempts                   = 0;
-            var chunkInfo                           = context.data.mapChunkInfos[chunkId];
-            var chunkSize                           = chunkInfo.width * chunkInfo.height;
+            var chunkInfo                           = context.data.getChunkInfo(chunkId);
+            var chunkData                           = context.data.getChunkData(chunkId);
 
             // TODO: account for a row/column overlap with previous map chunk
 
-            this.cells                              = new NativeArray<CellMeta>(chunkSize, Allocator.Persistent);
-            this.weights                            = new NativeArray<float>(chunkSize * this.numModules, Allocator.Persistent);
-            this.stack                              = new NativeArray<int>(chunkSize, Allocator.Persistent);
+            this.cells                              = new NativeArray<CellMeta>(chunkInfo.dataSize, Allocator.Persistent);
+            this.weights                            = new NativeArray<float>(chunkInfo.dataSize * this.numModules, Allocator.Persistent);
+            this.stack                              = new NativeArray<int>(chunkInfo.dataSize, Allocator.Persistent);
            
             while(numFailedAttempts < this.settings.numAttemptsToSolveMapChunk)
             {
                 // reset cell meta
-                cells.CopyFrom(Enumerable.Range(0, chunkSize).Select(_ => CellMeta.Create()).ToArray());
+                cells.CopyFrom(Enumerable.Range(0, chunkInfo.dataSize).Select(_ => CellMeta.Create()).ToArray());
 
                 // set initial weights acording to current map chunk mask
                 var initializeWeights               = new InitializeWeightsJob
                 {
                     weights                         = weights,
-                    mask                            = context.data.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize),
+                    mapChunkData                    = chunkData,
                     modules                         = this.modules,
-                    maskHeight                      = chunkInfo.height
-                }.ScheduleBatch(chunkSize, chunkInfo.width, constraintJob);
+                }.ScheduleBatch(chunkInfo.dataSize, chunkInfo.bounds.width, constraintJob);
 
                 // if all weights zero -> no more work
                 hasUncollapsedCells.Value           = true;
@@ -863,7 +866,7 @@ public class Step3 : MapGenStep<Step3Settings>
                         weights                     = this.weights,
                         cellMetas                   = this.cells,
                         numModules                  = this.numModules
-                    }.ScheduleBatch(chunkSize, chunkInfo.width, initializeWeights);
+                    }.ScheduleBatch(chunkInfo.dataSize, chunkInfo.bounds.width, initializeWeights);
 
                     // find min entropy cell id
                     JobHandle findMinEntropyCellId;
@@ -890,14 +893,14 @@ public class Step3 : MapGenStep<Step3Settings>
                         numModules                  = numModules,
                         rng                         = (float)context.random.NextDouble(),
 
-                        tiles                       = context.data.moduleId.Slice(chunkId * chunkSize, chunkSize)
+                        mapChunkData                = chunkData
                     }.Schedule(findMinEntropyCellId);
 
                     var propagateJob                = new PropagateContraintsJob
                     {
                         numModules                  = this.numModules,
-                        width                       = chunkInfo.width,
-                        height                      = chunkInfo.height,
+                        width                       = chunkInfo.bounds.width,
+                        height                      = chunkInfo.bounds.height,
                         collapsedCellId             = this.minEntropy,
                         cellMetas                   = this.cells,
                         weights                     = this.weights,
@@ -937,16 +940,6 @@ public class Step3 : MapGenStep<Step3Settings>
                 // if we have a solution we are done and can exit loop, else we increase the failed attempt count and try again
                 if(hasSolution.Value)
                 {
-                    //var paintTilesJob   = new PaintTilesJob
-                    //{
-                    //    tiles           = context.data.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize),
-                    //    tilesHeight     = chunkInfo.height,
-                    //    cellMetas       = this.cellMetas
-                    //}.ScheduleBatch(chunkSize, chunkInfo.width);
-
-                    //while(!paintTilesJob.IsCompleted) { yield return new MapGenStepState {}; }
-                    //paintTilesJob.Complete();
-
                     break;
                 }
                 else
@@ -1015,7 +1008,6 @@ public class Step3 : MapGenStep<Step3Settings>
 
     public override void initialize(MapGeneratorSettings context)
     {
-        context.data.moduleId = new NativeArray<int>(Enumerable.Range(0, context.data.walkableTilemapMask.Length).Select(x => 4).ToArray(), Allocator.Persistent);
     }
 
     public override void release(MapGeneratorSettings context)
@@ -1024,9 +1016,6 @@ public class Step3 : MapGenStep<Step3Settings>
         {
             this.pendingJob.Complete();
         }
-
-        if(context.data.moduleId.IsCreated) { context.data.moduleId.Dispose(); }
-
     }
 
     public override void Dispose()

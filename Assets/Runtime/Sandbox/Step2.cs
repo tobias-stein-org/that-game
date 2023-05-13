@@ -8,41 +8,41 @@ using UnityEngine.Tilemaps;
 using System.Linq;
 using Unity.Jobs;
 
-public enum TileMask
-{
-    Undefined = 0,
-    Walkable,
-    Wall
-}
 
 public struct MapChunkInfo
 {
-    public Vector2Int   size;
+    public RectInt      bounds;
 
-    public int          width { get { return this.size.x; } }
-    public int          height { get { return this.size.y; } }
+    public int          dataIndex0;
+    public int          dataSize;
+}
+
+public struct MapChunkData
+{
+    public  int                 moduleId;
+        
+    public TileConstructionType constructionType;
 }
 
 public partial struct MapGenData
 {
-    public NativeArray<TileMask> walkableTilemapMask;
+    public NativeArray<MapChunkInfo>        mapChunkInfo;
+    public NativeArray<MapChunkData>        mapChunkData;
 
-    public NativeArray<MapChunkInfo> mapChunkInfos;
+    public int                              numMapChunks { get { return this.mapChunkInfo.Length; } }
 
-    public int numMapChunks { get { return this.mapChunkInfos.Length; } }
+    public MapChunkInfo                     getChunkInfo(int chunkId) { return this.mapChunkInfo[chunkId]; }
+    public NativeSlice<MapChunkData>        getChunkData(int chunkId)
+    {
+        var chunkInfo = this.mapChunkInfo[chunkId];
+        return this.mapChunkData.Slice(chunkInfo.dataIndex0, chunkInfo.dataSize);
+    }
 }
 
 public class Step2 : MapGenStep<Step2Settings>
 {
-
-    public override void Dispose()
-    {
-    }
-
-
     private struct CreateMapChunkMaskJob : IJobParallelFor
     {
-        public Vector2Int                           mapChunkDimensions;
         public int                                  mapChunkWallSize;
         public int                                  mapPathThickness;
 
@@ -53,57 +53,52 @@ public class Step2 : MapGenStep<Step2Settings>
         public NativeArray<float>                   pathDisplacements;
 
         [NativeDisableParallelForRestriction] 
-        public NativeArray<TileMask>                walkableTilemapMask;
+        public NativeArray<MapChunkData>            mapChunkData;
 
         [NativeDisableParallelForRestriction] 
-        public NativeArray<MapChunkInfo>            mapChunkInfos;
+        public NativeArray<MapChunkInfo>            mapChunkInfo;
 
         public void Execute(int chunkId)
         {
-            var from = chunkId > 0
-            ? -this.pathSteps[chunkId - 1]
-            : Vector2Int.zero;
+            var from        = chunkId > 0                       ? -this.pathSteps[chunkId - 1]  : Vector2Int.zero;
+            var to          = chunkId < this.pathSteps.Length   ? this.pathSteps[chunkId]       : Vector2Int.zero;
 
-            var to = chunkId < this.pathSteps.Length
-                ? this.pathSteps[chunkId]
-                : Vector2Int.zero;
-
-            var chunkSize   = this.mapChunkDimensions.x * this.mapChunkDimensions.y;
-            var chunk       = this.walkableTilemapMask.Slice(chunkId * chunkSize, chunkSize);
-            var chunkInfo   = this.mapChunkInfos[chunkId];
-
-            chunkInfo.size  = this.mapChunkDimensions;
+            var chunkInfo   = this.mapChunkInfo[chunkId];
+            var chunkData   = this.mapChunkData.Slice(chunkInfo.dataIndex0, chunkInfo.dataSize);
 
             // draw walls
-            for(int y = 0; y < this.mapChunkDimensions.y; y++)
+            for(int y = 0; y < chunkInfo.bounds.height; y++)
             {
-                for(int x = 0; x < this.mapChunkDimensions.x; x++)
+                for(int x = 0; x < chunkInfo.bounds.width; x++)
                 {
-                    var tileId = (y * this.mapChunkDimensions.x) + x;
+                    var tileId  = (y * chunkInfo.bounds.width) + x;
+                    var tile    = chunkData[tileId];
 
                     // left wall
                     if(x < this.mapChunkWallSize && from != Vector2Int.left && to != Vector2Int.left)
                     {
-                        chunk[tileId] = TileMask.Wall;
+                        tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // right wall
-                    if(x >= (this.mapChunkDimensions.x - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
+                    if(x >= (chunkInfo.bounds.width - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
                     {
-                        chunk[tileId] = TileMask.Wall;
+                        tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // top wall
-                    if(y >= (this.mapChunkDimensions.y - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
+                    if(y >= (chunkInfo.bounds.height - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
                     {
-                        chunk[tileId] = TileMask.Wall;
+                        tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // bottom wall
                     if(y < this.mapChunkWallSize && from != Vector2Int.down && to != Vector2Int.down)
                     {
-                        chunk[tileId] = TileMask.Wall;
+                        tile.constructionType = TileConstructionType.Obstructed;
                     }
+
+                    chunkData[tileId] = tile;
                 }
             }
 
@@ -113,43 +108,52 @@ public class Step2 : MapGenStep<Step2Settings>
             if(to == Vector2Int.left)
             {
 
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
-                    var tileId = y * this.mapChunkDimensions.x;
-                    chunk[tileId] = TileMask.Walkable;
+                    var tileId = y * chunkInfo.bounds.width;
+                    var tile = chunkData[tileId];
+
+                    tile.constructionType = TileConstructionType.Walkable;
+                    chunkData[tileId] = tile;
                 }
             }
             else if(to == Vector2Int.right)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.y - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
-                    var tileId = (y * this.mapChunkDimensions.x) + (this.mapChunkDimensions.x - 1);
-                    chunk[tileId] = TileMask.Walkable;
+                    var tileId = (y * chunkInfo.bounds.width) + (chunkInfo.bounds.width - 1);
+                    var tile = chunkData[tileId];
+
+                    tile.constructionType = TileConstructionType.Walkable;
+                    chunkData[tileId] = tile;
                 }
             }
             else if(to == Vector2Int.up)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
-                    var tileId = ((this.mapChunkDimensions.y - 1) * this.mapChunkDimensions.x) + x;
-                    chunk[tileId] = TileMask.Walkable;
+                    var tileId = ((chunkInfo.bounds.height - 1) * chunkInfo.bounds.width) + x;
+                    var tile = chunkData[tileId];
+
+                    tile.constructionType = TileConstructionType.Walkable;
+                    chunkData[tileId] = tile;
                 }
             }
             else if(to == Vector2Int.down)
             {
-                var pathStart = Mathf.RoundToInt((float)(this.mapChunkDimensions.x - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
                     var tileId = x;
-                    chunk[tileId] = TileMask.Walkable;
+                    var tile = chunkData[tileId];
+
+                    tile.constructionType = TileConstructionType.Walkable;
+                    chunkData[tileId] = tile;
                 }
             }
-
-            // update chunk info
-            this.mapChunkInfos[chunkId] = chunkInfo;
         }
     }
 
@@ -162,13 +166,12 @@ public class Step2 : MapGenStep<Step2Settings>
 
         var jobHandle           = new CreateMapChunkMaskJob
         {
-            mapChunkDimensions  = this.settings.mapChunkDimensions,
             mapChunkWallSize    = this.settings.mapChunkWallSize,
             mapPathThickness    = this.settings.walkablePathThickness,
             pathDisplacements   = pathDisplacements,
             pathSteps           = context.data.pathSteps,
-            walkableTilemapMask = context.data.walkableTilemapMask,
-            mapChunkInfos       = context.data.mapChunkInfos
+            mapChunkData        = context.data.mapChunkData,
+            mapChunkInfo        = context.data.mapChunkInfo
 
         }.Schedule(numChunks, 8);
 
@@ -181,15 +184,67 @@ public class Step2 : MapGenStep<Step2Settings>
     public override void initialize(MapGeneratorSettings context)
     {
         int numChunks = context.data.pathSteps.Length + 1;
-        int chunkSize = this.settings.mapChunkDimensions.x * this.settings.mapChunkDimensions.y;
 
-        context.data.walkableTilemapMask = new NativeArray<TileMask>(Enumerable.Range(0, chunkSize * numChunks).Select(x => TileMask.Undefined).ToArray(), Allocator.Persistent);
-        context.data.mapChunkInfos = new NativeArray<MapChunkInfo>(numChunks, Allocator.Persistent);
+        context.data.mapChunkInfo   = new NativeArray<MapChunkInfo>(numChunks, Allocator.Persistent);
+        var nextChunkDataIndex0     = 0;
+
+        for(int chunkId = 0; chunkId < numChunks; chunkId++)
+        {
+            var chunkInfo           = new MapChunkInfo();
+            var chunkWidth          = this.settings.mapChunkDimensions.x;
+            var chunkHeight         = this.settings.mapChunkDimensions.y;
+
+            chunkInfo.dataIndex0    = nextChunkDataIndex0;
+
+            if(chunkId > 0)
+            {
+                var last            = context.data.mapChunkInfo[chunkId - 1];
+                var from            = context.data.pathSteps[chunkId - 1];
+
+                chunkInfo.bounds    = new RectInt
+                {
+                    x               = from.x != 0
+                        ? from.x == -1
+                            // came from right
+                            ? last.bounds.x - chunkWidth
+                            // came from left
+                            : last.bounds.x + last.bounds.width
+                        : last.bounds.x,
+                    y               = from.y != 0
+                        ? from.y == -1
+                            // came from bottom
+                            ? last.bounds.y - chunkHeight
+                            // came from top
+                            : last.bounds.y + last.bounds.height
+                        : last.bounds.y,
+                    width           = chunkWidth,
+                    height          = chunkHeight
+                };
+            }
+            // first chunk
+            else
+            {
+                chunkInfo.bounds    = new RectInt(Vector2Int.zero, new Vector2Int(chunkWidth, chunkHeight));
+            }
+
+            chunkInfo.dataSize      = chunkInfo.bounds.width * chunkInfo.bounds.height;
+            nextChunkDataIndex0     += chunkInfo.dataSize;
+
+            context.data.mapChunkInfo[chunkId] = chunkInfo;
+
+            //Debug.Log($"Chunk[{chunkId}]: {chunkInfo.bounds} (Index0: {chunkInfo.dataIndex0}, size: {chunkInfo.dataSize})");
+        }
+
+        context.data.mapChunkData = new NativeArray<MapChunkData>(Enumerable.Range(0, nextChunkDataIndex0).Select(x => new MapChunkData { constructionType = TileConstructionType.Walkable }).ToArray(), Allocator.Persistent);
     }
 
     public override void release(MapGeneratorSettings context)
     {
-        if(context.data.walkableTilemapMask.IsCreated) { context.data.walkableTilemapMask.Dispose(); }
-        if(context.data.mapChunkInfos.IsCreated) { context.data.mapChunkInfos.Dispose(); }
+        if(context.data.mapChunkData.IsCreated) { context.data.mapChunkData.Dispose(); }
+        if(context.data.mapChunkInfo.IsCreated) { context.data.mapChunkInfo.Dispose(); }
+    }
+
+    public override void Dispose()
+    {
     }
 }
