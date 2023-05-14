@@ -172,8 +172,6 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     public MapGeneratorState Current { get; private set; } = null;
     object IEnumerator.Current => (MapGeneratorState)this.Current;
 
-
-
     internal MapGenerator(in MapGenPipeline pipeline, in MapGeneratorSettings settings)
     {
         this.pipeline       = pipeline;
@@ -182,9 +180,6 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
         this.context.initialize();
 
     }
-
-   
-
     public  bool MoveNext()
     {
         // wait for all pending jobs to finish, before continue with next step iteration
@@ -361,7 +356,9 @@ public class MapGen_Layout : MonoBehaviour
 
     private void OnStep3Progress(in MapGenData data)
     {
-        floor.ClearAllTiles();
+        this.floor.ClearAllTiles();
+        this.obstr.ClearAllTiles();
+
         for(int c = 0; c < data.pathSteps.Length + 1; c++)
         {
             var chunkInfo = data.getChunkInfo(c);
@@ -382,7 +379,7 @@ public class MapGen_Layout : MonoBehaviour
 
                 if(obstrModuleId != -1)
                 {
-                    this.floor.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
+                    this.obstr.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
                 }
             }
         }
