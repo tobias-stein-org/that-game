@@ -28,7 +28,7 @@ public class MapGen_LayoutEditor : Editor
                     int i           = (y * chunkInfo.bounds.width) + x;
 
                     var cType       = chunkData[i].constructionType;
-                    var moduleId    = target.generatorSettings.modules[chunkData[i].moduleId];
+                    var moduleId    = target.generatorSettings.modules[chunkData[i].floorModuleId];
                     var tilePos     = new Vector3(chunkInfo.bounds.x + x + 0.5f, chunkInfo.bounds.y + y + 0.5f, 0) * 0.16f;
 
                     Handles.Label(tilePos, $"{cType.ToString()[0]}");

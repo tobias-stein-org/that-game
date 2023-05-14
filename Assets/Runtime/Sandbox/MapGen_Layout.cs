@@ -301,7 +301,8 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
 public class MapGen_Layout : MonoBehaviour
 {
-    public Tilemap          tilemap;
+    public Tilemap          floor, obstr;
+
     public Tile             tile;
     public Tile             wall;
     public Tile             path;
@@ -348,7 +349,7 @@ public class MapGen_Layout : MonoBehaviour
 
     private void OnStep3Progress(in MapGenData data)
     {
-        tilemap.ClearAllTiles();
+        floor.ClearAllTiles();
         for(int c = 0; c < data.pathSteps.Length + 1; c++)
         {
             var chunkInfo = data.getChunkInfo(c);
@@ -357,8 +358,20 @@ public class MapGen_Layout : MonoBehaviour
             for(int y = 0; y < chunkInfo.bounds.height; y++)
             for(int x = 0; x < chunkInfo.bounds.width; x++)
             {
-                int i = (y * chunkInfo.bounds.width) + x;
-                this.tilemap.SetTile(new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0), this.generatorSettings.modules[chunkData[i].moduleId]);
+                var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0);
+                int i               = (y * chunkInfo.bounds.width) + x;
+                int floorModuleId   = chunkData[i].floorModuleId;
+                int obstrModuleId   = chunkData[i].obstrModuleId;
+
+                if(floorModuleId != -1)
+                {
+                    this.floor.SetTile(tilePos, this.generatorSettings.modules[floorModuleId]);
+                }
+
+                if(obstrModuleId != -1)
+                {
+                    this.floor.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
+                }
             }
         }
 
@@ -369,18 +382,18 @@ public class MapGen_Layout : MonoBehaviour
     {
         if(typeof(Step1) == step.GetType())
         {
-            tilemap.ClearAllTiles();
+            floor.ClearAllTiles();
 
             Vector2Int s = this.step1Settings.pathStart;
 
             // start tile
-            tilemap.SetTile((Vector3Int)s, this.tile);
+            floor.SetTile((Vector3Int)s, this.tile);
 
             // path
             for(int i = 1; i < data.pathSteps.Length - 1; i++)
             {
                 s += data.pathSteps[i];
-                tilemap.SetTile((Vector3Int)s, this.tile);
+                floor.SetTile((Vector3Int)s, this.tile);
             }
 
             // end tile
@@ -388,7 +401,7 @@ public class MapGen_Layout : MonoBehaviour
             {
                 s += data.pathSteps[data.pathSteps.Length - 1];
 
-                tilemap.SetTile((Vector3Int)s, this.tile);
+                floor.SetTile((Vector3Int)s, this.tile);
             }
         }
         else if(typeof(Step3) == step.GetType())
@@ -411,7 +424,7 @@ public class MapGen_Layout : MonoBehaviour
 
     private void OnDestroy()
     {
-        this.tilemap?.ClearAllTiles();
+        this.floor?.ClearAllTiles();
         this.executor?.Dispose();
     }
 

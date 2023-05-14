@@ -610,7 +610,7 @@ public class Step3 : MapGenStep<Step3Settings>
             cellMetas[cellIdValue]  = meta;
 
             var tile = this.mapChunkData[this.cellId.Value];
-            tile.moduleId = meta.moduleId;
+            tile.floorModuleId = meta.moduleId;
             this.mapChunkData[this.cellId.Value] = tile;
         }
 

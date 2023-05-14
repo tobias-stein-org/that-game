@@ -11,17 +11,31 @@ using Unity.Jobs;
 
 public struct MapChunkInfo
 {
-    public RectInt      bounds;
+    public RectInt                          bounds;
 
-    public int          dataIndex0;
-    public int          dataSize;
+    public int                              dataIndex0;
+    public int                              dataSize;
 }
 
 public struct MapChunkData
 {
-    public  int                 moduleId;
+    public int                              floorModuleId;
+    public int                              obstrModuleId;
         
-    public TileConstructionType constructionType;
+    public TileConstructionType             constructionType;
+
+    public static MapChunkData Empty
+    {
+        get
+        {
+            return new MapChunkData
+            {
+                floorModuleId      = -1,
+                obstrModuleId      = -1,
+                constructionType   = TileConstructionType.Undefined
+            };
+        }
+    }
 }
 
 public partial struct MapGenData
@@ -235,7 +249,7 @@ public class Step2 : MapGenStep<Step2Settings>
             //Debug.Log($"Chunk[{chunkId}]: {chunkInfo.bounds} (Index0: {chunkInfo.dataIndex0}, size: {chunkInfo.dataSize})");
         }
 
-        context.data.mapChunkData = new NativeArray<MapChunkData>(Enumerable.Range(0, nextChunkDataIndex0).Select(x => new MapChunkData { constructionType = TileConstructionType.Walkable }).ToArray(), Allocator.Persistent);
+        context.data.mapChunkData = new NativeArray<MapChunkData>(Enumerable.Range(0, nextChunkDataIndex0).Select(x => MapChunkData.Empty).ToArray(), Allocator.Persistent);
     }
 
     public override void release(MapGeneratorSettings context)
