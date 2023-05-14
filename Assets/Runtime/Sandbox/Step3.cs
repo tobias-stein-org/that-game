@@ -92,7 +92,47 @@ public class ColorComparer
 
 public class Step3 : MapGenStep<Step3Settings>
 {
-    public const float              EPSILONE = 1e-6f;
+    public const float                      EPSILONE = 1e-6f;
+
+    internal struct Step3State
+    {
+        private UnsafeBitArray              state;
+
+        public  bool IsCreated { get { return this.state.IsCreated; } }
+        public  void Dispose()
+        {
+            if(this.state.IsCreated) { this.state.Dispose(); }
+        }
+
+        public static Step3State    Create()
+        {
+            return new Step3State
+            {
+                state = new UnsafeBitArray(32, Allocator.Persistent, NativeArrayOptions.ClearMemory)
+            };
+        }
+
+        public void reset()
+        {
+            this.state.Clear();
+        }
+
+        public bool hasSolution() { return this.state.IsSet(0); }
+        public void hasSolution(bool value) { this.state.Set(0, value); }
+
+        public bool hasFailed() { return this.state.IsSet(1); }
+        public void hasFailed(bool value) { this.state.Set(1, value); }
+
+        public bool allCollapsed() { return this.state.IsSet(2); }
+        public void allCollapsed(bool value) { this.state.Set(2, value); }
+       
+        public int  numFails() { return (int)this.state.GetBits(16, 16); }
+        public void fail()
+        {
+            this.hasFailed(true);
+            this.state.SetBits(16, (ulong)(this.numFails() + 1), 16);
+        }
+    }
 
     public struct ModuleMeta : IDisposable
     {
@@ -128,40 +168,7 @@ public class Step3 : MapGenStep<Step3Settings>
                 var height  = Mathf.FloorToInt(module.sprite.textureRect.height);
                 var pixels  = new UnsafeList<Color>(width * height, Allocator.Persistent);
 
-                foreach(var pixel in module.sprite.texture.GetPixels(x, y, width, height))
-                {
-                    pixels.AddNoResize(pixel);
-                }
-
-                //var t = new Texture2D(width, 1);
-                ////t.SetPixels(module.sprite.texture.GetPixels(x, y, width, height));
-                ////for(int py = 0; py < height; py++)
-                ////{
-                ////    var r  = pixels[py * width +  (width - 1)]; // moduleA's right border
-                ////    var l  = pixels[py * width];                // moduleB's left border
-
-                ////    //t.SetPixel(0, py, l);
-                ////    t.SetPixel(0, py, r);
-                ////}
-                //var bottomBorderOffset  = (height - 1) * width;
-
-                //for(int px = 0; px < width; px++)
-                //{
-                //    var tp  = pixels[px];                                         // moduleA's top border
-                //    var b   = pixels[px + bottomBorderOffset];                    // moduleB's bottom border
-
-                //    //t.SetPixel(px, 0, tp);
-                //    t.SetPixel(px, 0, b);
-                //}
-                //t.Apply();
-
-                //byte[] bytes = t.EncodeToPNG();
-                //var dirPath = Application.dataPath + "/RenderOutput/";
-                //if (!System.IO.Directory.Exists(dirPath))
-                //{
-                //    System.IO.Directory.CreateDirectory(dirPath);
-                //}
-                //System.IO.File.WriteAllBytes(dirPath + $"{module.name}-tb.png", bytes);
+                foreach(var pixel in module.sprite.texture.GetPixels(x, y, width, height)) { pixels.AddNoResize(pixel); }
 
                 var name = new UnsafeText(module.name.Length, Allocator.Persistent);
                 name.CopyFrom(module.name);
@@ -193,16 +200,19 @@ public class Step3 : MapGenStep<Step3Settings>
 
         
 
-        public static CellMeta Create()
+        public static CellMeta Empty
         {
-            return new CellMeta
-            {
-                isCollapsed     = false,
-                entropy         = 0.0f,
-                moduleId        = -1,
-                propagated      = false,
-                states          = new BitField32(0)
-            };
+
+            get {
+                return new CellMeta
+                {
+                    isCollapsed     = false,
+                    entropy         = 0.0f,
+                    moduleId        = -1,
+                    propagated      = false,
+                    states          = new BitField32(0)
+                };
+            }
         }
 
         public bool isCollapsed { get { return this.states.IsSet((int)CellMetaStates.Collapsed); } set { this.states.SetBits((int)CellMetaStates.Collapsed, value); } }
@@ -242,7 +252,6 @@ public class Step3 : MapGenStep<Step3Settings>
         {
             if(this.constraints.IsCreated) { this.constraints.Dispose(); }
         }
-
 
         /// <summary>
         /// Allow/disallow moduleA to be on the "side" of moduleB. This will automatically also allow the other way around, that is,
@@ -300,7 +309,6 @@ public class Step3 : MapGenStep<Step3Settings>
             return this.constraints.GetBits(((int)side * this.rowLength) + (moduleB * this.numModules) + moduleA);
         }
     }
-
 
     [BurstCompile]
     private struct InitializeVisualConstraintsJob : IJobParallelFor
@@ -582,7 +590,7 @@ public class Step3 : MapGenStep<Step3Settings>
 
     private struct CollapseCellJob : IJob
     {
-        public NativeArray<CellMeta>            cellMetas;
+        public NativeArray<CellMeta>            grid;
 
         [ReadOnly]
         public NativeArray<float>               weights;
@@ -593,13 +601,10 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeReference<int>             cellId;
 
-        [NativeDisableParallelForRestriction]
-        public NativeSlice<MapChunkData>    mapChunkData;
-
         public void Execute()
         {
             var cellIdValue         = this.cellId.Value;
-            var meta                = cellMetas[cellIdValue];
+            var meta                = grid[cellIdValue];
 
             var cellModuleWeights   = weights.Slice(cellIdValue * this.numModules, this.numModules);
             meta.moduleId           = this.pickRandomModule(cellModuleWeights, this.rng * cellModuleWeights.Sum());
@@ -607,11 +612,7 @@ public class Step3 : MapGenStep<Step3Settings>
             meta.entropy            = 0.0f;
 
             // update cell meta data in array
-            cellMetas[cellIdValue]  = meta;
-
-            var tile = this.mapChunkData[this.cellId.Value];
-            tile.floorModuleId = meta.moduleId;
-            this.mapChunkData[this.cellId.Value] = tile;
+            grid[cellIdValue]       = meta;
         }
 
         private int pickRandomModule([ReadOnly]NativeSlice<float> distribution, float rng)
@@ -638,7 +639,7 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeReference<int>             collapsedCellId;
 
-        public NativeReference<bool>            hasFailed;
+        public NativeReference<Step3State>      state;
 
         public int                              numModules;
 
@@ -716,7 +717,7 @@ public class Step3 : MapGenStep<Step3Settings>
                 // if modeules empty -> no solution!
                 if(modules.Length == 0)
                 {
-                    this.hasFailed.Value = true;
+                    this.state.Value.fail();
                     return;
                 }
 
@@ -752,20 +753,56 @@ public class Step3 : MapGenStep<Step3Settings>
 
     }
 
+    private struct UpdateMapChunkDataJob : IJob
+    {
+        [ReadOnly]
+        public NativeReference<int>             cellId;
+
+        [ReadOnly]
+        public NativeArray<CellMeta>            grid;
+
+        public NativeSlice<MapChunkData>        data;
+
+        public bool                             floor;
+
+        public void Execute()
+        {
+            var cellId              = this.cellId.Value;
+            var moduleId            = this.grid[cellId].moduleId;
+
+            var data                = this.data[cellId];
+            if(this.floor)
+            {
+                data.floorModuleId  = moduleId;
+            }
+            else
+            {
+                data.obstrModuleId  = moduleId;
+            }
+
+            this.data[cellId]       = data;
+        }
+    }
+
     [BurstCompile]
-    private struct HasUncollapsedJob : IJob
+    private struct AllCellsCollapsedJob : IJob
     {
         [ReadOnly]
         public NativeArray<CellMeta>    cellMetas;
 
-        public NativeReference<bool>    hasNotCollapsedCells;
+        public NativeReference<Step3State>  state;
 
         [BurstCompile]
         public void Execute()
         {
+            this.state.Value.allCollapsed(true);
             for(int i = 0; i < (this.cellMetas.Length); i++)
             {
-                if(!this.cellMetas[i].isCollapsed) { this.hasNotCollapsedCells.Value = true; break; }
+                if(!this.cellMetas[i].isCollapsed)
+                {
+                    this.state.Value.allCollapsed(false);
+                    break;
+                }
             }
         }
     }
@@ -776,38 +813,38 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeArray<CellMeta>    cellMetas;
 
-        public NativeReference<bool>    hasSolution;
+        public NativeReference<Step3State>  state;
 
         [BurstCompile]
         public void Execute()
         {
+            this.state.Value.hasSolution(true);
             for(int i = 0; i < (this.cellMetas.Length); i++)
             {
                 if(this.cellMetas[i].moduleId == -1)
                 {
-                    this.hasSolution.Value = false; break;
+                    this.state.Value.hasSolution(false);
+                    break;
                 }
             }
         }
     }
 
-    public delegate void Step3Progress(in MapGenData data);
-    public event Step3Progress OnProgress;
+    public  delegate void                           Step3Progress(in MapGenData data);
+    public  event Step3Progress                     OnProgress;
+                                                    
+                                                    
+    private ModuleConstraints                       constraints;
+    private NativeReference<Step3State>             state;
+                                                    
+    private NativeArray<CellMeta>                   grid;
+    private NativeArray<ModuleMeta>                 modules;
+    private NativeArray<float>                      weights;
+                                                    
+    private NativeQueue<int>                        minEntropyQueue;
+    private NativeReference<int>                    minEntropy;
+    private NativeArray<int>                        stack;
 
-
-    private ModuleConstraints       constraints;
-    private NativeReference<bool>   hasUncollapsedCells;
-    private NativeReference<bool>   hasFailed;
-    private NativeReference<bool>   hasSolution;
-    private NativeArray<CellMeta>   cells;
-    private NativeArray<ModuleMeta> modules;
-    private NativeArray<float>      weights;
-
-    private NativeQueue<int>        minEntropyQueue;
-    private NativeReference<int>    minEntropy;
-    private NativeArray<int>        stack;
-
-    private int                     numModules { get { return this.modules.Length; } }
 
     public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
@@ -819,144 +856,36 @@ public class Step3 : MapGenStep<Step3Settings>
             modules                                 = this.modules
         };
 
-        var dependsOn = context.schedule(constraintJob, this.numModules, this.numModules);
+        var dependsOn = context.schedule(constraintJob, this.modules.Length, this.modules.Length);
 
         for(int chunkId = 0; chunkId < context.data.numMapChunks; chunkId++)
         {
-            var numFailedAttempts                   = 0;
             var chunkInfo                           = context.data.getChunkInfo(chunkId);
             var chunkData                           = context.data.getChunkData(chunkId);
 
             // TODO: account for a row/column overlap with previous map chunk
 
-            this.cells                              = new NativeArray<CellMeta>(chunkInfo.dataSize, Allocator.Persistent);
-            this.weights                            = new NativeArray<float>(chunkInfo.dataSize * this.numModules, Allocator.Persistent);
-            this.stack                              = new NativeArray<int>(chunkInfo.dataSize, Allocator.Persistent);
-           
-            while(numFailedAttempts < this.settings.numAttemptsToSolveMapChunk)
+            var gridWidth                           = chunkInfo.bounds.width;
+            var gridHeight                          = chunkInfo.bounds.height;
+            var gridSize                            = gridWidth * gridHeight;
+
+            this.grid                               = new NativeArray<CellMeta>(gridSize, Allocator.Persistent);
+            this.weights                            = new NativeArray<float>(gridSize * this.modules.Length, Allocator.Persistent);
+            this.stack                              = new NativeArray<int>(gridSize, Allocator.Persistent);
+
+            this.state.Value.reset();
+
+            // 1st pass - generate floor
+            var passOne = this.passOne(context, chunkInfo, chunkData, gridWidth, gridHeight, dependsOn);
+            while(passOne.MoveNext()) { yield return passOne.Current; }
+
+            // 2nd pass - generate obstructables
+            var passTwo = this.passTwo(context, chunkInfo, chunkData, gridWidth, gridHeight, dependsOn);
+            while(passTwo.MoveNext()) { yield return passOne.Current; }
+
+            if(this.state.Value.hasSolution())
             {
-                // reset cell meta
-                cells.CopyFrom(Enumerable.Range(0, chunkInfo.dataSize).Select(_ => CellMeta.Create()).ToArray());
-
-                // set initial weights acording to current map chunk mask
-                var initializeWeightsJob            = new InitializeWeightsJob
-                {
-                    weights                         = weights,
-                    mapChunkData                    = chunkData,
-                    modules                         = this.modules,
-                };
-
-                dependsOn = context.scheduleBatch(initializeWeightsJob, chunkInfo.dataSize, chunkInfo.bounds.width, dependsOn);
-
-                // hand over controll to pipeline executor
-                yield return new MapGenStepState {};
-
-                // if all weights zero -> no more work
-                hasUncollapsedCells.Value           = true;
-                hasFailed.Value                     = false;
-                while(!hasFailed.Value && hasUncollapsedCells.Value)
-                {
-                    // report progress
-                    this.OnProgress?.Invoke(context.data);
-
-                    var calculateEntropiesJob       = new ComputeEntropiesJob
-                    {
-                        weights                     = this.weights,
-                        cellMetas                   = this.cells,
-                        numModules                  = this.numModules
-                    };
-
-                    dependsOn = context.scheduleBatch(calculateEntropiesJob, chunkInfo.dataSize, chunkInfo.bounds.width, dependsOn);
-
-                    // find min entropy cell id
-                    {
-                        var findPartialJob          = new FindMinEntropyCellPartialJob
-                        {
-                            cellMetas               = this.cells,
-                            minEntropy              = this.minEntropyQueue.AsParallelWriter(),
-                        };
-
-                        dependsOn = context.scheduleBatch(findPartialJob, this.cells.Length, 1024, dependsOn);
-
-                        var findMinimumJob          = new FindMinEntropyCellJob
-                        {
-                            cellMetas               = this.cells,
-                            minEntropies            = this.minEntropyQueue,
-                            cellId                  = this.minEntropy
-                        };
-
-                        dependsOn = context.schedule(findMinimumJob, dependsOn);
-                    }
-
-                    var collapseCellJob             = new CollapseCellJob
-                    {
-                        weights                     = weights,
-                        cellId                      = this.minEntropy,
-                        cellMetas                   = cells,
-                        numModules                  = numModules,
-                        rng                         = (float)context.random.NextDouble(),
-
-                        mapChunkData                = chunkData
-                    };
-
-                    dependsOn = context.schedule(collapseCellJob, dependsOn);
-
-                    var propagateJob                = new PropagateContraintsJob
-                    {
-                        numModules                  = this.numModules,
-                        width                       = chunkInfo.bounds.width,
-                        height                      = chunkInfo.bounds.height,
-                        collapsedCellId             = this.minEntropy,
-                        cellMetas                   = this.cells,
-                        weights                     = this.weights,
-                        constraints                 = this.constraints,
-                        stack                       = this.stack,
-                        hasFailed                   = this.hasFailed
-                    };
-
-                    dependsOn = context.schedule(propagateJob, dependsOn);
-
-                    // check if all cells are collapsed now
-                    this.hasUncollapsedCells.Value  = false;
-                    var checkAllCollapsedJob        = new HasUncollapsedJob
-                    {
-                        cellMetas                   = cells,
-                        hasNotCollapsedCells        = hasUncollapsedCells
-                    };
-
-                    context.schedule(checkAllCollapsedJob, dependsOn);
-
-                    // hand over controll to pipeline executor
-                    yield return new MapGenStepState {};
-                }
-
-                // check, if all cells have been successfully collapsed
-                hasSolution.Value   = true;
-                var hasSolutionJob  = new HasSolutionJob
-                {
-                    cellMetas       = cells,
-                    hasSolution     = hasSolution
-                };
-
-                context.schedule(hasSolutionJob);
-
-                // hand over controll to pipeline executor
-                yield return new MapGenStepState {};
-
-                // if we have a solution we are done and can exit loop, else we increase the failed attempt count and try again
-                if(hasSolution.Value)
-                {
-                    break;
-                }
-                else
-                {
-                    numFailedAttempts++;
-                }
-            }
-
-            if(hasSolution.Value)
-            {
-                Debug.Log($"Map generation successfull. [Attepts: {numFailedAttempts + 1}]");
+                Debug.Log($"Map generation successfull. [Attepts: {this.state.Value.numFails() + 1}]");
             }
             else
             {
@@ -964,12 +893,143 @@ public class Step3 : MapGenStep<Step3Settings>
             }
 
             this.weights.Dispose();
-            this.cells.Dispose();
+            this.grid.Dispose();
             this.stack.Dispose();
         }
+    }
 
-        
-        //Debug.Log(this.dumpContraints());
+    private IEnumerator<MapGenStepState> passOne(MapGeneratorSettings context, MapChunkInfo chunkInfo, NativeSlice<MapChunkData> chunkData, int gridWidth, int gridHeight, JobHandle dependsOn)
+    {
+         while(!this.state.Value.hasSolution() && this.state.Value.numFails() < this.settings.numAttemptsToSolveMapChunk)
+         {
+             // reset cell meta
+             grid.CopyFrom(Enumerable.Range(0, chunkInfo.dataSize).Select(_ => CellMeta.Empty).ToArray());
+
+             // set initial weights acording to current map chunk mask
+             var initializeWeightsJob            = new InitializeWeightsJob
+             {
+                 weights                         = weights,
+                 mapChunkData                    = chunkData,
+                 modules                         = this.modules,
+             };
+             dependsOn = context.scheduleBatch(initializeWeightsJob, chunkInfo.dataSize, chunkInfo.bounds.width, dependsOn);
+
+             // run WFC algorithm
+             this.state.Value.hasFailed(false);
+             while(!this.state.Value.hasFailed() && !this.state.Value.allCollapsed())
+             {
+                 dependsOn = this.doWaveFunctionCollapse(context, gridWidth, gridHeight, dependsOn);
+
+                 var updateMapChunkDataJob       = new UpdateMapChunkDataJob
+                 {
+                     grid                        = this.grid,
+                     cellId                      = this.minEntropy,
+                     data                        = chunkData,
+                     floor                       = true
+                 };
+                 dependsOn = context.schedule(updateMapChunkDataJob, dependsOn);
+
+                 this.checkAllCellsCollapsed(context, dependsOn);
+
+                 // hand over controll to pipeline executor
+                 yield return new MapGenStepState {};
+
+                 // report progress
+                 this.OnProgress?.Invoke(context.data);
+             }
+
+             this.checkSolution(context, dependsOn);
+
+             // hand over controll to pipeline executor
+             yield return new MapGenStepState {};
+         }
+    }
+
+    private IEnumerator<MapGenStepState> passTwo(MapGeneratorSettings context, MapChunkInfo chunkInfo, NativeSlice<MapChunkData> chunkData, int gridWidth, int gridHeight, JobHandle dependsOn)
+    {
+        yield return new MapGenStepState {};
+    }
+
+    private JobHandle doWaveFunctionCollapse(MapGeneratorSettings context, int gridWidth, int gridHeight, JobHandle dependsOn)
+    {
+        var calculateEntropiesJob       = new ComputeEntropiesJob
+        {
+            weights                     = this.weights,
+            cellMetas                   = this.grid,
+            numModules                  = this.modules.Length
+        };
+
+        dependsOn = context.scheduleBatch(calculateEntropiesJob, this.grid.Length, gridWidth, dependsOn);
+
+        // find min entropy cell id
+        {
+            var findPartialJob          = new FindMinEntropyCellPartialJob
+            {
+                cellMetas               = this.grid,
+                minEntropy              = this.minEntropyQueue.AsParallelWriter(),
+            };
+
+            dependsOn = context.scheduleBatch(findPartialJob, this.grid.Length, 1024, dependsOn);
+
+            var findMinimumJob          = new FindMinEntropyCellJob
+            {
+                cellMetas               = this.grid,
+                minEntropies            = this.minEntropyQueue,
+                cellId                  = this.minEntropy
+            };
+
+            dependsOn = context.schedule(findMinimumJob, dependsOn);
+        }
+
+        var collapseCellJob             = new CollapseCellJob
+        {
+            weights                     = this.weights,
+            cellId                      = this.minEntropy,
+            grid                        = this.grid,
+            numModules                  = this.modules.Length,
+            rng                         = (float)context.random.NextDouble(),
+        };
+
+        dependsOn = context.schedule(collapseCellJob, dependsOn);
+
+        var propagateJob                = new PropagateContraintsJob
+        {
+            numModules                  = this.modules.Length,
+            width                       = gridWidth,
+            height                      = gridHeight,
+            collapsedCellId             = this.minEntropy,
+            cellMetas                   = this.grid,
+            weights                     = this.weights,
+            constraints                 = this.constraints,
+            stack                       = this.stack,
+            state                       = this.state
+        };
+
+        return context.schedule(propagateJob, dependsOn);
+    }
+
+    private void checkAllCellsCollapsed(MapGeneratorSettings context, JobHandle dependsOn)
+    {
+        // check if all cells are collapsed now
+        var checkAllCollapsedJob        = new AllCellsCollapsedJob
+        {
+            cellMetas                   = grid,
+            state                       = this.state
+        };
+
+        context.schedule(checkAllCollapsedJob, dependsOn);
+    }
+
+    private void checkSolution(MapGeneratorSettings context, JobHandle dependsOn)
+    {
+        // if any cell has an invalid module id, hasSolution value will be set false
+        var hasSolutionJob  = new HasSolutionJob
+        {
+            cellMetas       = grid,
+            state           = this.state
+        };
+
+        context.schedule(hasSolutionJob);
     }
 
     private string dumpContraints()
@@ -1011,12 +1071,8 @@ public class Step3 : MapGenStep<Step3Settings>
 
     public override void initialize(MapGeneratorSettings context)
     {
+        this.state                  = new NativeReference<Step3State>(Step3State.Create(), Allocator.Persistent);
         this.modules                = new NativeArray<ModuleMeta>(context.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
-
-        // reusable flags
-        this.hasUncollapsedCells    = new NativeReference<bool>(Allocator.Persistent);
-        this.hasFailed              = new NativeReference<bool>(Allocator.Persistent);
-        this.hasSolution            = new NativeReference<bool>(Allocator.Persistent);
         this.minEntropyQueue        = new NativeQueue<int>(Allocator.Persistent);
         this.minEntropy             = new NativeReference<int>(Allocator.Persistent);
     }
@@ -1035,13 +1091,12 @@ public class Step3 : MapGenStep<Step3Settings>
         }
 
         if(this.weights.IsCreated) this.weights.Dispose();
-        if(this.cells.IsCreated) this.cells.Dispose();
-        if(this.hasUncollapsedCells.IsCreated) this.hasUncollapsedCells.Dispose();
-        if(this.hasFailed.IsCreated) this.hasFailed.Dispose();
-        if(this.hasSolution.IsCreated) this.hasSolution.Dispose();
+        if(this.grid.IsCreated) this.grid.Dispose();
         if(this.constraints.IsCreated) this.constraints.Dispose();
         if(this.minEntropyQueue.IsCreated) this.minEntropyQueue.Dispose();
         if(this.minEntropy.IsCreated) this.minEntropy.Dispose();
         if(this.stack.IsCreated) this.stack.Dispose();
+
+        if(this.state.IsCreated) this.state.Dispose();
     }
 }
