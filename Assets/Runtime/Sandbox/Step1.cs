@@ -174,7 +174,7 @@ public class Step1 : MapGenStep<Step1Settings>
             if(this.stack.Length < this.currentStep)
             {
                 var steps       = new NativeList<PathStepChoice>(4, Allocator.Persistent);
-                var jobHandle   = new ComputeNextPossibleStepsJob
+                var job         = new ComputeNextPossibleStepsJob
                 {
                     path                = this.path,
                     steps               = steps,
@@ -184,10 +184,10 @@ public class Step1 : MapGenStep<Step1Settings>
                     pathCurvature       = this.settings.pathCurvature,
                     pathDensity         = this.settings.pathDensity
                     
-                }.Schedule();
+                };
 
-                while(!jobHandle.IsCompleted) { yield return new MapGenStepState {}; }
-                jobHandle.Complete();
+                context.schedule(job);
+                yield return new MapGenStepState {};
 
                 this.stack.Add(steps);
             }
@@ -226,10 +226,9 @@ public class Step1 : MapGenStep<Step1Settings>
             }
 
             for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
-            yield return new MapGenStepState {};
         }
 
-        for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
+        //for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
     }
 
     public override void Dispose()

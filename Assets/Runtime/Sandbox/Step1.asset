@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Step1
   m_EditorClassIdentifier: 
   pathStart: {x: 0, y: 0}
-  pathLength: 100
-  pathStraightness: 0.2921212
-  pathCurvature: 0.5030303
-  pathDensity: 0.20484848
+  pathLength: 30
+  pathStraightness: 0
+  pathCurvature: 0.94428706
+  pathDensity: 0.055712935
   pathRandomness: 0
   pathIntersection: 0
   allowBacktracking: 1

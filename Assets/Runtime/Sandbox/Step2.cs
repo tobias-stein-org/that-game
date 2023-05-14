@@ -178,7 +178,7 @@ public class Step2 : MapGenStep<Step2Settings>
 
         var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)context.random.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
 
-        var jobHandle           = new CreateMapChunkMaskJob
+        var job                 = new CreateMapChunkMaskJob
         {
             mapChunkWallSize    = this.settings.mapChunkWallSize,
             mapPathThickness    = this.settings.walkablePathThickness,
@@ -187,10 +187,10 @@ public class Step2 : MapGenStep<Step2Settings>
             mapChunkData        = context.data.mapChunkData,
             mapChunkInfo        = context.data.mapChunkInfo
 
-        }.Schedule(numChunks, 8);
+        };
 
-        while(!jobHandle.IsCompleted) { yield return new MapGenStepState {}; }
-        jobHandle.Complete();
+        context.schedule(job, numChunks, 8);
+        yield return new MapGenStepState {};
 
         pathDisplacements.Dispose();
     }

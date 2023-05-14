@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17bba3a7a9263451b94232662a51cc7d, type: 3}
   m_Name: Step3
   m_EditorClassIdentifier: 
+  numAttemptsToSolveMapChunk: 3

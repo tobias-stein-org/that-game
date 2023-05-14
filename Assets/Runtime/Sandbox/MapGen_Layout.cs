@@ -14,7 +14,6 @@ public partial struct MapGenData
 {
 }
 
-
 public class MapGenStepState
 {
 
@@ -166,24 +165,31 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
     private readonly MapGenPipeline pipeline;
 
-    private readonly MapGeneratorSettings settings;
+    private readonly MapGeneratorSettings context;
 
-    public MapGenData data { get { return this.settings.data; } }
+    public MapGenData data { get { return this.context.data; } }
 
     public MapGeneratorState Current { get; private set; } = null;
     object IEnumerator.Current => (MapGeneratorState)this.Current;
 
+
+
     internal MapGenerator(in MapGenPipeline pipeline, in MapGeneratorSettings settings)
     {
         this.pipeline       = pipeline;
-        this.settings       = settings;
+        this.context        = settings;
 
-        this.settings.initialize();
+        this.context.initialize();
 
     }
 
-    public bool MoveNext()
+   
+
+    public  bool MoveNext()
     {
+        // wait for all pending jobs to finish, before continue with next step iteration
+        if(this.context.hasPendingJobs) { return true; }
+
         switch(this.Current.state)
         {
             case MapGeneratorState.State.Initialized:
@@ -197,11 +203,11 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                 // move to first pipeline step
                 if(this.Current.pipe.MoveNext())
                 {
-                    this.Current.pipe.Current.initialize(this.settings);
-                    this.Current.step = this.Current.pipe.Current.execute(this.settings);
+                    this.Current.pipe.Current.initialize(this.context);
+                    this.Current.step = this.Current.pipe.Current.execute(this.context);
 
                     this.Current.stepStart = DateTime.Now;
-                    this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.settings.data);
+                    this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.context.data);
                 }
 
                 this.Current.state = this.Current.pipe.Current != null
@@ -221,10 +227,12 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                     var t0 = System.DateTime.Now;
                     while(System.DateTime.Now - t0 < maxSubStepDuration)
                     {
+                        if(this.context.hasPendingJobs) { continue; }
+
                         if(this.Current.step.MoveNext())
                         {
                             var stepState = this.Current.step.Current;
-                            this.OnMapGenStepUpdated?.Invoke(this.Current.pipe.Current, this.settings.data);
+                            this.OnMapGenStepUpdated?.Invoke(this.Current.pipe.Current, this.context.data);
                         }
                         // map gen step completed
                         else
@@ -232,16 +240,16 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                             var duration = DateTime.Now - this.Current.stepStart;
                             Debug.Log($"Map generator step {this.Current.pipe.Current} finished in: {duration}");
 
-                            this.OnMapGenStepFinished?.Invoke(this.Current.pipe.Current, this.settings.data);
+                            this.OnMapGenStepFinished?.Invoke(this.Current.pipe.Current, this.context.data);
 
                             // move on to next step in the pipeline
                             if(this.Current.pipe.MoveNext())
                             {
-                                this.Current.pipe.Current.initialize(this.settings);
-                                this.Current.step = this.Current.pipe.Current.execute(this.settings);
+                                this.Current.pipe.Current.initialize(this.context);
+                                this.Current.step = this.Current.pipe.Current.execute(this.context);
 
                                 this.Current.stepStart = DateTime.Now;
-                                this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.settings.data);
+                                this.OnMapGenStepStarted?.Invoke(this.Current.pipe.Current, this.context.data);
                             }
                             // no more steps to process
                             else
@@ -268,7 +276,7 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                 var duration = DateTime.Now - this.Current.pipeStart;
                 Debug.Log($"Map generator finished in: {duration}");
 
-                this.OnMapGenFinished?.Invoke(this.settings.data);
+                this.OnMapGenFinished?.Invoke(this.context.data);
                 break;
             }
         }
@@ -278,9 +286,11 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
     public void Reset()
     {
+        this.context.awaitPendingJobs();
+
         // allow each map gen step to release its previously initialized resources.
         // note: we start releasing the latest steps first as they might rely on resources from previous steps
-        foreach(var step in this.pipeline.getSteps.Reverse()) { step.release(this.settings); }
+        foreach(var step in this.pipeline.getSteps.Reverse()) { step.release(this.context); }
 
         // reset mep generator state
         this.Current        = MapGeneratorState.CreateInitial(this.pipeline);
@@ -290,9 +300,11 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
 
     public void Dispose()
     {
+        this.context.awaitPendingJobs();
+
         // allow each map gen step to release its previously initialized resources.
         // note: we start releasing the latest steps first as they might rely on resources from previous steps
-        foreach(var step in this.pipeline.getSteps.Reverse()) { step.release(this.settings); }
+        foreach(var step in this.pipeline.getSteps.Reverse()) { step.release(this.context); }
 
         this.pipeline.Dispose();
     }
