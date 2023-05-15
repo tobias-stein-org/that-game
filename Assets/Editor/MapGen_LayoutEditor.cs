@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using Unity.Collections;
+using Unity.Entities.UniversalDelegates;
 
 [CustomEditor(typeof(MapGen_Layout))]
 public class MapGen_LayoutEditor : Editor
@@ -24,11 +25,10 @@ public class MapGen_LayoutEditor : Editor
 
                 for(int y = 0; y < chunkInfo.bounds.height; y++)
                 for(int x = 0; x < chunkInfo.bounds.width; x++)
-                {
+                    {
                     int i           = (y * chunkInfo.bounds.width) + x;
 
                     var cType       = chunkData[i].constructionType;
-                    var moduleId    = target.generatorSettings.modules[chunkData[i].floorModuleId];
                     var tilePos     = new Vector3(chunkInfo.bounds.x + x + 0.5f, chunkInfo.bounds.y + y + 0.5f, 0) * 0.16f;
 
                     Handles.Label(tilePos, $"{cType.ToString()[0]}");
