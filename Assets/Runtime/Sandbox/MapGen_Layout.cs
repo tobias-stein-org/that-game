@@ -324,6 +324,10 @@ public class MapGen_Layout : MonoBehaviour
 
     public bool done = false;
 
+    [Range(0, 1000)]
+    public int delayTilemapRefresh = 0;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -384,7 +388,7 @@ public class MapGen_Layout : MonoBehaviour
             }
         }
 
-        //System.Threading.Tasks.Task.Delay(200).Wait();
+        System.Threading.Tasks.Task.Delay(this.delayTilemapRefresh).Wait();
     }
 
     private void OnMapGenStepFinished(in IMapGenStep step, in MapGenData data)
