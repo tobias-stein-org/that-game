@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Editor/ModuleSimilarity.uss?fileID=7433441132597879392&amp;guid=8284e1421d622433d8594d9ab8fc3e5d&amp;type=3#ModuleSimilarity" />
+    <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); flex-direction: column; width: 700px; height: 700px; justify-content: space-between; flex-shrink: 0;">
+        <ui:VisualElement name="panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-wrap: nowrap; align-items: flex-start;">
+            <uie:ObjectField label="Module A" name="moduleA" style="height: auto;" />
+            <uie:ObjectField label="Module B" name="moduleB" style="height: auto;" />
+            <ui:EnumField label="Sim. Score Function" type="ModuleSimilarity+SimScoreFunction, Assembly-CSharp-Editor" name="simFunc" value="PCT" />
+            <ui:Slider picking-mode="Ignore" label="Percentile" value="50" high-value="100" page-size="0" inverted="false" show-input-field="true" name="percentile" style="height: 34px; width: 252px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-wrap: wrap; width: 100%; justify-content: flex-end; height: 100%; visibility: visible;">
+            <ui:Slider picking-mode="Ignore" label="Sim. Threshold" value="1" high-value="20" name="threshold" show-input-field="false" inverted="false" />
+            <uie:GradientField label="Indicator" name="indicator" focusable="false" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
