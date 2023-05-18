@@ -48,7 +48,7 @@ public class ModuleSimilarity : EditorWindow
         Sum,
         Min,
         Max,
-        LLM,
+        LMM,
         PCT
     };
 
@@ -142,6 +142,9 @@ public class ModuleSimilarity : EditorWindow
 
             this.updatePreviewTextures();
         });
+
+        this.rootVisualElement.Q<SliderInt>("blurSize").RegisterValueChangedCallback((ChangeEvent<int> e) => this.updatePreviewTextures());
+        this.rootVisualElement.Q<Slider>("blurStrength").RegisterValueChangedCallback((ChangeEvent<float> e) => this.updatePreviewTextures());
     }
 
     [MenuItem("Assets/MapGen/Module Similarity", true)]
@@ -208,18 +211,17 @@ public class ModuleSimilarity : EditorWindow
         float[] sortedValues = values.OrderBy(x => x).ToArray();
 
         // Calculate the index corresponding to the desired percentile
-        float index = (Mathf.Clamp(percentile, 0, 99.99f) / 100.0f) * (sortedValues.Length - 1);
+        float index = (percentile / 100.0f) * (sortedValues.Length - 1);
 
         // Separate the whole and fractional parts of the index
-        int lowerIndex = (int)index;
+        int lowerIndex = Mathf.FloorToInt(index);
         float fractionalPart = index - lowerIndex;
 
         // Interpolate the percentile value
         float lowerValue = sortedValues[lowerIndex];
         float upperValue = sortedValues[lowerIndex + 1];
-        float interpolatedValue = lowerValue + (upperValue - lowerValue) * fractionalPart;
+        return lowerValue + (upperValue - lowerValue) * fractionalPart;
 
-        return interpolatedValue;
     }
 
     private float computeSimScore(Side side)
@@ -233,7 +235,7 @@ public class ModuleSimilarity : EditorWindow
             case SimScoreFunction.Sum: return values.Sum();
             case SimScoreFunction.Avg: return values.Average();
             case SimScoreFunction.Med: return percentile(values, 50f);
-            case SimScoreFunction.LLM: return (values[0] + values[Mathf.FloorToInt(values.Length / 2)] + values[values.Length - 1]) / 3.0f;
+            case SimScoreFunction.LMM: return (values[0] + values[Mathf.FloorToInt(values.Length / 2)] + values[values.Length - 1]) / 3.0f;
             case SimScoreFunction.PCT: return percentile(values, this.rootVisualElement.Q<Slider>("percentile").value);
 
         }
@@ -342,7 +344,8 @@ public class ModuleSimilarity : EditorWindow
             var sB = 0.0f;
             var sL = 0.0f;
             var sR = 0.0f;
-
+            //var threshold = this.rootVisualElement.Q<Slider>("threshold").value;
+            
             if(this.moduleA)
             {
                 sT = this.computeSimScore(Side.Top);
@@ -414,50 +417,44 @@ public class ModuleSimilarity : EditorWindow
                ),
                lR);
 
+             // Set the color to red
+            Handles.color = Color.red;
 
 
-            if(sT >= 1.0f)
+            if(sT >= threshold.value)
                 {
-                     GUI.DrawTexture(
-                        new Rect(
-                            previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - (modulePreviewSizeHalf),
-                    previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (3.0f * modulePreviewSizeHalf + borderSpacing),
-                            32, 32
-                       ),
-                       this.deny);
+                    // Draw a line
+        Vector3 startPoint = new Vector3(previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - (modulePreviewSizeHalf), previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (3.0f * modulePreviewSizeHalf + borderSpacing), 0);
+        Vector3 endPoint = startPoint + new Vector3(modulePreviewSize, modulePreviewSize, 0);
+        Handles.DrawAAPolyLine(6f, startPoint, endPoint);
+        Handles.DrawAAPolyLine(6f, startPoint + new Vector3(modulePreviewSize, 0), endPoint - new Vector3(modulePreviewSize, 0));
                 }
 
-                if(sB >= 1.0f)
+                if(sB >= threshold.value)
                 {
-                     GUI.DrawTexture(
-                        new Rect(
-                            previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - modulePreviewSizeHalf,
-                    previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) + (1.0f * modulePreviewSizeHalf + borderSpacing),
-                            32, 32
-                       ),
-                       this.deny);
+                // Draw a line
+        Vector3 startPoint = new Vector3(previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - modulePreviewSizeHalf, previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) + (1.0f * modulePreviewSizeHalf + borderSpacing), 0);
+        Vector3 endPoint = startPoint + new Vector3(modulePreviewSize, modulePreviewSize, 0);
+        Handles.DrawAAPolyLine(6f, startPoint, endPoint);
+        Handles.DrawAAPolyLine(6f, startPoint + new Vector3(modulePreviewSize, 0), endPoint - new Vector3(modulePreviewSize, 0));
                 }
 
-                if(sL >= 1.0f)
+                if(sL >= threshold.value)
                 {
-                     GUI.DrawTexture(
-                        new Rect(
-                            previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - (3.0f * modulePreviewSizeHalf + borderSpacing),
-                    previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - modulePreviewSizeHalf,
-                            32, 32
-                       ),
-                       this.deny);
+       
+        Vector3 startPoint = new Vector3(previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) - (3.0f * modulePreviewSizeHalf + borderSpacing), previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - modulePreviewSizeHalf, 0);
+        Vector3 endPoint = startPoint + new Vector3(modulePreviewSize, modulePreviewSize, 0);
+        Handles.DrawAAPolyLine(6f, startPoint, endPoint);
+        Handles.DrawAAPolyLine(6f, startPoint + new Vector3(modulePreviewSize, 0), endPoint - new Vector3(modulePreviewSize, 0));
                 }
 
-                if(sR >= 1.0f)
+                if(sR >= threshold.value)
                 {
-                     GUI.DrawTexture(
-                        new Rect(
-                            previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) + (1.0f * modulePreviewSizeHalf + borderSpacing),
-                    previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - modulePreviewSizeHalf,
-                            32, 32
-                       ),
-                       this.deny);
+                  
+        Vector3 startPoint = new Vector3(previewRect.x + Mathf.FloorToInt(previewRect.width * 0.5f) + (1.0f * modulePreviewSizeHalf + borderSpacing), previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - modulePreviewSizeHalf, 0);
+        Vector3 endPoint = startPoint + new Vector3(modulePreviewSize, modulePreviewSize, 0);
+        Handles.DrawAAPolyLine(6f, startPoint, endPoint);
+        Handles.DrawAAPolyLine(6f, startPoint + new Vector3(modulePreviewSize, 0), endPoint - new Vector3(modulePreviewSize, 0));
                 }
 
             // cut-outs
@@ -512,8 +509,8 @@ public class ModuleSimilarity : EditorWindow
                 EditorGUI.DrawPreviewTexture(
                     new Rect(
                         previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) - (modulePreviewSizeHalf),
-                        previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (modulePreviewSizeHalf + 2*margin + borderTextureSize - 1),
-                        modulePreviewSize, margin - 2
+                        previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (modulePreviewSizeHalf + 2*margin + borderTextureSize),
+                        modulePreviewSize, margin
                    ),
                    this.textures[(int)TextureID.Similar_Top]
                 );
@@ -522,7 +519,7 @@ public class ModuleSimilarity : EditorWindow
                 EditorGUI.DrawPreviewTexture(
                     new Rect(
                         previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) - (modulePreviewSizeHalf),
-                        previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) + (modulePreviewSizeHalf + margin + borderTextureSize + 1),
+                        previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) + (modulePreviewSizeHalf + margin + borderTextureSize),
                         modulePreviewSize, margin - 2
                    ),
                    this.textures[(int)TextureID.Similar_Bottom]
@@ -531,9 +528,9 @@ public class ModuleSimilarity : EditorWindow
                 // LEFT
                 EditorGUI.DrawPreviewTexture(
                     new Rect(
-                        previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) - (modulePreviewSizeHalf + 2*margin + borderTextureSize - 1),
+                        previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) - (modulePreviewSizeHalf + 2*margin + borderTextureSize),
                         previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (modulePreviewSizeHalf),
-                        margin - 2, modulePreviewSize
+                        margin, modulePreviewSize
                    ),
                    this.textures[(int)TextureID.Similar_Left]
                 );
@@ -541,9 +538,9 @@ public class ModuleSimilarity : EditorWindow
                 // RIGHT
                 EditorGUI.DrawPreviewTexture(
                     new Rect(
-                        previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) + (modulePreviewSizeHalf + margin + borderTextureSize + 1),
+                        previewRect.x + Mathf.FloorToInt(previewRect.width  * 0.5f) + (modulePreviewSizeHalf + margin + borderTextureSize),
                         previewRect.y + Mathf.FloorToInt(previewRect.height * 0.5f) - (modulePreviewSizeHalf),
-                        margin - 2, modulePreviewSize
+                        margin, modulePreviewSize
                    ),
                    this.textures[(int)TextureID.Similar_Right]
                 );
@@ -558,10 +555,10 @@ public class ModuleSimilarity : EditorWindow
         var pixels = module.sprite.texture.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height, 0);
 
         var texture = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGBA32, false);
+
         //texture.SetPixels(pixels);
-        
-        texture.SetPixels(pixels.Select(pixel => Color.Lerp(Color.clear, pixel, pixel.a)).ToArray());
-        //texture.SetPixels(pixels.Select(pixel => pixel.a < 1e-5 ? Color.clear : pixel).ToArray());
+        //texture.SetPixels(pixels.Select(pixel => Color.Lerp(Color.clear, pixel, pixel.a)).ToArray());
+        texture.SetPixels(pixels.Select(pixel => pixel.a < 1.0f ? Color.magenta : pixel).ToArray());
         texture.filterMode = FilterMode.Point;
 
         texture.Apply();
@@ -630,7 +627,11 @@ public class ModuleSimilarity : EditorWindow
         }
 
         var t = new Texture2D(X, Y, TextureFormat.RGBA32, false);
-        t.SetPixels(pixels);
+        t.SetPixels(
+            this.applyBlur1D(pixels, this.rootVisualElement.Q<SliderInt>("blurSize").value, this.rootVisualElement.Q<Slider>("blurStrength").value)
+        );
+        //t.SetPixels(pixels);
+        
         t.filterMode = FilterMode.Point;
         t.Apply();
 
@@ -652,9 +653,12 @@ public class ModuleSimilarity : EditorWindow
         var threshold = this.rootVisualElement.Q<Slider>("threshold").value;
         for(int i = 0; i < pa.Length; i++)
         {
-            var sim = Mathf.Clamp(ColorComparer.CalculateDeltaE(pa[i], pb[i]), 0.0f, threshold) / threshold;
+            var alphaAdj = pa[i].a < 1.0f ? Color.Lerp(pb[i], pa[i], pa[i].a) : pa[i];
+
+            var sim = Mathf.Clamp(ColorComparer.deltaE(alphaAdj, pb[i]), 0.0f, threshold);
+            //var sim = ColorComparer.deltaE(pa[i], pb[i]);
             this.similarVals[(int)side][i] = sim;
-            pc[i] = Color.Lerp(Color.green, Color.red, sim);
+            pc[i] = Color.LerpUnclamped(Color.green, Color.red, sim / threshold);
         }
 
         t.SetPixels(pc);
@@ -662,5 +666,30 @@ public class ModuleSimilarity : EditorWindow
         t.Apply();
 
         return t;
-    } 
+    }
+
+    Color[] applyBlur1D(Color[] pixels, int blurSize, float blurStrength)
+    {
+        Color[] blurredPixels = new Color[pixels.Length];
+
+        for (int x = 0; x < pixels.Length; x++)
+        {
+            Color accumulatedColor = Color.black;
+            float totalWeight = 0f;
+
+            for (int i = -blurSize; i <= blurSize; i++)
+            {
+                int offsetX = Mathf.Clamp(x + i, 0, pixels.Length - 1);
+                Color pixel = pixels[offsetX];
+
+                float weight = Mathf.Exp(-i * i / (2f * blurStrength * blurStrength));
+                accumulatedColor += pixel * weight;
+                totalWeight += weight;
+            }
+
+            blurredPixels[x] = accumulatedColor / totalWeight;
+        }
+
+        return blurredPixels;
+    }
 }
