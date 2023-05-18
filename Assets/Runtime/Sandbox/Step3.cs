@@ -1210,7 +1210,6 @@ public class Step3 : MapGenStep<Step3Settings>
             else
                 Debug.LogWarning("Map generation failed.");
 
-            Debug.Log(this.dumpContraints(this.constraints, 5));
             this.weights.Dispose();
             this.grid.Dispose();
             this.stack.Dispose();
