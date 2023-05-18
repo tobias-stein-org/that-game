@@ -172,6 +172,8 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     public MapGeneratorState Current { get; private set; } = null;
     object IEnumerator.Current => (MapGeneratorState)this.Current;
 
+    public bool isBusy { get { return this.context.hasPendingJobs; } }
+
     internal MapGenerator(in MapGenPipeline pipeline, in MapGeneratorSettings settings)
     {
         this.pipeline       = pipeline;
@@ -183,7 +185,7 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     public  bool MoveNext()
     {
         // wait for all pending jobs to finish, before continue with next step iteration
-        if(this.context.hasPendingJobs) { return true; }
+        if(this.isBusy) { return true; }
 
         switch(this.Current.state)
         {
@@ -222,12 +224,13 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
                     var t0 = System.DateTime.Now;
                     while(System.DateTime.Now - t0 < maxSubStepDuration)
                     {
-                        if(this.context.hasPendingJobs) { continue; }
+                        if(this.isBusy) { continue; }
+
+                        this.OnMapGenStepUpdated?.Invoke(this.Current.pipe.Current, this.context.data);
 
                         if(this.Current.step.MoveNext())
                         {
                             var stepState = this.Current.step.Current;
-                            this.OnMapGenStepUpdated?.Invoke(this.Current.pipe.Current, this.context.data);
                         }
                         // map gen step completed
                         else
