@@ -12,6 +12,7 @@ using UnityEngine.Rendering;
 using Unity.VisualScripting.Antlr3.Runtime;
 using Unity.VisualScripting;
 using UnityEngine.Tilemaps;
+using System.Reflection;
 
 public partial struct MapGenData
 {
@@ -20,70 +21,164 @@ public partial struct MapGenData
 
 public class ColorComparer
 {
-    public static float CalculateDeltaE(in Color c1, in Color c2)
+    public static float deltaE(in Color c1, in Color c2)
     {
         //return 1.0f - (Vector3.Distance(new Vector3(c1.r, c1.g, c1.b), new Vector3(c2.r, c2.g, c2.b)) / Mathf.Sqrt(3f));
 
-        return CIEDE2000(RGBToLab(c1), RGBToLab(c2));
+        return DE00(RGBToLab(c1), RGBToLab(c2));
+        //return DE94(RGBToLab(c1), RGBToLab(c2));
+        //return DE76(RGBToLab(c1), RGBToLab(c2));
+    }
+
+    private static float Fxyz(float t)
+    {
+        return t > 0.008856f ? Mathf.Pow(t, 1.0f / 3.0f) : (903.3f * t + 16.0f) / 116.0f;
     }
 
     // Helper method to convert RGB to Lab color space using SIMD
-    private static float3 RGBToLab(in Color color)
+    public static float3 RGBToLab(in Color color)
     {
-        float3 c = new float3(color.r, color.g, color.b);
-        float3 xyz = new float3(
+        float3 c        = new float3(color.r, color.g, color.b);
+        float3 xyz      = new float3(
             math.dot(new float3(0.4124564f, 0.3575761f, 0.1804375f), c),
             math.dot(new float3(0.2126729f, 0.7151522f, 0.0721750f), c),
             math.dot(new float3(0.0193339f, 0.1191920f, 0.9503041f), c)
         ) / 255f;
 
-        float3 fxyz = math.select(math.pow(xyz / 0.950456f, 1.0f / 3.0f), (xyz * 7.787f) + (16f / 116f), xyz > 0.008856f);
-        float3 lab = new float3((116f * fxyz.y) - 16f, 500f * (fxyz.x - fxyz.y), 200f * (fxyz.y - fxyz.z));
+        float3 fxyz     = math.select(math.pow(xyz / 0.950456f, 1.0f / 3.0f), (xyz * 7.787f) + (16f / 116f), xyz > 0.008856f);
+        float3 lab      = new float3((116f * fxyz.y) - 16f, 500f * (fxyz.x - fxyz.y), 200f * (fxyz.y - fxyz.z));
 
         return lab;
     }
 
-    private static float CIEDE2000(float3 lab1, float3 lab2)
+    private static float deltaPrime(float C1Prime, float C2Prime, float h1Prime, float h2Prime)
     {
-        float kL = 1f, kC = 1f, kH = 1f; // Set weighting factors
-        float deg2rad = math.PI / 180f;
+        float deltaHPrime = h2Prime - h1Prime;
 
-        float C1 = math.length(lab1.yz);
-        float C2 = math.length(lab2.yz);
+        if (C1Prime * C2Prime == 0)
+        {
+            // If either C1' or C2' is zero, set deltaH' to 0
+            return 0.0f;
+        }
+        else if (Mathf.Abs(deltaHPrime) <= 180.0f)
+        {
+            // If the absolute value of deltaH' is less than or equal to 180 degrees, return deltaH'
+            return deltaHPrime;
+        }
+        else if (deltaHPrime > 180.0f)
+        {
+            // If deltaH' is greater than 180 degrees, subtract 360 degrees
+            return deltaHPrime - 360.0f;
+        }
+        else
+        {
+            // If deltaH' is less than -180 degrees, add 360 degrees
+            return deltaHPrime + 360.0f;
+        }
+    }
+
+    private static float hPrime(float b, float aPrime)
+    {
+        float hPrime = Mathf.Atan2(b, aPrime) * 180.0f / Mathf.PI;
+
+        if (hPrime < 0)
+        {
+            // If h' is negative, add 360 degrees to bring it within the range of 0 to 360 degrees
+            hPrime += 360.0f;
+        }
+
+        return hPrime;
+    }
+
+
+    public static float DE76(float3 lab1, float3 lab2)
+    {
+         return Mathf.Sqrt(Mathf.Pow(lab2.x - lab1.x, 2) + Mathf.Pow(lab2.y - lab1.y, 2) + Mathf.Pow(lab2.z - lab1.z, 2));
+    }
+
+
+    public static float DE94(float3 lab1, float3 lab2)
+    {
+
+        // Calculate the color difference using the CIE94 formula
+        float deltaL = lab2.x - lab1.x;
+        float deltaA = lab2.y - lab1.y;
+        float deltaB = lab2.z - lab1.z;
+
+        float deltaC = Mathf.Sqrt(deltaA * deltaA + deltaB * deltaB);
+        float deltaH = Mathf.Sqrt(deltaA * deltaA + deltaB * deltaB - deltaC * deltaC);
+
+        float Sl = 1.0f;
+        float K1 = 0.045f;
+        float K2 = 0.015f;
+
+        float Sc = 1.0f + K1 * deltaC;
+        float Sh = 1.0f + K2 * deltaC;
+
+        float deltaE = Mathf.Sqrt(
+            Mathf.Pow(deltaL / Sl, 2) +
+            Mathf.Pow(deltaC / Sc, 2) +
+            Mathf.Pow(deltaH / Sh, 2)
+        );
+
+        return float.IsNaN(deltaE) ? 0.0f : deltaE;
+    }
+
+    const float DEG2RAD = Mathf.PI / 180.0f;
+
+    public static float DE00(float3 ca, float3 cb, float kL = 1.0f, float kC = 1.0f, float kH = 1.0f)
+    {
+        float L1 = ca.x; float L2 = cb.x;
+        float a1 = ca.y; float a2 = cb.y;
+        float b1 = ca.z; float b2 = cb.z;
+
+
+        float C1 = Mathf.Sqrt(a1 * a1 + b1 * b1);
+        float C2 = Mathf.Sqrt(a2 * a2 + b2 * b2);
         float barC = (C1 + C2) * 0.5f;
 
-        float G = 0.5f * (1f - math.sqrt(math.pow(barC, 7f) / (math.pow(barC, 7f) + math.pow(25f, 7f))));
+        float G = 0.5f * (1.0f - Mathf.Sqrt(Mathf.Pow(barC, 7.0f) / (Mathf.Pow(barC, 7.0f) + Mathf.Pow(25.0f, 7.0f))));
+        float a1Prime = (1.0f + G) * a1;
+        float a2Prime = (1.0f + G) * a2;
 
-        float2 a1Prime = (1f + G) * lab1.yz;
-        float2 a2Prime = (1f + G) * lab2.yz;
+        float C1Prime = Mathf.Sqrt(a1Prime * a1Prime + b1 * b1);
+        float C2Prime = Mathf.Sqrt(a2Prime * a2Prime + b2 * b2);
 
-        float C1Prime = math.length(a1Prime);
-        float C2Prime = math.length(a2Prime);
+        float h1Prime = hPrime(b1, a1Prime);
+        float h2Prime = hPrime(b2, a2Prime);
 
-        float2 h1Prime = math.atan2(lab1.z, a1Prime);
-        float2 h2Prime = math.atan2(lab2.z, a2Prime);
+        float deltaLPrime = L2 - L1;
+        float deltaCPrime = C2Prime - C1Prime;
+        float deltahPrime = deltaPrime(C1Prime, C2Prime, h1Prime, h2Prime);
+        float deltaHPrimeBar = 2.0f * Mathf.Sqrt(C1Prime * C2Prime) * Mathf.Sin(deltahPrime * 0.5f * DEG2RAD);
 
-        float deltaL = lab2.x - lab1.x;
-        float deltaC = C2Prime - C1Prime;
+        float LPrimeBar = (L1 + L2) * 0.5f;
+        float CPrimeBar = (C1Prime + C2Prime) * 0.5f;
 
-        float2 hBarPrime = math.abs(h1Prime - h2Prime);
-        float deltaH = math.csum(2f * math.sqrt(C1Prime * C2Prime) * math.sin((hBarPrime * 0.5f) * deg2rad));
+        float hPrimeBar = Mathf.Abs(h1Prime - h2Prime) <= 180.0f ? (h1Prime + h2Prime) * 0.5f : (h1Prime + h2Prime + 360.0f) * 0.5f;
 
-        float LBarPrime = (lab1.x + lab2.x) * 0.5f;
-        float CBarPrime = (C1Prime + C2Prime) * 0.5f;
+        float T = 1.0f -
+            0.17f * Mathf.Cos((hPrimeBar - 30.0f)           * DEG2RAD) +
+            0.24f * Mathf.Cos(2.0f * hPrimeBar              * DEG2RAD) +
+            0.32f * Mathf.Cos((3.0f * hPrimeBar + 6.0f)     * DEG2RAD) -
+            0.20f * Mathf.Cos((4.0f * hPrimeBar - 63.0f)    * DEG2RAD);
 
-        float2 hBarPrimeAbs = math.abs(h1Prime - h2Prime);
-        float2 hBarPrimeAbs2 = math.select(hBarPrimeAbs, 360f - hBarPrimeAbs, hBarPrimeAbs > 180f);
+        float SL = 1.0f + (0.015f * ((LPrimeBar - 50.0f) * (LPrimeBar - 50.0f))) / Mathf.Sqrt(20.0f + ((LPrimeBar - 50.0f) * (LPrimeBar - 50.0f)));
+        float SC = 1.0f + 0.045f * CPrimeBar;
+        float SH = 1.0f + 0.015f * CPrimeBar * T;
 
-        float HBarPrime = math.csum(math.select((h1Prime + h2Prime) * 0.5f, (h1Prime + h2Prime) * 0.5f + 180f, hBarPrimeAbs2 <= hBarPrimeAbs));
+        float deltaTheta = 30.0f * Mathf.Exp(-Mathf.Pow((hPrimeBar - 275.0f) / 25.0f, 2.0f));
+        float RC = 2.0f * Mathf.Sqrt(Mathf.Pow(CPrimeBar, 7.0f) / (Mathf.Pow(CPrimeBar, 7.0f) + Mathf.Pow(25.0f, 7.0f)));
+        float RT = -RC * Mathf.Sin(2.0f * deltaTheta * DEG2RAD);
 
-        float T = 1f - 0.17f * math.cos((HBarPrime - 30f) * deg2rad) + 0.24f * math.cos((2f * HBarPrime) * deg2rad) + 0.32f * math.cos((3f * HBarPrime + 6f) * deg2rad) - 0.20f * math.cos((4.5f * HBarPrime - 63f) * deg2rad);
-
-        float dL = deltaL / kL;
-        float dC = deltaC / kC;
-        float dH = deltaH / kH;
-
-        float deltaE = math.sqrt(math.pow(dL, 2f) + math.pow(dC, 2f) + math.pow(dH, 2f) + T * (dC * dH));
+        float deltaE =
+            Mathf.Sqrt(
+                Mathf.Pow(deltaLPrime       / (kL * SL), 2.0f) +
+                Mathf.Pow(deltaCPrime       / (kC * SC), 2.0f) +
+                Mathf.Pow(deltaHPrimeBar    / (kH * SH), 2.0f) +
+                RT * (deltaCPrime           / (kC * SC))
+                   * (deltaHPrimeBar        / (kH * SH))
+            );
 
         return deltaE;
     }
@@ -166,8 +261,8 @@ public class Step3 : MapGenStep<Step3Settings>
                 var y       = Mathf.FloorToInt(module.sprite.textureRect.y);
                 var width   = Mathf.FloorToInt(module.sprite.textureRect.width);
                 var height  = Mathf.FloorToInt(module.sprite.textureRect.height);
-                var pixels  = new UnsafeList<Color>(width * height, Allocator.Persistent);
 
+                var pixels  = new UnsafeList<Color>(width * height, Allocator.Persistent);
                 foreach(var pixel in module.sprite.texture.GetPixels(x, y, width, height)) { pixels.AddNoResize(pixel); }
 
                 var name = new UnsafeText(module.name.Length, Allocator.Persistent);
@@ -359,12 +454,14 @@ public class Step3 : MapGenStep<Step3Settings>
     private struct InitializeConstraintsJob : IJobParallelFor
     {
         public float                    similarityThreshold;
+        public float                    similarityPercentile;
 
         [NativeDisableParallelForRestriction] 
         public ModuleConstraints        constraints;
 
         [NativeDisableParallelForRestriction]
         public NativeArray<ModuleMeta>  modules;
+
         /*
                     0               2 3               5 6               8
                     <-  M1 constr. -> <-  M2 constr. -> <-  M2 constr. ->
@@ -378,8 +475,6 @@ public class Step3 : MapGenStep<Step3Settings>
             note: constraint matrix is mirrored, meaning if a match is possible on Mi/Mj left -> Mj/Mi right is also true
             x, y = {0, 1}
          */
-
-        
 
         [BurstCompile]
         public void Execute(int moduleA)
@@ -418,84 +513,168 @@ public class Step3 : MapGenStep<Step3Settings>
             module.weight           = module.weight * ((float)sumOfOnes / (float)Mathf.Max(0, numModules * 4));
             this.modules[moduleA]   = module;
         }
+
+        private float percentile(NativeArray<float> values, float percentile)
+        {
+            // Sort the array of values in ascending order
+            values.Sort();
+
+            // Calculate the index corresponding to the desired percentile
+            var index           = percentile / 100.0f * (values.Length - 1);
+
+            // Separate the whole and fractional parts of the index
+            var lowerIndex      = Mathf.FloorToInt(index);
+            var fractionalPart  = index - lowerIndex;
+
+            // Interpolate the percentile value
+            var lowerValue      = values[lowerIndex];
+            var upperValue      = values[lowerIndex + 1];
+
+            return lowerValue + (upperValue - lowerValue) * fractionalPart;
+        }
+
+        private void applyBlur1D(NativeArray<Color> pixels, int blurSize, float blurStrength)
+        {
+            var blurredPixels           = new NativeArray<Color>(pixels.Length, Allocator.Temp);
+
+            for (int p = 0; p < pixels.Length; p++)
+            {
+                var accumulatedColor    = Color.black;
+                var totalWeight         = 0f;
+
+                for (int i = -blurSize; i <= blurSize; i++)
+                {
+                    var offsetX         = Mathf.Clamp(p + i, 0, pixels.Length - 1);
+                    var pixel           = pixels[offsetX];
+                    var weight          = Mathf.Exp(-i * i / (2f * blurStrength * blurStrength));
+
+                    accumulatedColor    += pixel * weight;
+                    totalWeight         += weight;
+                }
+
+                blurredPixels[p]        = accumulatedColor / totalWeight;
+                // ignore alpha bluring
+                blurredPixels[p]        = new Color(blurredPixels[p].r, blurredPixels[p].g, blurredPixels[p].b, pixels[p].a);
+            }
+
+            pixels.CopyFrom(blurredPixels);
+
+            blurredPixels.Dispose();
+        }
+
         private void check(int moduleA, ModuleConstraints.Side side, int moduleB)
         {
             var mA          = this.modules[moduleA];
             var mB          = this.modules[moduleB];
 
-            var similarity  = 0.0f;
+            var width       = mA.textureSize.x;
+            var height      = mA.textureSize.y;
+
+            var similar     = new NativeArray<float>();
+            var borderA     = new NativeArray<Color>();
+            var borderB     = new NativeArray<Color>();
 
             switch(side)
             {
                 case ModuleConstraints.Side.Left:
                 {
-                    var rightBorderOffset   = (mA.textureSize.x - 1);
-                    var Y                   = Mathf.Min(mA.textureSize.y, mB.textureSize.y);
+                    borderA = new NativeArray<Color>(height, Allocator.Temp);
+                    borderB = new NativeArray<Color>(height, Allocator.Temp);
+                    similar = new NativeArray<float>(height, Allocator.Temp);
 
-                    for(int py = 0; py < Y; py++)
+                    var rightBorderOffset   = width - 1;
+                    for(int py = 0; py < height; py++)
                     {
-                        var pixelA  = mA.pixels[py * mA.textureSize.x + rightBorderOffset]; // moduleA's right border
-                        var pixelB  = mB.pixels[py * mB.textureSize.x];                     // moduleB's left border
-                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                        borderA[py] = mA.pixels[py * width + rightBorderOffset]; // moduleA's right border
+                        borderB[py] = mB.pixels[py * width];                     // moduleB's left border
                     }
 
-                    similarity /= Y;
                     break;
                 }
 
                 case ModuleConstraints.Side.Right:
                 {
-                    var rightBorderOffset   = (mB.textureSize.x - 1);
-                    var Y                   = Mathf.Min(mA.textureSize.y, mB.textureSize.y);
+                    borderA = new NativeArray<Color>(height, Allocator.Temp);
+                    borderB = new NativeArray<Color>(height, Allocator.Temp);
+                    similar = new NativeArray<float>(height, Allocator.Temp);
 
-                    for(int py = 0; py < Y; py++)
+                    var rightBorderOffset   = width - 1;
+                    for(int py = 0; py < height; py++)
                     {
-                        var pixelA  = mA.pixels[py * mA.textureSize.x];                     // moduleA's left border
-                        var pixelB  = mB.pixels[py * mB.textureSize.x + rightBorderOffset]; // moduleB's right border
-                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
-
+                        borderA[py] = mA.pixels[py * width];                     // moduleA's left border
+                        borderB[py] = mB.pixels[py * width + rightBorderOffset]; // moduleB's right border
                     }
 
-                    similarity /= Y;
                     break;
                 }
 
                 case ModuleConstraints.Side.Top:
                 {
-                    var bottomBorderOffset  = (mA.textureSize.y - 1) * mA.textureSize.x;
-                    var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
+                    borderA = new NativeArray<Color>(width, Allocator.Temp);
+                    borderB = new NativeArray<Color>(width, Allocator.Temp);
+                    similar = new NativeArray<float>(width, Allocator.Temp);
 
-                    for(int px = 0; px < X; px++)
+                    // note: unity stores texture data "up-side-down", that is the first pixel is bottom-left!
+                    var topBorderOffset  = (height - 1) * width;
+
+                    for(int px = 0; px < width; px++)
                     {
-                        var pixelA  = mA.pixels[px + bottomBorderOffset];   // moduleA's bottom border
-                        var pixelB  = mB.pixels[px];                        // moduleB's top border
-                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                        borderA[px] = mA.pixels[px];                            // moduleA's bottom border
+                        borderB[px] = mB.pixels[px + topBorderOffset];          // moduleB's top border
                     }
 
-                    similarity /= X;
                     break;
                 }
 
                 case ModuleConstraints.Side.Bottom:
                 {
-                    var bottomBorderOffset  = (mB.textureSize.y - 1) * mB.textureSize.x;
-                    var X                   = Mathf.Min(mA.textureSize.x, mB.textureSize.x);
+                    borderA = new NativeArray<Color>(width, Allocator.Temp);    
+                    borderB = new NativeArray<Color>(width, Allocator.Temp);    
+                    similar = new NativeArray<float>(width, Allocator.Temp);    
 
-                    for(int px = 0; px < X; px++)
+                    // note: unity stores texture data "up-side-down", that is the first pixel is bottom-left!
+                    var topBorderOffset  = (height - 1) * width;
+                    for(int px = 0; px < width; px++)
                     {
-                        var pixelA  = mA.pixels[px];                        // moduleA's top border
-                        var pixelB  = mB.pixels[px + bottomBorderOffset];   // moduleB's bottom border
-                        similarity  += ColorComparer.CalculateDeltaE(pixelA, pixelB);
+                        borderA[px] = mA.pixels[px + topBorderOffset];          // moduleA's top border
+                        borderB[px] = mB.pixels[px];                            // moduleB's bottom border
                     }
 
-                    similarity /= X;
                     break;
                 }
             }
+            this.applyBlur1D(borderA, borderA.Length, borderA.Length);
+            this.applyBlur1D(borderB, borderB.Length, borderB.Length);
+            for(int i = 0; i < borderA.Length; i++)
+            {
+                // allow modules of different construction types, e.g. floor and obstructable to overlap, if there is a transparent edge
+                if(this.modules[moduleA].constructionType != this.modules[moduleB].constructionType)
+                {
+                    float minAlpha  = Mathf.Min(borderA[i].a, borderB[i].a);
+                    borderA[i] = minAlpha < 1.0f ? Color.Lerp(borderB[i], borderA[i], minAlpha) : borderA[i];
+                    //borderA[i] = borderA[i].a < 1.0f ? Color.Lerp(borderB[i], borderA[i], borderA[i].a) : borderA[i];
+                }
+                else
+                {
+                    borderA[i] = borderA[i].a < 1.0f ? Color.magenta : borderA[i];
+                    borderB[i] = borderB[i].a < 1.0f ? Color.magenta : borderB[i];
+                }
+
+
+                similar[i] = Mathf.Clamp(ColorComparer.deltaE(borderA[i], borderB[i]), 0.0f, this.similarityThreshold);
+            }
+
+            float pct = this.percentile(similar, this.similarityPercentile);
 
             //Debug.Log($"{moduleA}-{side.ToString()[0]}-{moduleB}: {similarity}");
             // note: lower CIEDE2000 values are more similar, values bellow one are considered hardly distigushable by the human eye
-            this.constraints.set(moduleA, side, moduleB, similarity < this.similarityThreshold);
+            this.constraints.set(moduleA, side, moduleB, pct < this.similarityThreshold);
+
+
+            similar.Dispose();
+            borderA.Dispose();
+            borderB.Dispose();
+
         }
     }
   
@@ -580,8 +759,7 @@ public class Step3 : MapGenStep<Step3Settings>
                         // else everything goes
                         default:
                         {
-                            this.weights[i + moduleId] = 0.0f;//this.modules[moduleId].weight[1];
-
+                            this.weights[i + moduleId] = this.modules[moduleId].weight;
                             break;
                         }
                     }
@@ -789,7 +967,9 @@ public class Step3 : MapGenStep<Step3Settings>
             var cell = this.grid[cellId];
             if(!cell.isCollapsed && !cell.propagated)
             {
-                this.grid[cellId].propagated = true;
+                //Debug.Log($"Propagating to {side.ToString()} cell [ID: {cellId}]: {String.Join(",", modules)}");
+
+                //this.grid[cellId].propagated = true;
 
                 var weights = this.weights.Slice(cellId * this.numModules, this.numModules);
                 var w1 = 0.0f;
@@ -809,6 +989,8 @@ public class Step3 : MapGenStep<Step3Settings>
                     weights[moduleB] *= allowed;
                     w2 += weights[moduleB];
                 }
+
+                //Debug.Log($"Remaining options {side.ToString()} cell {cellId}: {String.Join(",", weights.Select((w, moduleId) => w > Step3.EPSILONE ? moduleId : -1).Where(id => id != -1))}");
 
                 if((w1 - w2) > Step3.EPSILONE)
                 {
@@ -831,6 +1013,7 @@ public class Step3 : MapGenStep<Step3Settings>
 
             this.stack[stackPtr++]      = this.collapsedCellId.Value;
 
+            //Debug.Log($"CellId: {this.collapsedCellId.Value} collapsed to {this.grid[this.collapsedCellId.Value].moduleId}");
             while(stackPtr > 0)
             {
                 var cellId              = this.stack[--stackPtr];
@@ -988,6 +1171,7 @@ public class Step3 : MapGenStep<Step3Settings>
         var constraintsJob                          = new InitializeConstraintsJob
         {
             similarityThreshold                     = this.settings.similarityThreshold,
+            similarityPercentile                    = this.settings.similarityPercentile,
             constraints                             = this.constraints,
             modules                                 = this.modules
         };
@@ -1006,7 +1190,7 @@ public class Step3 : MapGenStep<Step3Settings>
 
             this.grid                               = Grid.Create(gridWidth, gridHeight);
             this.weights                            = new NativeArray<float>(this.grid.size * this.modules.Length, Allocator.Persistent);
-            this.stack                              = new NativeArray<int>(this.grid.size, Allocator.Persistent);
+            this.stack                              = new NativeArray<int>(this.grid.size * this.grid.size, Allocator.Persistent);
 
             this.state.Value.reset();
 
@@ -1019,14 +1203,11 @@ public class Step3 : MapGenStep<Step3Settings>
             while(passTwo.MoveNext()) { yield return passTwo.Current; }
 
             if(this.state.Value.hasSolution())
-            {
                 Debug.Log($"Map generation successfull. [Attepts: {this.state.Value.numFails() + 1}]");
-            }
             else
-            {
                 Debug.LogWarning("Map generation failed.");
-            }
 
+            Debug.Log(this.dumpContraints(this.constraints, 5));
             this.weights.Dispose();
             this.grid.Dispose();
             this.stack.Dispose();
@@ -1206,20 +1387,22 @@ public class Step3 : MapGenStep<Step3Settings>
         context.schedule(hasSolutionJob);
     }
 
-    private string dumpContraints(in ModuleConstraints contraints)
+    private string dumpContraints(in ModuleConstraints contraints, int moduleId = -1)
     {
+        int PAD = $"{this.modules.Length}".Length;
+        
         string buffer = "";
         for(int i = 0; i < this.modules.Length; i++)
         {
-            buffer += $"ModuleId: {i} = {this.modules[i].name.ToString()}\n";
+            buffer += $"ModuleId: {i} = {this.modules[i].name.ToString().PadLeft(PAD, '0')}\n";
         }
 
         buffer += "M |";
-        for(int moduleA = 0; moduleA < this.modules.Length; moduleA++)
+        for(int moduleA = moduleId == -1 ? 0 : moduleId; moduleA < (moduleId == -1 ? this.modules.Length : moduleId + 1); moduleA++)
         {
             for(int moduleB = 0; moduleB < this.modules.Length; moduleB++)
             {
-                buffer += $" {moduleB}";
+                buffer += $" {moduleB.ToString().PadLeft(PAD, '0')}";
             }
             buffer += " |";
         }
@@ -1228,11 +1411,11 @@ public class Step3 : MapGenStep<Step3Settings>
         for(int side = 0; side < 4; side++)
         {
             buffer += $"{((ModuleConstraints.Side)side).ToString()[0]} |";
-            for(int moduleA = 0; moduleA < this.modules.Length; moduleA++)
+            for(int moduleA = moduleId == -1 ? 0 : moduleId; moduleA < (moduleId == -1 ? this.modules.Length : moduleId + 1); moduleA++)
             {
                 for(int moduleB = 0; moduleB < this.modules.Length; moduleB++)
                 {
-                    buffer += $" {contraints.isSet(moduleA, (ModuleConstraints.Side)side, moduleB)}";
+                    buffer += $" {contraints.isSet(moduleA, (ModuleConstraints.Side)side, moduleB).ToString().PadLeft(PAD, '0')}";
                 }
 
                 buffer += " |";

@@ -7,7 +7,11 @@ public class Step3Settings : MapGenStepSettings
 {
     public int              numAttemptsToSolveMapChunk = 3;
 
-    public float            similarityThreshold = 5.0f;
+    [Range(0.0f, 100.0f)]
+    public float            similarityThreshold = 2.0f;
+
+    [Range(0.0f, 100.0f)]
+    public float            similarityPercentile = 95.0f;
 
     public void OnValidate()
     {
