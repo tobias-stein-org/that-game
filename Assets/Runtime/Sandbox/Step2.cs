@@ -15,6 +15,8 @@ public struct MapChunkInfo
 
     public int                              dataIndex0;
     public int                              dataSize;
+
+    public Vector2Int                       pathExit;
 }
 
 public struct MapChunkData
@@ -117,11 +119,10 @@ public class Step2 : MapGenStep<Step2Settings>
             }
 
             // draw path
-
+            chunkInfo.pathExit = chunkInfo.bounds.size / 2;
             var displacement = this.pathDisplacements[chunkId];
             if(to == Vector2Int.left)
             {
-
                 var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
@@ -131,6 +132,8 @@ public class Step2 : MapGenStep<Step2Settings>
                     tile.constructionType = TileConstructionType.Walkable;
                     chunkData[tileId] = tile;
                 }
+
+                chunkInfo.pathExit = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
             }
             else if(to == Vector2Int.right)
             {
@@ -143,6 +146,8 @@ public class Step2 : MapGenStep<Step2Settings>
                     tile.constructionType = TileConstructionType.Walkable;
                     chunkData[tileId] = tile;
                 }
+
+                chunkInfo.pathExit = new Vector2Int(chunkInfo.bounds.width - 1, pathStart + this.mapPathThickness / 2);
             }
             else if(to == Vector2Int.up)
             {
@@ -155,6 +160,8 @@ public class Step2 : MapGenStep<Step2Settings>
                     tile.constructionType = TileConstructionType.Walkable;
                     chunkData[tileId] = tile;
                 }
+
+                chunkInfo.pathExit = new Vector2Int(pathStart + this.mapPathThickness / 2, chunkInfo.bounds.height - 1);
             }
             else if(to == Vector2Int.down)
             {
@@ -167,7 +174,12 @@ public class Step2 : MapGenStep<Step2Settings>
                     tile.constructionType = TileConstructionType.Walkable;
                     chunkData[tileId] = tile;
                 }
+
+                chunkInfo.pathExit = new Vector2Int(pathStart + this.mapPathThickness / 2, 0);
             }
+
+            // update chunk info
+            this.mapChunkInfo[chunkId] = chunkInfo;
         }
     }
 
