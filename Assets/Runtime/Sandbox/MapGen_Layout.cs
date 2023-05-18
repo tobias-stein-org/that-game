@@ -371,7 +371,7 @@ public class MapGen_Layout : MonoBehaviour
             for(int y = 0; y < chunkInfo.bounds.height; y++)
             for(int x = 0; x < chunkInfo.bounds.width; x++)
             {
-                var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0);
+                var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, -(chunkInfo.bounds.y + y), 0);
                 int i               = (y * chunkInfo.bounds.width) + x;
                 int floorModuleId   = chunkData[i].floorModuleId;
                 int obstrModuleId   = chunkData[i].obstrModuleId;
