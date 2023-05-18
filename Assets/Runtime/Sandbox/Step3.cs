@@ -652,7 +652,6 @@ public class Step3 : MapGenStep<Step3Settings>
                 {
                     float minAlpha  = Mathf.Min(borderA[i].a, borderB[i].a);
                     borderA[i] = minAlpha < 1.0f ? Color.Lerp(borderB[i], borderA[i], minAlpha) : borderA[i];
-                    //borderA[i] = borderA[i].a < 1.0f ? Color.Lerp(borderB[i], borderA[i], borderA[i].a) : borderA[i];
                 }
                 else
                 {
@@ -722,6 +721,8 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeSlice<MapChunkData>        mapChunkData;
 
+        public float                            mapChunkObstructivness;
+
         public void Execute(int start, int count)
         {
             var weightChunkSize   = count * this.modules.Length;
@@ -759,7 +760,9 @@ public class Step3 : MapGenStep<Step3Settings>
                         // else everything goes
                         default:
                         {
-                            this.weights[i + moduleId] = this.modules[moduleId].weight;
+                            this.weights[i + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
+                                    ? this.modules[moduleId].weight * this.mapChunkObstructivness
+                                    : this.modules[moduleId].weight * (1.0f - this.mapChunkObstructivness);
                             break;
                         }
                     }
@@ -1250,6 +1253,7 @@ public class Step3 : MapGenStep<Step3Settings>
             // set initial weights acording to current map chunk mask
             var initializeWeightsJob            = new InitializePassTwoWeightsJob
             {
+                mapChunkObstructivness          = this.settings.mapChunkObstructivness,          
                 weights                         = this.weights,
                 mapChunkData                    = chunkData,
                 modules                         = this.modules,
