@@ -14,14 +14,14 @@ public class MapGen_LayoutEditor : Editor
             var data = target.executor.data;
             float camDistance = Mathf.Abs(SceneView.lastActiveSceneView.camera.transform.position.z);
 
-            for(int c = 0; c < data.pathSteps.Length + 1; c++)
+            for(int c = 0; c < data.numMapChunks; c++)
             {
                 var chunkInfo = data.getChunkInfo(c);
                 var chunkData = data.getChunkData(c);
 
                 this.drawMapChunkId(chunkInfo, c);
 
-                if(camDistance < 1.0f)
+                if(camDistance < 7.0f)
                 {
                     for(int y = 0; y<chunkInfo.bounds.height; y++)
                     for(int x = 0; x<chunkInfo.bounds.width; x++)
@@ -30,10 +30,24 @@ public class MapGen_LayoutEditor : Editor
 
                         var cType = chunkData[i].constructionType;
 
-                        if(chunkData[i].obstrModuleId != -1)
-                            Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.66f, 0) * 0.16f, $"{target.generatorSettings.modules[chunkData[i].obstrModuleId].name} [T: {target.generatorSettings.modules[chunkData[i].obstrModuleId].constructionType.ToString()[0]}, ID: {chunkData[i].obstrModuleId}]");
+                            //if(chunkData[i].obstrModuleId != -1)
+                            //    Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.66f, 0) * 0.16f, $"{target.generatorSettings.modules[chunkData[i].obstrModuleId].name} [T: {target.generatorSettings.modules[chunkData[i].obstrModuleId].constructionType.ToString()[0]}, ID: {chunkData[i].obstrModuleId}]");
 
-                        Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.33f, 0) * 0.16f, $"({cType.ToString()[0]})");
+                        var prevColor = GUI.color;
+                        switch(cType)
+                        {
+                            case TileConstructionType.Obstructed:
+                                GUI.color = Color.gray;
+                                Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.33f, 0) * 0.16f, "O");
+                                break;
+
+                            case TileConstructionType.Walkable:
+                                GUI.color = Color.green;
+                                Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.33f, 0) * 0.16f, "W");
+                                break;
+                        }
+
+                        GUI.color = prevColor;
                     }
                 }
             }
