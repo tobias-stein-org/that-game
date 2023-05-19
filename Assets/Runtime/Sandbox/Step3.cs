@@ -383,13 +383,13 @@ public class Step3 : MapGenStep<Step3Settings>
 
             unsafe
             {
-                var mapDataPtr = NativeArrayUnsafeUtility.GetUnsafePtr(context.data.mapChunkData);
+                MapChunkData* mapDataPtr = (MapChunkData*)NativeArrayUnsafeUtility.GetUnsafePtr(context.data.mapChunkData);
 
                 for(int h = 0; h < chunkInfo.bounds.height; h++)
                 for(int w = 0; w < chunkInfo.bounds.width; w++)
                 {
                     var tileId = (h * chunkInfo.bounds.width) + w;
-                    cells.AddNoResize(GridCell.Create(mapDataPtr, chunkInfo.dataIndex0 + tileId, MapGenData.Layer.Floor));
+                    cells.AddNoResize(GridCell.Create(mapDataPtr + chunkInfo.dataIndex0 + tileId, MapGenData.Layer.Floor));
                 }
             }
 
@@ -436,15 +436,14 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public  MapGenData.Layer    layer { get; private set; }
 
-        private void*               mapDataPtr;
-        private int                 refTileIdx;
+        private MapChunkData*       mapDataPtr;
 
-        public static GridCell Create(void* mapDataPtr, int refTileId, MapGenData.Layer layer)
+        public static GridCell Create(MapChunkData* mapDataPtr, MapGenData.Layer layer)
         {
             // get the current moduleId set on this cell, this will most of the time be -1, but in case we are dealing with a neighbouring tile
             // of the current processed chunk, it could already been processed and set to a non negative value
-            var moduleId = UnsafeUtility.ReadArrayElement<MapChunkData>(mapDataPtr, refTileId)[(int)layer];
-
+            var moduleId = (*mapDataPtr)[(int)layer];
+           
             return new GridCell
             {
                 isEmpty                 = false,
@@ -458,7 +457,6 @@ public class Step3 : MapGenStep<Step3Settings>
                 layer                   = layer,
 
                 mapDataPtr              = mapDataPtr,
-                refTileIdx              = refTileId,
             };
         }
 
@@ -477,7 +475,6 @@ public class Step3 : MapGenStep<Step3Settings>
                     layer               = MapGenData.Layer.Floor,
 
                     mapDataPtr          = null,
-                    refTileIdx          = -1
                 };
             }
         }
@@ -502,8 +499,8 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public MapChunkData mapData
         {
-            get         { return UnsafeUtility.ReadArrayElement<MapChunkData>(this.mapDataPtr, this.refTileIdx); }
-            private set { UnsafeUtility.WriteArrayElement(this.mapDataPtr, this.refTileIdx, value); }
+            get         { return *(this.mapDataPtr); }
+            private set { *(this.mapDataPtr) = value; }
         }
     }
 
@@ -1479,7 +1476,7 @@ public class Step3 : MapGenStep<Step3Settings>
         this.state                      = new NativeReference<Step3State>(Step3State.Create(), Allocator.Persistent);
         this.modules                    = new NativeArray<ModuleMeta>(context.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
         this.minEntropyQueue            = new NativeQueue<int>(Allocator.Persistent);
-        this.minEntropyCell                 = new NativeReference<int>(Allocator.Persistent);
+        this.minEntropyCell             = new NativeReference<int>(Allocator.Persistent);
     }
 
     public  override void release(MapGeneratorSettings context)
