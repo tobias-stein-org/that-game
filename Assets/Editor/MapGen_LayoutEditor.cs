@@ -9,7 +9,7 @@ public class MapGen_LayoutEditor : Editor
     void OnSceneGUI()
     {
         var target = this.target as MapGen_Layout;
-        if(target != null && target.executor != null && !target.executor.isBusy)
+        if(Application.isPlaying && target != null && target.executor != null && !target.executor.isBusy)
         {
             var data = target.executor.data;
             float camDistance = Mathf.Abs(SceneView.lastActiveSceneView.camera.transform.position.z);
