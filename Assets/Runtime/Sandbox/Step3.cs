@@ -8,11 +8,7 @@ using Unity.Jobs;
 using Unity.Burst;
 using UnityEngine;
 using Unity.Mathematics;
-using UnityEngine.Rendering;
-using Unity.VisualScripting.Antlr3.Runtime;
-using Unity.VisualScripting;
-using UnityEngine.Tilemaps;
-using System.Reflection;
+using Unity.Entities.UniversalDelegates;
 
 public partial struct MapGenData
 {
@@ -280,48 +276,6 @@ public class Step3 : MapGenStep<Step3Settings>
     }
 
     [BurstCompile]
-    public  struct GridCell : IComparable<GridCell>
-    {
-        public enum CellMetaStates
-        {
-            Collapsed = 0,
-            Propagated
-        }
-
-        public int              moduleId;
-        public float            entropy;
-
-        public BitField32       states;
-
-        public static GridCell Empty
-        {
-
-            get {
-                return new GridCell
-                {
-                    isCollapsed     = false,
-                    entropy         = 0.0f,
-                    moduleId        = -1,
-                    propagated      = false,
-                    states          = new BitField32(0)
-                };
-            }
-        }
-
-        public bool isCollapsed { get { return this.states.IsSet((int)CellMetaStates.Collapsed); } set { this.states.SetBits((int)CellMetaStates.Collapsed, value); } }
-        public bool propagated { get { return this.states.IsSet((int)CellMetaStates.Propagated); } set { this.states.SetBits((int)CellMetaStates.Propagated, value); } }
-
-        public int CompareTo(GridCell other)
-        {
-            if(this.isCollapsed && other.isCollapsed) { return 0; }
-            if(this.isCollapsed) { return 1; }
-            if(other.isCollapsed) { return -1; }
-
-            return this.entropy.CompareTo(other.entropy);
-        }
-    }
-
-    [BurstCompile]
     public  struct ModuleConstraints : IDisposable
     {
         public enum Side { Left = 0, Right, Top, Bottom }
@@ -421,22 +375,39 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public int size { get { return this.width * this.height; } }
 
-        public void reset()
+        public void reset(MapGenData.Layer layer)
         {
-            this.cells.Clear();
-            foreach(var cell in Enumerable.Range(0, this.width * this.height).Select(_ => GridCell.Empty))
-            {
-                this.cells.AddNoResize(cell);
-            }
+            for(int cellId = 0; cellId < this.cells.Length; cellId++) { this.cells.ElementAt(cellId).reset(layer); } 
         }
 
-        public static Grid Create(int width, int height)
+        public static Grid Create(int chunkId, MapGeneratorSettings context)
         {
+            var chunkInfo   = context.data.getChunkInfo(chunkId);
+
+            var width       = chunkInfo.bounds.width;
+            var height      = chunkInfo.bounds.height;
+
             var gridSize    = width * height;
+
+            // pre-allocate memory for all grid cells
+            var cells       = new UnsafeList<GridCell>(gridSize, Allocator.Persistent);
+
+
+            unsafe
+            {
+                var mapDataPtr = NativeArrayUnsafeUtility.GetUnsafePtr(context.data.mapChunkData);
+
+                for(int h = 0; h < chunkInfo.bounds.height; h++)
+                for(int w = 0; w < chunkInfo.bounds.width; w++)
+                {
+                    var tileId = (h * chunkInfo.bounds.width) + w;
+                    cells.AddNoResize(GridCell.Create(mapDataPtr, chunkInfo.dataIndex0 + tileId, MapGenData.Layer.Floor));
+                }
+            }
 
             var instance    = new Grid
             {
-                cells       = new UnsafeList<GridCell>(gridSize, Allocator.Persistent),
+                cells       = cells,
                 width       = width,
                 height      = height
             };
@@ -447,6 +418,91 @@ public class Step3 : MapGenStep<Step3Settings>
         public ref GridCell this[int index]
         {
             get { return ref this.cells.ElementAt(index); }
+        }
+    }
+
+    [BurstCompile]
+    public  unsafe struct GridCell
+    {
+        public  bool                isEmpty;
+        public  bool                isCollapsed;
+        public  bool                canReset;
+
+        public  int                 moduleId;
+        public  float               entropy;
+
+        private MapGenData.Layer    layer;
+
+        private void*               mapDataPtr;
+        private int                 refTileIdx;
+
+
+        public static GridCell Create(void* mapDataPtr, int refTileId, MapGenData.Layer layer)
+        {
+            // get the current moduleId set on this cell, this will most of the time be -1, but in case we are dealing with a neighbouring tile
+            // of the current processed chunk, it could already been processed and set to a non negative value
+            var moduleId = UnsafeUtility.ReadArrayElement<MapChunkData>(mapDataPtr, refTileId)[(int)layer];
+
+            return new GridCell
+            {
+                isEmpty             = false,
+
+                // note: we make an assumption here, that if the tile module of the current referenced tile is unset or set
+                // it will also be the case for all other layers
+                canReset            = moduleId == -1,
+
+                isCollapsed         = moduleId != -1 ? true : false,
+                entropy             = 0.0f,
+                moduleId            = moduleId,
+                layer               = layer,
+
+                mapDataPtr          = mapDataPtr,
+                refTileIdx          = refTileId,
+            };
+        }
+
+        public static GridCell Empty
+        {
+            get
+            {
+                return new GridCell
+                {
+                    isEmpty         = true,
+                    canReset        = false,
+
+                    isCollapsed     = false,
+                    entropy         = 0.0f,
+                    moduleId        = -1,
+                    layer           = MapGenData.Layer.Floor,
+
+                    mapDataPtr      = null,
+                    refTileIdx      = -1
+                };
+            }
+        }
+
+        public void reset(MapGenData.Layer layer)
+        {
+            if(this.canReset)
+            {
+                this.layer          = layer;
+                this.isCollapsed    = false;
+                this.entropy        = 0.0f;
+                this.moduleId       = -1;
+            }
+        }
+
+        public void apply()
+        {
+            var mapData                 = this.mapData;
+            mapData[(int)this.layer]    = this.moduleId;
+            this.mapData                = mapData;
+        }
+
+        public MapChunkData mapData
+        {
+            get { return UnsafeUtility.ReadArrayElement<MapChunkData>(this.mapDataPtr, this.refTileIdx); }
+            private set { UnsafeUtility.WriteArrayElement(this.mapDataPtr, this.refTileIdx, value); }
         }
     }
 
@@ -686,9 +742,6 @@ public class Step3 : MapGenStep<Step3Settings>
         [NativeDisableParallelForRestriction]
         public NativeArray<float>               weights;
 
-        [ReadOnly]
-        public NativeSlice<MapChunkData>        mapChunkData;
-
         public void Execute(int start, int count)
         {
             var weightChunkSize   = count * this.modules.Length;
@@ -696,8 +749,6 @@ public class Step3 : MapGenStep<Step3Settings>
 
             for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
             {
-                var tileId      = Mathf.FloorToInt(i / this.modules.Length);
-
                 for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
                     // ONLY, allow 'walkable' modules
@@ -719,7 +770,7 @@ public class Step3 : MapGenStep<Step3Settings>
         public NativeArray<float>               weights;
 
         [ReadOnly]
-        public NativeSlice<MapChunkData>        mapChunkData;
+        public Grid                             grid;
 
         public float                            mapChunkObstructivness;
 
@@ -731,7 +782,7 @@ public class Step3 : MapGenStep<Step3Settings>
             for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
             {
                 var tileId      = Mathf.FloorToInt(i / this.modules.Length);
-                var tileData    = this.mapChunkData[tileId];
+                var tileData    = this.grid[tileId].mapData;
 
                 for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
@@ -778,17 +829,16 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeArray<ModuleMeta>          modules;
 
-        public NativeSlice<MapChunkData>        mapChunkData;
+        public Grid                             grid;
 
         public void Execute(int startIndex, int count)
         {
             for(int i = startIndex; i < startIndex + count; i++)
             { 
-                var tileData = this.mapChunkData[i];
-                if(tileData.obstrModuleId != -1 && this.modules[tileData.obstrModuleId].constructionType != TileConstructionType.Obstructed)
+                if(this.grid[i].moduleId != -1 && this.modules[this.grid[i].moduleId].constructionType != TileConstructionType.Obstructed)
                 {
-                    tileData.obstrModuleId = -1;
-                    this.mapChunkData[i] = tileData;
+                    this.grid[i].moduleId = -1;
+                    this.grid[i].apply();
                 }
             }
         }
@@ -826,7 +876,6 @@ public class Step3 : MapGenStep<Step3Settings>
 
                 // update cell
                 this.grid[cellId].entropy       = fastLog2(sum) - (logSum / sum + Step3.EPSILONE);
-                this.grid[cellId].propagated    = false;
             }
         }
 
@@ -968,11 +1017,9 @@ public class Step3 : MapGenStep<Step3Settings>
         private void propagate(int cellId, in int[] modules, ModuleConstraints.Side side)
         {
             var cell = this.grid[cellId];
-            if(!cell.isCollapsed && !cell.propagated)
+            if(!cell.isCollapsed)
             {
                 //Debug.Log($"Propagating to {side.ToString()} cell [ID: {cellId}]: {String.Join(",", modules)}");
-
-                //this.grid[cellId].propagated = true;
 
                 var weights = this.weights.Slice(cellId * this.numModules, this.numModules);
                 var w1 = 0.0f;
@@ -1073,32 +1120,11 @@ public class Step3 : MapGenStep<Step3Settings>
         [ReadOnly]
         public NativeReference<int>             cellId;
 
-        [ReadOnly]
         public Grid                             grid;
-
-        public NativeSlice<MapChunkData>        data;
-
-        public bool                             floor;
 
         public void Execute()
         {
-            var cellId              = this.cellId.Value;
-
-            if(cellId < 0) { return; }
-
-            var moduleId            = this.grid[cellId].moduleId;
-
-            var data                = this.data[cellId];
-            if(this.floor)
-            {
-                data.floorModuleId  = moduleId;
-            }
-            else
-            {
-                data.obstrModuleId  = moduleId;
-            }
-
-            this.data[cellId]       = data;
+            if(this.cellId.Value != -1) { this.grid[this.cellId.Value].apply(); }
         }
     }
 
@@ -1183,26 +1209,18 @@ public class Step3 : MapGenStep<Step3Settings>
 
         for(int chunkId = 0; chunkId < context.data.numMapChunks; chunkId++)
         {
-            var chunkInfo                           = context.data.getChunkInfo(chunkId);
-            var chunkData                           = context.data.getChunkData(chunkId);
-
-            // TODO: account for a row/column overlap with previous map chunk
-
-            var gridWidth                           = chunkInfo.bounds.width;
-            var gridHeight                          = chunkInfo.bounds.height;
-
-            this.grid                               = Grid.Create(gridWidth, gridHeight);
+            this.grid                               = Grid.Create(chunkId, context);
             this.weights                            = new NativeArray<float>(this.grid.size * this.modules.Length, Allocator.Persistent);
             this.stack                              = new NativeArray<int>(this.grid.size * this.grid.size, Allocator.Persistent);
 
             this.state.Value.reset();
 
             // 1st pass - generate floor
-            var passOne = this.passOne(context, chunkData, dependsOn);
+            var passOne = this.passOne(context, this.grid, dependsOn);
             while(passOne.MoveNext()) { yield return passOne.Current; }
 
             // 2nd pass - generate obstructables
-            var passTwo = this.passTwo(context, chunkData, dependsOn);
+            var passTwo = this.passTwo(context, this.grid, dependsOn);
             while(passTwo.MoveNext()) { yield return passTwo.Current; }
 
             if(this.state.Value.hasSolution())
@@ -1216,56 +1234,55 @@ public class Step3 : MapGenStep<Step3Settings>
         }
     }
 
-    private IEnumerator<MapGenStepState> passOne(MapGeneratorSettings context, NativeSlice<MapChunkData> chunkData, JobHandle dependsOn)
+    private IEnumerator<MapGenStepState> passOne(MapGeneratorSettings context, Grid grid, JobHandle dependsOn)
     {
         this.state.Value.hasSolution(false);
 
         while(!this.state.Value.hasSolution() && this.state.Value.numFails() < this.settings.numAttemptsToSolveMapChunk)
         {
             // reset all grid cells
-            grid.reset();
+            grid.reset(MapGenData.Layer.Floor);
             
             // set initial weights acording to current map chunk mask
             var initializeWeightsJob            = new InitializePassOneWeightsJob
             {
                 weights                         = this.weights,
-                mapChunkData                    = chunkData,
                 modules                         = this.modules,
             };
             
             dependsOn = context.scheduleBatch(initializeWeightsJob, this.grid.size, this.grid.width, dependsOn);
             
-            var WFC = this.runWFC(context, chunkData, true, dependsOn);
+            var WFC = this.runWFC(context, grid, dependsOn);
             while(WFC.MoveNext()) { yield return WFC.Current; }
         }
     }
 
-    private IEnumerator<MapGenStepState> passTwo(MapGeneratorSettings context, NativeSlice<MapChunkData> chunkData, JobHandle dependsOn)
+    private IEnumerator<MapGenStepState> passTwo(MapGeneratorSettings context, Grid grid, JobHandle dependsOn)
     {
         this.state.Value.hasSolution(false);
 
         while(!this.state.Value.hasSolution() && this.state.Value.numFails() < this.settings.numAttemptsToSolveMapChunk)
         {
             // reset all grid cells
-            grid.reset();
+            grid.reset(MapGenData.Layer.Obstructable);
 
             // set initial weights acording to current map chunk mask
             var initializeWeightsJob            = new InitializePassTwoWeightsJob
             {
                 mapChunkObstructivness          = this.settings.mapChunkObstructivness,          
                 weights                         = this.weights,
-                mapChunkData                    = chunkData,
                 modules                         = this.modules,
+                grid                            = grid,
             };
 
             dependsOn = context.scheduleBatch(initializeWeightsJob, this.grid.size, this.grid.width, dependsOn);
 
-            var WFC = this.runWFC(context, chunkData, false, dependsOn);
+            var WFC = this.runWFC(context, grid, dependsOn);
             while(WFC.MoveNext()) { yield return WFC.Current; }
 
             var postJob = new PassTwoPostJob
             {
-                mapChunkData                    = chunkData,
+                grid                            = grid,
                 modules                         = this.modules
             };
 
@@ -1277,7 +1294,7 @@ public class Step3 : MapGenStep<Step3Settings>
         }
     }
 
-    private IEnumerator<MapGenStepState> runWFC(MapGeneratorSettings context, NativeSlice<MapChunkData> chunkData, bool isFloor, JobHandle dependsOn)
+    private IEnumerator<MapGenStepState> runWFC(MapGeneratorSettings context, Grid grid, JobHandle dependsOn)
     {
         this.state.Value.hasFailed(false);
         this.state.Value.allCollapsed(false);
@@ -1288,10 +1305,8 @@ public class Step3 : MapGenStep<Step3Settings>
 
             var updateMapChunkDataJob       = new UpdateMapChunkDataJob
             {
-                grid                        = this.grid,
                 cellId                      = this.minEntropy,
-                data                        = chunkData,
-                floor                       = isFloor
+                grid                        = grid
             };
             dependsOn = context.schedule(updateMapChunkDataJob, dependsOn);
 
