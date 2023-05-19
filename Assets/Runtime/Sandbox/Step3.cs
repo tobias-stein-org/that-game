@@ -8,7 +8,6 @@ using Unity.Jobs;
 using Unity.Burst;
 using UnityEngine;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
 
 public partial struct MapGenData
 {
@@ -358,27 +357,16 @@ public class Step3 : MapGenStep<Step3Settings>
     }
 
     [BurstCompile]
-    public  struct Grid : IDisposable
+    public  struct Grid : IDisposable, IEnumerable<GridCell>
     {
         [NativeDisableContainerSafetyRestriction]
         private UnsafeList<GridCell>    cells;
 
-        public bool IsCreated { get { return this.cells.IsCreated; } }
+        public  bool                    IsCreated   { get { return this.cells.IsCreated; } }
 
-        public int width { get; private set; }
-        public int height { get; private set; }
-
-        public void Dispose()
-        {
-            if(this.cells.IsCreated) { this.cells.Dispose(); }
-        }
-
-        public int size { get { return this.width * this.height; } }
-
-        public void reset(MapGenData.Layer layer)
-        {
-            for(int cellId = 0; cellId < this.cells.Length; cellId++) { this.cells.ElementAt(cellId).reset(layer); } 
-        }
+        public  int                     width       { get; private set; }
+        public  int                     height      { get; private set; }
+        public  int                     size        { get { return this.width * this.height; } }
 
         public static Grid Create(int chunkId, MapGeneratorSettings context)
         {
@@ -415,27 +403,41 @@ public class Step3 : MapGenStep<Step3Settings>
             return instance;
         }
 
-        public ref GridCell this[int index]
+        public void Dispose()
         {
-            get { return ref this.cells.ElementAt(index); }
+            if(this.cells.IsCreated) { this.cells.Dispose(); }
         }
+
+        public void reset(MapGenData.Layer layer)
+        {
+            for(int cellId = 0; cellId < this.cells.Length; cellId++) { this.cells.ElementAt(cellId).reset(layer); } 
+        }
+
+        #region Grid cell access
+
+        public IEnumerator<GridCell> GetEnumerator() { return this.cells.GetEnumerator(); }
+
+        IEnumerator IEnumerable.GetEnumerator() { return this.cells.GetEnumerator(); }
+
+        public ref GridCell this[int index] { get { return ref this.cells.ElementAt(index); } }
+
+        #endregion // Grid cell access
     }
 
     [BurstCompile]
     public  unsafe struct GridCell
     {
-        public  bool                isEmpty;
+        public  bool                isEmpty { get; private set; }
         public  bool                isCollapsed;
-        public  bool                canReset;
+        private bool                canReset;
 
         public  int                 moduleId;
         public  float               entropy;
 
-        private MapGenData.Layer    layer;
+        public  MapGenData.Layer    layer { get; private set; }
 
         private void*               mapDataPtr;
         private int                 refTileIdx;
-
 
         public static GridCell Create(void* mapDataPtr, int refTileId, MapGenData.Layer layer)
         {
@@ -445,19 +447,18 @@ public class Step3 : MapGenStep<Step3Settings>
 
             return new GridCell
             {
-                isEmpty             = false,
+                isEmpty                 = false,
 
                 // note: we make an assumption here, that if the tile module of the current referenced tile is unset or set
                 // it will also be the case for all other layers
-                canReset            = moduleId == -1,
+                canReset                = moduleId == -1,
+                isCollapsed             = moduleId != -1 ? true : false,
+                moduleId                = moduleId,
+                entropy                 = 0.0f,
+                layer                   = layer,
 
-                isCollapsed         = moduleId != -1 ? true : false,
-                entropy             = 0.0f,
-                moduleId            = moduleId,
-                layer               = layer,
-
-                mapDataPtr          = mapDataPtr,
-                refTileIdx          = refTileId,
+                mapDataPtr              = mapDataPtr,
+                refTileIdx              = refTileId,
             };
         }
 
@@ -467,16 +468,16 @@ public class Step3 : MapGenStep<Step3Settings>
             {
                 return new GridCell
                 {
-                    isEmpty         = true,
-                    canReset        = false,
+                    isEmpty             = true,
 
-                    isCollapsed     = false,
-                    entropy         = 0.0f,
-                    moduleId        = -1,
-                    layer           = MapGenData.Layer.Floor,
+                    canReset            = false,
+                    isCollapsed         = false,
+                    moduleId            = -1,
+                    entropy             = 0.0f,
+                    layer               = MapGenData.Layer.Floor,
 
-                    mapDataPtr      = null,
-                    refTileIdx      = -1
+                    mapDataPtr          = null,
+                    refTileIdx          = -1
                 };
             }
         }
@@ -485,10 +486,10 @@ public class Step3 : MapGenStep<Step3Settings>
         {
             if(this.canReset)
             {
-                this.layer          = layer;
-                this.isCollapsed    = false;
-                this.entropy        = 0.0f;
-                this.moduleId       = -1;
+                this.layer              = layer;
+                this.isCollapsed        = false;
+                this.entropy            = 0.0f;
+                this.moduleId           = -1;
             }
         }
 
@@ -501,7 +502,7 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public MapChunkData mapData
         {
-            get { return UnsafeUtility.ReadArrayElement<MapChunkData>(this.mapDataPtr, this.refTileIdx); }
+            get         { return UnsafeUtility.ReadArrayElement<MapChunkData>(this.mapDataPtr, this.refTileIdx); }
             private set { UnsafeUtility.WriteArrayElement(this.mapDataPtr, this.refTileIdx, value); }
         }
     }
@@ -742,17 +743,22 @@ public class Step3 : MapGenStep<Step3Settings>
         [NativeDisableParallelForRestriction]
         public NativeArray<float>               weights;
 
+        [ReadOnly]
+        public Grid                             grid;
+
         public void Execute(int start, int count)
         {
-            var weightChunkSize   = count * this.modules.Length;
-            var weightChunkStart  = start * this.modules.Length;
-
-            for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
+            for(int cellId = start; cellId < start + count; cellId++)
             {
+                var cell = this.grid[cellId];
+
+                if(cell.isEmpty || cell.isCollapsed) { continue; }
+               
+                var cellModuleWeight0 = (cellId * this.modules.Length);
                 for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
                     // ONLY, allow 'walkable' modules
-                    this.weights[i + moduleId] = this.modules[moduleId].constructionType == TileConstructionType.Walkable
+                    this.weights[cellModuleWeight0 + moduleId] = this.modules[moduleId].constructionType == TileConstructionType.Walkable
                         ? this.modules[moduleId].weight
                         : 0.0f;
                 }
@@ -776,13 +782,15 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public void Execute(int start, int count)
         {
-            var weightChunkSize   = count * this.modules.Length;
-            var weightChunkStart  = start * this.modules.Length;
-
-            for(int i = weightChunkStart; i < weightChunkStart + weightChunkSize; i += this.modules.Length)
+            for(int cellId = start; cellId < start + count; cellId++)
             {
-                var tileId      = Mathf.FloorToInt(i / this.modules.Length);
-                var tileData    = this.grid[tileId].mapData;
+                var cell = this.grid[cellId];
+
+                if(cell.isEmpty || cell.isCollapsed) { continue; }
+
+
+                var cellModuleWeight0   = (cellId * this.modules.Length);
+                var tileData            = cell.mapData;
 
                 for(int moduleId = 0; moduleId < this.modules.Length; moduleId++)
                 {
@@ -793,7 +801,7 @@ public class Step3 : MapGenStep<Step3Settings>
                         // force only obstructable modules to be placed here
                         case TileConstructionType.Obstructed:
                         {
-                            this.weights[i + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
+                            this.weights[cellModuleWeight0 + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
                                 ? this.modules[moduleId].weight
                                 : 0.0f;
                             break;
@@ -802,7 +810,7 @@ public class Step3 : MapGenStep<Step3Settings>
                         // never allow obstructables on walkable tiles
                         case TileConstructionType.Walkable:
                         {
-                            this.weights[i + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
+                            this.weights[cellModuleWeight0 + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
                                 ? 0.0f
                                 : this.modules[moduleId].weight;
                             break;
@@ -811,7 +819,7 @@ public class Step3 : MapGenStep<Step3Settings>
                         // else everything goes
                         default:
                         {
-                            this.weights[i + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
+                            this.weights[cellModuleWeight0 + moduleId] = moduleConstructionType == TileConstructionType.Obstructed
                                     ? this.modules[moduleId].weight * this.mapChunkObstructivness
                                     : this.modules[moduleId].weight * (1.0f - this.mapChunkObstructivness);
                             break;
@@ -835,7 +843,7 @@ public class Step3 : MapGenStep<Step3Settings>
         {
             for(int i = startIndex; i < startIndex + count; i++)
             { 
-                if(this.grid[i].moduleId != -1 && this.modules[this.grid[i].moduleId].constructionType != TileConstructionType.Obstructed)
+                if(!this.grid[i].isEmpty && this.grid[i].moduleId != -1 && this.modules[this.grid[i].moduleId].constructionType != TileConstructionType.Obstructed)
                 {
                     this.grid[i].moduleId = -1;
                     this.grid[i].apply();
@@ -847,7 +855,7 @@ public class Step3 : MapGenStep<Step3Settings>
     [BurstCompile]
     private struct ComputeEntropiesJob : IJobParallelForBatch
     {
-        public Grid    grid;
+        public Grid                     grid;
 
         [ReadOnly]
         public NativeArray<float>       weights;
@@ -860,7 +868,7 @@ public class Step3 : MapGenStep<Step3Settings>
             {
                 var cellId  = startIndex + i;
 
-                if(this.grid[cellId].isCollapsed) { continue; }
+                if(this.grid[cellId].isEmpty || this.grid[cellId].isCollapsed) { continue; }
 
                 var weights                     = this.weights.Slice(cellId * numModules, numModules);
 
@@ -1005,8 +1013,6 @@ public class Step3 : MapGenStep<Step3Settings>
         public NativeArray<int>                 stack;
 
         private int                             stackPtr;
-        private int                             moduleChunkSize;
-
 
         /// <summary>
         /// Update cellId's cell possible modules that can be on the "side" of "modules".
@@ -1051,7 +1057,6 @@ public class Step3 : MapGenStep<Step3Settings>
 
         public void Execute()
         {
-            this.moduleChunkSize        = this.numModules * this.numModules;
             this.stackPtr               = 0;
 
             // if modeules empty -> no solution!
@@ -1141,7 +1146,7 @@ public class Step3 : MapGenStep<Step3Settings>
             this.state.Value.allCollapsed(true);
             for(int i = 0; i < (this.grid.size); i++)
             {
-                if(!this.grid[i].isCollapsed)
+                if(!this.grid[i].isEmpty && !this.grid[i].isCollapsed)
                 {
                     this.state.Value.allCollapsed(false);
                     break;
@@ -1163,7 +1168,7 @@ public class Step3 : MapGenStep<Step3Settings>
             this.state.Value.hasSolution(true);
             for(int i = 0; i < (this.grid.size); i++)
             {
-                if(this.grid[i].moduleId == -1)
+                if(!this.grid[i].isEmpty && this.grid[i].moduleId == -1)
                 {
                     this.state.Value.hasSolution(false);
                     break;
@@ -1187,7 +1192,7 @@ public class Step3 : MapGenStep<Step3Settings>
     private NativeArray<float>                      weights;
                                                     
     private NativeQueue<int>                        minEntropyQueue;
-    private NativeReference<int>                    minEntropy;
+    private NativeReference<int>                    minEntropyCell;
     private NativeArray<int>                        stack;
 
 
@@ -1248,6 +1253,7 @@ public class Step3 : MapGenStep<Step3Settings>
             {
                 weights                         = this.weights,
                 modules                         = this.modules,
+                grid                            = this.grid
             };
             
             dependsOn = context.scheduleBatch(initializeWeightsJob, this.grid.size, this.grid.width, dependsOn);
@@ -1299,13 +1305,37 @@ public class Step3 : MapGenStep<Step3Settings>
         this.state.Value.hasFailed(false);
         this.state.Value.allCollapsed(false);
 
+        // pre-propagate module weights from pre-set (collapsed) cells
+        for(var cellId = 0; cellId < grid.size; cellId++)
+        {
+            if(this.state.Value.hasFailed()) { break; }
+
+            var cell = grid[cellId];
+            if(!cell.isCollapsed || cell.isEmpty) { continue; }
+
+            this.minEntropyCell.Value       = cellId;
+            var propagateJob                = new PropagateContraintsJob
+            {
+                numModules                  = this.modules.Length,
+                collapsedCellId             = this.minEntropyCell,
+                grid                        = grid,
+                weights                     = this.weights,
+                constraints                 = this.constraints,
+                stack                       = this.stack,
+                state                       = this.state
+            };
+
+            context.schedule(propagateJob, dependsOn);
+            yield return new MapGenStepState {};
+        }
+
         while(!this.state.Value.hasFailed() && !this.state.Value.allCollapsed())
         {
             dependsOn = this.doWaveFunctionCollapse(context, dependsOn);
 
             var updateMapChunkDataJob       = new UpdateMapChunkDataJob
             {
-                cellId                      = this.minEntropy,
+                cellId                      = this.minEntropyCell,
                 grid                        = grid
             };
             dependsOn = context.schedule(updateMapChunkDataJob, dependsOn);
@@ -1350,7 +1380,7 @@ public class Step3 : MapGenStep<Step3Settings>
             {
                 grid                    = this.grid,
                 minEntropies            = this.minEntropyQueue,
-                cellId                  = this.minEntropy
+                cellId                  = this.minEntropyCell
             };
 
             dependsOn = context.schedule(findMinimumJob, dependsOn);
@@ -1359,7 +1389,7 @@ public class Step3 : MapGenStep<Step3Settings>
         var collapseCellJob             = new CollapseCellJob
         {
             weights                     = this.weights,
-            cellId                      = this.minEntropy,
+            cellId                      = this.minEntropyCell,
             grid                        = this.grid,
             numModules                  = this.modules.Length,
             rng                         = (float)context.random.NextDouble(),
@@ -1370,7 +1400,7 @@ public class Step3 : MapGenStep<Step3Settings>
         var propagateJob                = new PropagateContraintsJob
         {
             numModules                  = this.modules.Length,
-            collapsedCellId             = this.minEntropy,
+            collapsedCellId             = this.minEntropyCell,
             grid                        = this.grid,
             weights                     = this.weights,
             constraints                 = this.constraints,
@@ -1449,7 +1479,7 @@ public class Step3 : MapGenStep<Step3Settings>
         this.state                      = new NativeReference<Step3State>(Step3State.Create(), Allocator.Persistent);
         this.modules                    = new NativeArray<ModuleMeta>(context.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
         this.minEntropyQueue            = new NativeQueue<int>(Allocator.Persistent);
-        this.minEntropy                 = new NativeReference<int>(Allocator.Persistent);
+        this.minEntropyCell                 = new NativeReference<int>(Allocator.Persistent);
     }
 
     public  override void release(MapGeneratorSettings context)
@@ -1470,7 +1500,7 @@ public class Step3 : MapGenStep<Step3Settings>
         if(this.constraints.IsCreated) this.constraints.Dispose();
         if(this.passTwoConstraints.IsCreated) this.passTwoConstraints.Dispose();
         if(this.minEntropyQueue.IsCreated) this.minEntropyQueue.Dispose();
-        if(this.minEntropy.IsCreated) this.minEntropy.Dispose();
+        if(this.minEntropyCell.IsCreated) this.minEntropyCell.Dispose();
         if(this.stack.IsCreated) this.stack.Dispose();
 
         if(this.state.IsCreated) this.state.Dispose();
