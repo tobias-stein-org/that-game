@@ -1,10 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
-using Unity.Entities.UniversalDelegates;
-using UnityEngine.UIElements;
-using UnityEngine.Tilemaps;
+using Unity.Collections.LowLevel.Unsafe;
 using System.Linq;
 using Unity.Jobs;
 
@@ -19,12 +16,11 @@ public struct MapChunkInfo
     public Vector2Int                       pathExit;
 }
 
-public struct MapChunkData
+public struct MapChunkData : System.IDisposable 
 {
-    public int                              floorModuleId;
-    public int                              obstrModuleId;
-        
     public TileConstructionType             constructionType;
+
+    private UnsafeHashMap<int, int>         layerModules;
 
     public static MapChunkData Empty
     {
@@ -32,11 +28,23 @@ public struct MapChunkData
         {
             return new MapChunkData
             {
-                floorModuleId      = -1,
-                obstrModuleId      = -1,
-                constructionType   = TileConstructionType.Undefined
+                constructionType    = TileConstructionType.Undefined,
+                layerModules        = new UnsafeHashMap<int, int>(4, Allocator.Persistent)
             };
         }
+    }
+
+    public bool IsCreated { get { return this.layerModules.IsCreated; } }
+    public void Dispose()
+    {
+        if(this.layerModules.IsCreated) { this.layerModules.Dispose(); }
+    }
+
+    public int this[int layer]
+    {
+        get { return this.layerModules.ContainsKey(layer) ? this.layerModules[layer] : -1; }
+
+        set { this.layerModules[layer] = value; }
     }
 }
 
@@ -266,7 +274,16 @@ public class Step2 : MapGenStep<Step2Settings>
 
     public override void release(MapGeneratorSettings context)
     {
-        if(context.data.mapChunkData.IsCreated) { context.data.mapChunkData.Dispose(); }
+        if(context.data.mapChunkData.IsCreated)
+        {
+            for(int chunkId = 0; chunkId < context.data.numMapChunks; chunkId++)
+            {
+                context.data.mapChunkData[chunkId].Dispose();
+            }
+
+            context.data.mapChunkData.Dispose();
+        }
+
         if(context.data.mapChunkInfo.IsCreated) { context.data.mapChunkInfo.Dispose(); }
     }
 

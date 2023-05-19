@@ -1,17 +1,18 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-using Unity.Jobs;
-using Unity.Collections;
-
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Linq;
 using System.Collections;
 using System;
 
 public partial struct MapGenData
 {
+    public enum Layer
+    {
+        Floor = 0,
+        Obstructable
+    }
 }
 
 public class MapGenStepState
@@ -321,6 +322,7 @@ public class MapGen_Layout : MonoBehaviour
 
     public Step1Settings    step1Settings;
     public Step2Settings    step2Settings;
+    public Step2aSettings   step2aSettings;
     public Step3Settings    step3Settings;
 
     public MapGenerator    executor;
@@ -341,6 +343,7 @@ public class MapGen_Layout : MonoBehaviour
                 .create()
                     .add<Step1, Step1Settings>(this.step1Settings)
                     .add<Step2, Step2Settings>(this.step2Settings)
+                    .add<Step2a, Step2aSettings>(this.step2aSettings)
                     //.add<Step3, Step3Settings>(this.step3Settings)
                     .add(step3, this.step3Settings)
                 .build();
@@ -376,8 +379,8 @@ public class MapGen_Layout : MonoBehaviour
             {
                 var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, -(chunkInfo.bounds.y + y), 0);
                 int i               = (y * chunkInfo.bounds.width) + x;
-                int floorModuleId   = chunkData[i].floorModuleId;
-                int obstrModuleId   = chunkData[i].obstrModuleId;
+                int floorModuleId   = chunkData[i][(int)MapGenData.Layer.Floor];
+                int obstrModuleId   = chunkData[i][(int)MapGenData.Layer.Obstructable];
 
                 if(floorModuleId != -1)
                 {
