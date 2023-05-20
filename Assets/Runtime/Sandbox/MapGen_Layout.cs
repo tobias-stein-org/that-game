@@ -8,10 +8,25 @@ using System;
 
 public partial struct MapGenData
 {
-    public enum Layer
+    public struct Layer : IEquatable<Layer>
     {
-        Floor = 0,
-        Obstructable
+        private readonly int layerIndex;
+
+        public static int MAX_LAYERS        { get; private set; } = 0;
+        private Layer(int index)
+        {
+            this.layerIndex = index;
+            Layer.MAX_LAYERS++;
+        }
+
+        public override int GetHashCode() { return this.layerIndex.GetHashCode(); }
+
+        public bool Equals(Layer other) { return this.layerIndex == other.layerIndex; }
+
+        public static implicit operator int(Layer layer) { return layer.layerIndex; }
+
+        public static Layer Floor           = new Layer(0);
+        public static Layer Obstructable    = new Layer(1);
     }
 }
 
@@ -379,8 +394,8 @@ public class MapGen_Layout : MonoBehaviour
             {
                 var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, -(chunkInfo.bounds.y + y), 0);
                 int i               = (y * chunkInfo.bounds.width) + x;
-                int floorModuleId   = chunkData[i][(int)MapGenData.Layer.Floor];
-                int obstrModuleId   = chunkData[i][(int)MapGenData.Layer.Obstructable];
+                int floorModuleId   = chunkData[i][MapGenData.Layer.Floor];
+                int obstrModuleId   = chunkData[i][MapGenData.Layer.Obstructable];
 
                 if(floorModuleId != -1)
                 {
@@ -411,7 +426,7 @@ public class MapGen_Layout : MonoBehaviour
             // path
             for(int i = 1; i < data.pathSteps.Length - 1; i++)
             {
-                s += data.pathSteps[i];
+                s += new Vector2Int(data.pathSteps[i].x, -data.pathSteps[i].y);
                 floor.SetTile((Vector3Int)s, this.tile);
             }
 
@@ -425,19 +440,33 @@ public class MapGen_Layout : MonoBehaviour
         }
         else if(typeof(Step3) == step.GetType())
         {
-            //tilemap.ClearAllTiles();
-            //for(int c = 0; c < data.pathSteps.Length + 1; c++)
-            //{
-            //    var chunkInfo = data.getChunkInfo(c);
-            //    var chunkData = data.getChunkData(c);
+            this.floor.ClearAllTiles();
+            this.obstr.ClearAllTiles();
 
-            //    for(int y = 0; y < chunkInfo.bounds.height; y++)
-            //    for(int x = 0; x < chunkInfo.bounds.width; x++)
-            //    {
-            //        int i = ((chunkInfo.bounds.height - y - 1) * chunkInfo.bounds.width) + x;
-            //        this.tilemap.SetTile(new Vector3Int(chunkInfo.bounds.x + x, chunkInfo.bounds.y + y, 0), this.generatorSettings.modules[chunkData[i].moduleId]);
-            //    }
-            //}
+            for(int c = 0; c < data.pathSteps.Length + 1; c++)
+            {
+                var chunkInfo = data.getChunkInfo(c);
+                var chunkData = data.getChunkData(c);
+
+                for(int y = 0; y < chunkInfo.bounds.height; y++)
+                for(int x = 0; x < chunkInfo.bounds.width; x++)
+                {
+                    var tilePos         = new Vector3Int(chunkInfo.bounds.x + x, -(chunkInfo.bounds.y + y), 0);
+                    int i               = (y * chunkInfo.bounds.width) + x;
+                    int floorModuleId   = chunkData[i][MapGenData.Layer.Floor];
+                    int obstrModuleId   = chunkData[i][MapGenData.Layer.Obstructable];
+
+                    if(floorModuleId != -1)
+                    {
+                        this.floor.SetTile(tilePos, this.generatorSettings.modules[floorModuleId]);
+                    }
+
+                    if(obstrModuleId != -1)
+                    {
+                        this.obstr.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
+                    }
+                }
+            }
         }
     }
 
