@@ -8,12 +8,29 @@ using Unity.Jobs;
 
 public struct MapChunkInfo
 {
+    public readonly int                     id;
     public RectInt                          bounds;
+
+    public int                              wallSize;
 
     public int                              dataIndex0;
     public int                              dataSize;
 
     public Vector2Int                       pathExit;
+
+    public MapChunkInfo(int chunkId)
+    {
+        this.id             = chunkId;
+
+        this.bounds         = default;
+        this.wallSize       = 0;
+
+        this.dataIndex0     = 0;
+        this.dataSize       = 0;
+
+        this.pathExit       = default;
+    }
+
 }
 
 public struct MapChunkData : System.IDisposable 
@@ -55,6 +72,19 @@ public partial struct MapGenData
 
     public int                              numMapChunks { get { return this.mapChunkInfo.Length; } }
 
+    public MapChunkInfo?                    getChunkInfo(Vector2Int position)
+    {
+        foreach(var chunkInfo in this.mapChunkInfo)
+        {
+            if(chunkInfo.bounds.Contains(position))
+            {
+                return chunkInfo;
+            }
+        }
+
+        return null;
+    }
+
     public MapChunkInfo                     getChunkInfo(int chunkId) { return this.mapChunkInfo[chunkId]; }
     public NativeSlice<MapChunkData>        getChunkData(int chunkId)
     {
@@ -91,6 +121,7 @@ public class Step2 : MapGenStep<Step2Settings>
             var chunkData   = this.mapChunkData.Slice(chunkInfo.dataIndex0, chunkInfo.dataSize);
 
             // draw walls
+            chunkInfo.wallSize = this.mapChunkWallSize;
             for(int y = 0; y < chunkInfo.bounds.height; y++)
             {
                 for(int x = 0; x < chunkInfo.bounds.width; x++)
@@ -98,26 +129,46 @@ public class Step2 : MapGenStep<Step2Settings>
                     var tileId  = (y * chunkInfo.bounds.width) + x;
                     var tile    = chunkData[tileId];
 
+                    // top-left
+                    if(x < this.mapChunkWallSize && y < this.mapChunkWallSize)
+                    {
+                        tile.constructionType = TileConstructionType.Obstructed;
+                    }
+                    // top-right
+                    else if(x > chunkInfo.bounds.width - this.mapChunkWallSize - 1 && y < this.mapChunkWallSize)
+                    {
+                        tile.constructionType = TileConstructionType.Obstructed;
+                    }
+                    // bottom-left
+                    else if(x < this.mapChunkWallSize && y > chunkInfo.bounds.height - this.mapChunkWallSize - 1)
+                    {
+                        tile.constructionType = TileConstructionType.Obstructed;
+                    }
+                    // bottom-right
+                    else if(x > chunkInfo.bounds.width - this.mapChunkWallSize - 1 && y > chunkInfo.bounds.height - this.mapChunkWallSize - 1)
+                    {
+                        tile.constructionType = TileConstructionType.Obstructed;
+                    }
                     // left wall
-                    if(x < this.mapChunkWallSize && from != Vector2Int.left && to != Vector2Int.left)
+                    else if(x < this.mapChunkWallSize && from != Vector2Int.left && to != Vector2Int.left)
                     {
                         tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // right wall
-                    if(x >= (chunkInfo.bounds.width - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
+                    else if(x >= (chunkInfo.bounds.width - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
                     {
                         tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // top wall
-                    if(y >= (chunkInfo.bounds.height - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
+                    else if(y >= (chunkInfo.bounds.height - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
                     {
                         tile.constructionType = TileConstructionType.Obstructed;
                     }
 
                     // bottom wall
-                    if(y < this.mapChunkWallSize && from != Vector2Int.down && to != Vector2Int.down)
+                    else if(y < this.mapChunkWallSize && from != Vector2Int.down && to != Vector2Int.down)
                     {
                         tile.constructionType = TileConstructionType.Obstructed;
                     }
@@ -224,7 +275,7 @@ public class Step2 : MapGenStep<Step2Settings>
 
         for(int chunkId = 0; chunkId < numChunks; chunkId++)
         {
-            var chunkInfo           = new MapChunkInfo();
+            var chunkInfo           = new MapChunkInfo(chunkId);
             var chunkWidth          = this.settings.mapChunkDimensions.x;
             var chunkHeight         = this.settings.mapChunkDimensions.y;
 
