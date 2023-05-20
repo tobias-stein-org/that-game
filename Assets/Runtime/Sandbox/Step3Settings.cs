@@ -18,7 +18,7 @@ public class Step3Settings : MapGenStepSettings
 
     public void OnValidate()
     {
-        this.numAttemptsToSolveMapChunk = Mathf.Max(1, this.numAttemptsToSolveMapChunk);
+        this.numAttemptsToSolveMapChunk = Mathf.Max(0, this.numAttemptsToSolveMapChunk);
         this.mapChunkObstructivness = Mathf.Clamp(this.mapChunkObstructivness, 1e-5f, 1.0f);
     }
 }
