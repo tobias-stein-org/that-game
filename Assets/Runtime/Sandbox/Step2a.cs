@@ -1,14 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Jobs;
 
 public class Step2a : MapGenStep<Step2aSettings>
 {
     public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
-        for(int i = 0; i < context.data.mapChunkInfo.Length; i++)
+        for(int i = 0; i < context.data.numMapChunks; i++)
         {
             var chunkInfo   = context.data.getChunkInfo(i);
             var chunkData   = context.data.getChunkData(i);
@@ -23,37 +25,123 @@ public class Step2a : MapGenStep<Step2aSettings>
                 from = lastChunkInfo.pathExit + offset;
             }
 
+             var tileId = (from.y * chunkInfo.bounds.width) + from.x;
+             var tileData = chunkData[tileId];
+
+             tileData.constructionType = TileConstructionType.Walkable;
+             chunkData[tileId] = tileData;
+
             Vector2Int to   = chunkInfo.pathExit;
 
-            Vector2Int diff = to - from;
+            var currentPos = from;
+            while(currentPos != to)
+            {
+                var options = this.walkOptions(currentPos, chunkInfo, chunkData);
+                currentPos = options[context.random.Next(0, options.Count)];
 
-            var sX = Enumerable.Range(0, Mathf.Abs(diff.x)).Select(s => Vector2Int.right    * (int)Mathf.Sign(diff.x)).ToList();
-            var sY = Enumerable.Range(0, Mathf.Abs(diff.y)).Select(s => Vector2Int.up       * (int)Mathf.Sign(diff.y)).ToList();
-
-            var spX = sX.Count / Mathf.Max(Mathf.FloorToInt((float)sX.Count * this.settings.pathConvolution), 1);
-            var spY = sY.Count / Mathf.Max(Mathf.FloorToInt((float)sY.Count * this.settings.pathConvolution), 1);
-
-            var pX = partition(sX, spX);
-            var pY = partition(sY, spY);
-
-            var shuffledSteps = pX.Concat(pY).OrderBy(_ => context.random.Next()).SelectMany(partition => partition).ToList();
-
-            var S = from;
-            foreach(var s in shuffledSteps)
-            { 
-                var tileId = (S.y * chunkInfo.bounds.width) + S.x;
-                var tileData = chunkData[tileId];
+                tileId = (currentPos.y * chunkInfo.bounds.width) + currentPos.x;
+                tileData = chunkData[tileId];
 
                 tileData.constructionType = TileConstructionType.Walkable;
                 chunkData[tileId] = tileData;
-
-                S += s;
             }
 
-            from = to;
+            var camefrom = i > 0 ? -context.data.pathSteps[i - 1]  : Vector2Int.zero;
+
+            if(camefrom == Vector2Int.up)
+            {
+                for(int x = chunkInfo.wallSize; x < chunkInfo.bounds.width - chunkInfo.wallSize; x++)
+                {
+                    if(x == from.x) { continue; }
+
+                    tileId = ((chunkInfo.bounds.height - 1) * chunkInfo.bounds.width) + x;
+                    tileData = chunkData[tileId];
+
+                    if(tileData.constructionType == TileConstructionType.Walkable)
+                    {
+                        tileData.constructionType = TileConstructionType.Undefined;
+                        chunkData[tileId] = tileData;
+                    }
+                }
+            }
+            else if(camefrom == Vector2Int.down)
+            {
+                for(int x = chunkInfo.wallSize; x < chunkInfo.bounds.width - chunkInfo.wallSize; x++)
+                {
+                    if(x == from.x) { continue; }
+
+                    tileId = x;
+                    tileData = chunkData[tileId];
+
+                    if(tileData.constructionType == TileConstructionType.Walkable)
+                    {
+                        tileData.constructionType = TileConstructionType.Undefined;
+                        chunkData[tileId] = tileData;
+                    }
+                }
+            }
+            else if(camefrom == Vector2Int.left)
+            {
+                for(int y = chunkInfo.wallSize; y < chunkInfo.bounds.height - chunkInfo.wallSize; y++)
+                {
+                    if(y == from.y) { continue; }
+
+                    tileId = (y * chunkInfo.bounds.width);
+                    tileData = chunkData[tileId];
+
+                    if(tileData.constructionType == TileConstructionType.Walkable)
+                    {
+                        tileData.constructionType = TileConstructionType.Undefined;
+                        chunkData[tileId] = tileData;
+                    }
+                }
+            }
+            else if(camefrom == Vector2Int.right)
+            {
+                for(int y = chunkInfo.wallSize; y < chunkInfo.bounds.height - chunkInfo.wallSize; y++)
+                {
+                    if(y == from.y) { continue; }
+
+                    tileId = (y * chunkInfo.bounds.width) + chunkInfo.bounds.width - 1;
+                    tileData = chunkData[tileId];
+
+                    if(tileData.constructionType == TileConstructionType.Walkable)
+                    {
+                        tileData.constructionType = TileConstructionType.Undefined;
+                        chunkData[tileId] = tileData;
+                    }
+                }
+            }
         }
 
         yield return new MapGenStepState {};
+    }
+
+    private List<Vector2Int> walkOptions(in Vector2Int current, in MapChunkInfo info, in NativeSlice<MapChunkData> data)
+    {
+        var options = new List<Vector2Int>(4);
+
+        // walk left
+        var walkLeft = current + Vector2Int.left;
+        if(walkLeft.x >= 0 && data[(walkLeft.y * info.bounds.width) + walkLeft.x].constructionType != TileConstructionType.Obstructed)
+            options.Add(walkLeft);
+
+        // walk right
+        var walkRight = current + Vector2Int.right;
+        if(walkRight.x < info.bounds.width && data[(walkRight.y * info.bounds.width) + walkRight.x].constructionType != TileConstructionType.Obstructed)
+            options.Add(walkRight);
+
+        // walk top
+        var walkTop = current + Vector2Int.up;
+        if(walkTop.y < info.bounds.height && data[(walkTop.y * info.bounds.width) + walkTop.x].constructionType != TileConstructionType.Obstructed)
+            options.Add(walkTop);
+
+        // walk bottom
+        var walkBottom = current + Vector2Int.down;
+        if(walkBottom.y >= 0 && data[(walkBottom.y * info.bounds.width) + walkBottom.x].constructionType != TileConstructionType.Obstructed)
+            options.Add(walkBottom);
+
+        return options;
     }
 
     static List<List<T>> partition<T>(List<T> source, int n)
