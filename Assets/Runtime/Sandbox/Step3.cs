@@ -768,11 +768,24 @@ public class Step3 : MapGenStep<Step3Settings>
         public  NativeSlice<MapChunkData>   chunkTop;
         [ReadOnly]
         public  NativeSlice<MapChunkData>   chunkBottom;
+        [ReadOnly]
+        public  NativeSlice<MapChunkData>   chunkTopLeft;
+        [ReadOnly]
+        public  NativeSlice<MapChunkData>   chunkTopRight;
+        [ReadOnly]
+        public  NativeSlice<MapChunkData>   chunkBottomLeft;
+        [ReadOnly]
+        public  NativeSlice<MapChunkData>   chunkBottomRight;
 
-        private bool hasLeft    { get { return this.chunkLeft.Length    > 0; } }
-        private bool hasRight   { get { return this.chunkRight.Length   > 0; } }
-        private bool hasTop     { get { return this.chunkTop.Length     > 0; } }
-        private bool hasBottom  { get { return this.chunkBottom.Length  > 0; } }
+        private bool hasLeft        { get { return this.chunkLeft.Length        > 0; } }
+        private bool hasRight       { get { return this.chunkRight.Length       > 0; } }
+        private bool hasTop         { get { return this.chunkTop.Length         > 0; } }
+        private bool hasBottom      { get { return this.chunkBottom.Length      > 0; } }
+
+        private bool hasTopLeft     { get { return this.chunkTopLeft.Length     > 0; } }
+        private bool hasTopRight    { get { return this.chunkTopRight.Length    > 0; } }
+        private bool hasBottomLeft  { get { return this.chunkBottomLeft.Length  > 0; } }
+        private bool hasBottomRight { get { return this.chunkBottomRight.Length > 0; } }
 
         public void Execute(int startIndex, int gridWidth)
         {
@@ -785,13 +798,29 @@ public class Step3 : MapGenStep<Step3Settings>
                     var cellId = (y * this.grid.width) + x;
 
                     // top-left
-                    if(x == 0                   && y == 0                    && this.hasLeft  && this.hasTop)    { this.grid[this.layer, cellId] = GridCell.Empty; continue; }
+                    if(x == 0                   && y == 0                    && this.hasLeft  && this.hasTop)
+                    {
+                        this.grid[this.layer, cellId] = this.hasTopLeft ? GridCell.Create((MapChunkData*)this.chunkTopLeft.GetUnsafeReadOnlyPtr(), this.layer) : GridCell.Empty;
+                        continue;
+                    }
                     // top-right
-                    if(x == this.grid.width - 1 && y == 0                    && this.hasRight && this.hasTop)    { this.grid[this.layer, cellId] = GridCell.Empty; continue; }
+                    if(x == this.grid.width - 1 && y == 0                    && this.hasRight && this.hasTop)
+                    {
+                        this.grid[this.layer, cellId] = this.hasTopRight ? GridCell.Create((MapChunkData*)this.chunkTopRight.GetUnsafeReadOnlyPtr(), this.layer) : GridCell.Empty;
+                        continue;
+                    }
                     // bottom-left
-                    if(x == 0                   && y == this.grid.height - 1 && this.hasLeft  && this.hasBottom) { this.grid[this.layer, cellId] = GridCell.Empty; continue; }
+                    if(x == 0                   && y == this.grid.height - 1 && this.hasLeft  && this.hasBottom)
+                    {
+                        this.grid[this.layer, cellId] = this.hasBottomLeft ? GridCell.Create((MapChunkData*)this.chunkBottomLeft.GetUnsafeReadOnlyPtr(), this.layer) : GridCell.Empty;
+                        continue;
+                    }
                     // bottom-right
-                    if(x == this.grid.width - 1 && y == this.grid.height - 1 && this.hasRight && this.hasBottom) { this.grid[this.layer, cellId] = GridCell.Empty; continue; }
+                    if(x == this.grid.width - 1 && y == this.grid.height - 1 && this.hasRight && this.hasBottom)
+                    {
+                        this.grid[this.layer, cellId] = this.hasBottomRight ? GridCell.Create((MapChunkData*)this.chunkBottomRight.GetUnsafeReadOnlyPtr(), this.layer) : GridCell.Empty;
+                        continue;
+                    }
 
                     // chunk adjusted tile (x,y) coord
                     var cx                              = this.hasLeft ? x - 1 : x;
@@ -1364,16 +1393,25 @@ public class Step3 : MapGenStep<Step3Settings>
         var chunkInfo                               = context.data.getChunkInfo(chunkId);
         var chunkData                               = context.data.getChunkData(chunkId);
         
-        var chunkInfoLeft                           = context.data.getChunkInfo(chunkInfo.bounds.position - new Vector2Int(chunkInfo.bounds.width, 0));
+        var chunkInfoLeft                           = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, 0));
         var chunkInfoRight                          = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, 0));
-        var chunkInfoTop                            = context.data.getChunkInfo(chunkInfo.bounds.position - new Vector2Int(0, chunkInfo.bounds.height));
+        var chunkInfoTop                            = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(0, -chunkInfo.bounds.height));
         var chunkInfoBottom                         = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(0, chunkInfo.bounds.height));
 
+        var chunkInfoTopLeft                        = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, -chunkInfo.bounds.height));
+        var chunkInfoTopRight                       = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, -chunkInfo.bounds.height));
+        var chunkInfoBottomLeft                     = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, chunkInfo.bounds.height));
+        var chunkInfoBottomRight                    = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, chunkInfo.bounds.height));
 
+        // note: this will ensure we only use already generated neighbouring cells
         if(chunkInfoLeft.HasValue && chunkInfoLeft.Value.id > chunkInfo.id) { chunkInfoLeft = null; }
         if(chunkInfoRight.HasValue && chunkInfoRight.Value.id > chunkInfo.id) { chunkInfoRight = null; }
         if(chunkInfoTop.HasValue && chunkInfoTop.Value.id > chunkInfo.id) { chunkInfoTop = null; }
         if(chunkInfoBottom.HasValue && chunkInfoBottom.Value.id > chunkInfo.id) { chunkInfoBottom = null; }
+        if(chunkInfoTopLeft.HasValue && chunkInfoTopLeft.Value.id > chunkInfo.id) { chunkInfoTopLeft = null; }
+        if(chunkInfoTopRight.HasValue && chunkInfoTopRight.Value.id > chunkInfo.id) { chunkInfoTopRight = null; }
+        if(chunkInfoBottomLeft.HasValue && chunkInfoBottomLeft.Value.id > chunkInfo.id) { chunkInfoBottomLeft = null; }
+        if(chunkInfoBottomRight.HasValue && chunkInfoBottomRight.Value.id > chunkInfo.id) { chunkInfoBottomRight = null; }
 
         var gridWidth                               = chunkInfo.bounds.width;
         var gridHeight                              = chunkInfo.bounds.height;
@@ -1412,7 +1450,20 @@ public class Step3 : MapGenStep<Step3Settings>
                 chunkBottom                         = chunkInfoBottom.HasValue
                     // get slice of the top border of the bottom neighbour map chunk
                     ? context.data.mapChunkData.Slice(chunkInfoBottom.Value.dataIndex0, chunkInfoBottom.Value.bounds.width)
-                    : chunkData.Slice(0, 0)
+                    : chunkData.Slice(0, 0),
+
+                chunkTopLeft                        = chunkInfoTopLeft.HasValue
+                    ? context.data.mapChunkData.Slice(chunkInfoTopLeft.Value.dataIndex0 + chunkInfoTopLeft.Value.dataSize - 1, 1)
+                    : chunkData.Slice(0, 0),
+                chunkTopRight                       = chunkInfoTopRight.HasValue
+                    ? context.data.mapChunkData.Slice(chunkInfoTopRight.Value.dataIndex0 + chunkInfoTopRight.Value.dataSize - chunkInfoTopRight.Value.bounds.width, 1)
+                    : chunkData.Slice(0, 0),
+                chunkBottomLeft                     = chunkInfoBottomLeft.HasValue
+                    ? context.data.mapChunkData.Slice(chunkInfoBottomLeft.Value.dataIndex0 + chunkInfoBottomLeft.Value.bounds.width - 1, 1)
+                    : chunkData.Slice(0, 0),
+                chunkBottomRight                    = chunkInfoBottomRight.HasValue
+                    ? context.data.mapChunkData.Slice(chunkInfoBottomRight.Value.dataIndex0, 1)
+                    : chunkData.Slice(0, 0),
 
             };
 
