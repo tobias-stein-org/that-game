@@ -17,8 +17,8 @@ public class Step2Settings : MapGenStepSettings
 
     public void OnValidate()
     {
-        this.mapChunkDimensions.x   = Mathf.Max(3, this.mapChunkDimensions.x);
-        this.mapChunkDimensions.y   = Mathf.Max(3, this.mapChunkDimensions.y);
+        this.mapChunkDimensions.x   = Mathf.Max(5, this.mapChunkDimensions.x);
+        this.mapChunkDimensions.y   = Mathf.Max(5, this.mapChunkDimensions.y);
 
         var minSideSize             = Mathf.Min(this.mapChunkDimensions.x, this.mapChunkDimensions.y);
         var maxWallSize             = Mathf.FloorToInt((float)minSideSize / 2.0f);

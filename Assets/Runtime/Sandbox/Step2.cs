@@ -182,7 +182,7 @@ public class Step2 : MapGenStep<Step2Settings>
             var displacement = this.pathDisplacements[chunkId];
             if(to == Vector2Int.left)
             {
-                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * (this.mapChunkWallSize + 1)) - this.mapPathThickness) * displacement) + this.mapChunkWallSize + 1;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
                     var tileId = y * chunkInfo.bounds.width;
@@ -196,7 +196,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.right)
             {
-                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.height - (2 * (this.mapChunkWallSize + 1)) - this.mapPathThickness) * displacement) + this.mapChunkWallSize + 1;
                 for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                 {
                     var tileId = (y * chunkInfo.bounds.width) + (chunkInfo.bounds.width - 1);
@@ -210,7 +210,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.up)
             {
-                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * (this.mapChunkWallSize + 1)) - this.mapPathThickness) * displacement) + this.mapChunkWallSize + 1;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
                     var tileId = ((chunkInfo.bounds.height - 1) * chunkInfo.bounds.width) + x;
@@ -224,7 +224,7 @@ public class Step2 : MapGenStep<Step2Settings>
             }
             else if(to == Vector2Int.down)
             {
-                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * this.mapChunkWallSize) - this.mapPathThickness) * displacement) + this.mapChunkWallSize;
+                var pathStart = Mathf.RoundToInt((float)(chunkInfo.bounds.width - (2 * (this.mapChunkWallSize + 1)) - this.mapPathThickness) * displacement) + this.mapChunkWallSize + 1;
                 for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                 {
                     var tileId = x;
