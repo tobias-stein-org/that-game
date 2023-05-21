@@ -207,16 +207,29 @@ public class Step3 : MapGenStep<Step3Settings>
             this.state.Clear();
         }
 
+        // BIT 1
         public bool hasSolution() { return this.state.IsSet(0); }
         public void hasSolution(bool value) { this.state.Set(0, value); }
 
+        // BIT 2
         public bool hasFailed() { return this.state.IsSet(1); }
-        public void hasFailed(bool value) { this.state.Set(1, value); }
+        public void hasFailed(bool value, bool unrecoverable = false)
+        {
+            this.state.Set(1, value);
+            this.state.Set(3, unrecoverable);
+        }
 
+        // BIT 3
         public bool allCollapsed() { return this.state.IsSet(2); }
         public void allCollapsed(bool value) { this.state.Set(2, value); }
-       
+
+        // BIT 4
+        public bool isRecoverable() { return !this.state.IsSet(3); }
+        public void isRecoverable(bool value) { this.state.Set(3, !value); }
+
+        // BIT 16-32
         public int  numFails() { return (int)this.state.GetBits(16, 16); }
+
         public void fail()
         {
             this.hasFailed(true);
