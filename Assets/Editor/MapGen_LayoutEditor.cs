@@ -2,12 +2,23 @@ using UnityEngine;
 using UnityEditor;
 using Unity.Collections;
 using Unity.Entities.UniversalDelegates;
+using UnityEditor.Rendering;
 
 [CustomEditor(typeof(MapGen_Layout))]
 public class MapGen_LayoutEditor : Editor
 {
     void OnSceneGUI()
     {
+        var camCenter = SceneView.lastActiveSceneView.camera.transform.position * 1f/0.16f;
+
+        var viewRect  = new RectInt
+        {
+            xMin = Mathf.FloorToInt(camCenter.x - 50f),
+            yMin = Mathf.FloorToInt(-camCenter.y - 50f),
+            xMax = Mathf.FloorToInt(camCenter.x + 50f),
+            yMax = Mathf.FloorToInt(-camCenter.y + 50f),
+        };
+
         var target = this.target as MapGen_Layout;
         if(Application.isPlaying && target != null && target.executor != null && !target.executor.isBusy)
         {
@@ -16,8 +27,11 @@ public class MapGen_LayoutEditor : Editor
 
             for(int c = 0; c < data.numMapChunks; c++)
             {
+
                 var chunkInfo = data.getChunkInfo(c);
                 var chunkData = data.getChunkData(c);
+
+                if(!viewRect.Contains(chunkInfo.bounds.min) && !viewRect.Contains(chunkInfo.bounds.max)) { continue; }
 
                 this.drawMapChunkId(chunkInfo, c);
 
@@ -26,12 +40,18 @@ public class MapGen_LayoutEditor : Editor
                     for(int y = 0; y<chunkInfo.bounds.height; y++)
                     for(int x = 0; x<chunkInfo.bounds.width; x++)
                     {
+                        if(!viewRect.Contains(new Vector2Int(x, y))) { continue; }
+
                         int i = (y * chunkInfo.bounds.width) + x;
 
                         var cType = chunkData[i].constructionType;
 
                             //if(chunkData[i].obstrModuleId != -1)
                             //    Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.66f, 0) * 0.16f, $"{target.generatorSettings.modules[chunkData[i].obstrModuleId].name} [T: {target.generatorSettings.modules[chunkData[i].obstrModuleId].constructionType.ToString()[0]}, ID: {chunkData[i].obstrModuleId}]");
+
+                        //if(chunkData[i][MapGenData.Layer.Floor] != -1)
+                        //    Handles.Label(new Vector3(chunkInfo.bounds.x + x + 0.1f, -(chunkInfo.bounds.y + y) + 0.66f, 0) * 0.16f, $"{target.generatorSettings.modules[chunkData[i][MapGenData.Layer.Floor]].name}");
+
 
                         var prevColor = GUI.color;
                         switch(cType)
