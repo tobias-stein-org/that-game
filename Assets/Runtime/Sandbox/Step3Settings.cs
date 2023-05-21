@@ -16,9 +16,13 @@ public class Step3Settings : MapGenStepSettings
     [Range(1e-5f, 1.0f)]
     public float            mapChunkObstructivness = 0.05f;
 
+    [Range(1, 100)]
+    public int              numBacktrackingSteps    = 2;
+
     public void OnValidate()
     {
         this.numAttemptsToSolveMapChunk = Mathf.Max(0, this.numAttemptsToSolveMapChunk);
         this.mapChunkObstructivness = Mathf.Clamp(this.mapChunkObstructivness, 1e-5f, 1.0f);
+        this.numBacktrackingSteps = Mathf.Clamp(this.numBacktrackingSteps, 1, 100);
     }
 }
