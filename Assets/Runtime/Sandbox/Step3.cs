@@ -1471,6 +1471,7 @@ public class Step3 : MapGenStep<Step3Settings>
     private NativeReference<int>                    minEntropyCell;
     private NativeArray<int>                        stack;
 
+    private NativeHashSet<Vector2Int>               processedMapChunks;
 
     public override IEnumerator<MapGenStepState> execute(MapGeneratorSettings context)
     {
@@ -1490,6 +1491,12 @@ public class Step3 : MapGenStep<Step3Settings>
 
         for(int chunkId = 0; chunkId < context.data.numMapChunks; chunkId++)
         {
+            var chunkInfo = context.data.getChunkInfo(chunkId);
+            if(this.processedMapChunks.Contains(chunkInfo.bounds.position)) { continue; }
+            this.processedMapChunks.Add(chunkInfo.bounds.position);
+
+
+
             this.state.Value.reset();
 
             var initGrid = this.initializeGrid(chunkId, context);
@@ -1877,9 +1884,10 @@ public class Step3 : MapGenStep<Step3Settings>
     public  override void initialize(MapGeneratorSettings context)
     {
         this.state                      = new NativeReference<Step3State>(Step3State.Create(), Allocator.Persistent);
-        this.modules                    = new NativeArray<ModuleMeta>(context.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
+        this.modules                    = new NativeArray<ModuleMeta>(this.settings.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
         this.minEntropyQueue            = new NativeQueue<int>(Allocator.Persistent);
         this.minEntropyCell             = new NativeReference<int>(Allocator.Persistent);
+        this.processedMapChunks         = new NativeHashSet<Vector2Int>(context.data.numMapChunks, Allocator.Persistent);
     }
 
     public  override void release(MapGeneratorSettings context)
@@ -1895,6 +1903,7 @@ public class Step3 : MapGenStep<Step3Settings>
             this.modules.Dispose();
         }
 
+        if(this.processedMapChunks.IsCreated) this.processedMapChunks.Dispose();
         if(this.weightsBuffer.IsCreated) this.weightsBuffer.Dispose();
         if(this.grid.IsCreated) this.grid.Dispose();
         if(this.constraints.IsCreated) this.constraints.Dispose();

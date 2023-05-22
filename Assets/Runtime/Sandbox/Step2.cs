@@ -238,7 +238,57 @@ public class Step2 : MapGenStep<Step2Settings>
             }
 
             // update chunk info
-            this.mapChunkInfo[chunkId] = chunkInfo;
+            this.mapChunkInfo[chunkId]  = chunkInfo;
+        }
+    }
+
+    private struct MergeOverlappingChunksJob : IJob
+    {
+        public NativeArray<MapChunkData>            mapChunkData;
+        public NativeArray<MapChunkInfo>            mapChunkInfo;
+
+        public void Execute()
+        {
+            for(int chunkA = 0; chunkA < this.mapChunkInfo.Length; chunkA++)
+            {
+                for(int chunkB = chunkA; chunkB < this.mapChunkInfo.Length; chunkB++)
+                {
+                    if(chunkA == chunkB) { continue; }
+
+                    var infoA = this.mapChunkInfo[chunkA];
+                    var infoB = this.mapChunkInfo[chunkB];
+
+                    // two different chunks overlap
+                    if(infoA.bounds.position == infoB.bounds.position)
+                    {
+                        var dataA = this.mapChunkData.Slice(infoA.dataIndex0, infoA.dataSize);
+                        var dataB = this.mapChunkData.Slice(infoB.dataIndex0, infoB.dataSize);
+
+                        // merge all walkable tiles from chunkB with chunkA
+                        for(int y = 0; y < infoA.bounds.height; y++)
+                        for(int x = 0; x < infoA.bounds.height; x++)
+                        {
+                            var tileId = (y * infoA.bounds.width) + x;
+                            var tile = dataA[tileId];
+
+                            if(dataB[tileId].constructionType == TileConstructionType.Walkable)
+                            {
+                                tile.constructionType = TileConstructionType.Walkable;
+                            }
+
+                            if(dataB[tileId].constructionType == TileConstructionType.Undefined && dataA[tileId].constructionType == TileConstructionType.Obstructed)
+                            {
+                                tile.constructionType = TileConstructionType.Undefined;
+                            }
+
+                            dataA[tileId] = tile;
+                        }
+
+                        // replice merge result to chunkB
+                        dataB.CopyFrom(dataA);
+                    }
+                }
+            }
         }
     }
 
@@ -246,7 +296,7 @@ public class Step2 : MapGenStep<Step2Settings>
     {
         var numChunks           = context.data.numMapChunks;
         
-
+        // pre-compute random values, since we cannot pass mamanged Random instance to job
         var pathDisplacements   = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)context.random.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
 
         var job                 = new CreateMapChunkMaskJob
@@ -260,7 +310,16 @@ public class Step2 : MapGenStep<Step2Settings>
 
         };
 
-        context.schedule(job, numChunks, 8);
+        var dependsOn = context.schedule(job, numChunks, 8);
+
+        var mergeJob            = new MergeOverlappingChunksJob
+        {
+            mapChunkInfo        = context.data.mapChunkInfo,
+            mapChunkData        = context.data.mapChunkData,
+        };
+
+        context.schedule(mergeJob, dependsOn);
+
         yield return new MapGenStepState {};
 
         pathDisplacements.Dispose();
