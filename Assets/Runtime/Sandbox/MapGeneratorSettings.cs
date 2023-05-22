@@ -8,9 +8,6 @@ public class MapGeneratorSettings : ScriptableObject
 {
     public  int             seed    = 0;
 
-    public List<Module>     modules = new List<Module>();
-
-
     /// <summary>
     /// Called at runtime to initialize the runtime settings.
     /// </summary>

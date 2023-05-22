@@ -5,6 +5,8 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "MapGen/Step3")]
 public class Step3Settings : MapGenStepSettings<Step3>
 {
+    public List<Module>     modules = new List<Module>();
+
     public int              numAttemptsToSolveMapChunk = 3;
 
     [Range(0.0f, 100.0f)]
