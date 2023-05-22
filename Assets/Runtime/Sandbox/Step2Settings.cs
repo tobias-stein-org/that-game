@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "MapGen/Step2")]
-public class Step2Settings : MapGenStepSettings
+public class Step2Settings : MapGenStepSettings<Step2>
 {
     public Vector2Int   mapChunkDimensions          = new Vector2Int(20, 20);
 

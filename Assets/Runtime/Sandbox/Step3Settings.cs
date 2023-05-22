@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "MapGen/Step3")]
-public class Step3Settings : MapGenStepSettings
+public class Step3Settings : MapGenStepSettings<Step3>
 {
     public int              numAttemptsToSolveMapChunk = 3;
 

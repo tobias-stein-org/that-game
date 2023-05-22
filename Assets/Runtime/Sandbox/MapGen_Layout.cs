@@ -71,25 +71,34 @@ public class MapGeneratorState
 
 public interface IMapGenStep : System.IDisposable
 {
+    void configure(in MapGenStepSettingsBase settings);
+
     IEnumerator<MapGenStepState> execute(MapGeneratorSettings context);
     void initialize(MapGeneratorSettings context);
     void release(MapGeneratorSettings context);
 }
 
-public class MapGenStepSettings: ScriptableObject
+public abstract class MapGenStepSettingsBase : ScriptableObject
 {
+    public abstract System.Type MapGenStepType { get; }
+}
+
+public class MapGenStepSettings<TStep> : MapGenStepSettingsBase
+{
+    public override System.Type MapGenStepType { get { return typeof(TStep); } }
 }
 
 public abstract class MapGenStep<TStepSettings> : IMapGenStep
+    where TStepSettings : MapGenStepSettingsBase
 {
     protected TStepSettings settings;
 
     public MapGenStep()
     {}
 
-    public virtual void configure(in TStepSettings settings)
+    public virtual void configure(in MapGenStepSettingsBase settings)
     {
-        this.settings = settings;
+        this.settings = (TStepSettings)settings;
     }
    
     public abstract IEnumerator<MapGenStepState> execute(MapGeneratorSettings context);
@@ -139,14 +148,14 @@ public class MapGenPipelineBuilder
 
     public MapGenPipelineBuilder add<TStep, TStepSettings>(in TStepSettings settings = null)
         where TStep : MapGenStep<TStepSettings>, new()
-        where TStepSettings : MapGenStepSettings
+        where TStepSettings : MapGenStepSettingsBase
     {
         return this.add(new TStep(), settings);
     }
 
     public MapGenPipelineBuilder add<TStep, TStepSettings>(TStep step, TStepSettings settings = null)
         where TStep : MapGenStep<TStepSettings>, new()
-        where TStepSettings : MapGenStepSettings
+        where TStepSettings : MapGenStepSettingsBase
     {
         if(settings)
         {
@@ -158,9 +167,19 @@ public class MapGenPipelineBuilder
         return this;
     }
 
+    public MapGenPipelineBuilder add<TStepSettings>(TStepSettings settings)
+        where TStepSettings : MapGenStepSettingsBase
+    {
+        
+        var step = (IMapGenStep)Activator.CreateInstance(settings.MapGenStepType);
+        step.configure(settings);
+        this.steps.Add(step);
+
+        return this;
+    }
+
     public MapGenPipeline build() { return new MapGenPipeline(this.steps); }
 }
-
 
 public class MapGenerator : IEnumerator<MapGeneratorState>
 {
@@ -324,7 +343,6 @@ public class MapGenerator : IEnumerator<MapGeneratorState>
     }
 }
 
-
 public class MapGen_Layout : MonoBehaviour
 {
     public Tilemap          floor, obstr;
@@ -356,9 +374,14 @@ public class MapGen_Layout : MonoBehaviour
 
         var pipeline = MapGenPipeline
                 .create()
-                    .add<Step1, Step1Settings>(this.step1Settings)
-                    .add<Step2, Step2Settings>(this.step2Settings)
-                    .add<Step2a, Step2aSettings>(this.step2aSettings)
+                    //.add<Step1, Step1Settings>(this.step1Settings)
+                    //.add<Step2, Step2Settings>(this.step2Settings)
+                    //.add<Step2a, Step2aSettings>(this.step2aSettings)
+
+                    .add(this.step1Settings)
+                    .add(this.step2Settings)
+                    .add(this.step2aSettings)
+
                     //.add<Step3, Step3Settings>(this.step3Settings)
                     .add(step3, this.step3Settings)
                 .build();
@@ -399,12 +422,12 @@ public class MapGen_Layout : MonoBehaviour
 
                 if(floorModuleId != -1)
                 {
-                    this.floor.SetTile(tilePos, this.generatorSettings.modules[floorModuleId]);
+                    this.floor.SetTile(tilePos, this.step3Settings.modules[floorModuleId]);
                 }
 
                 if(obstrModuleId != -1)
                 {
-                    this.obstr.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
+                    this.obstr.SetTile(tilePos, this.step3Settings.modules[obstrModuleId]);
                 }
             }
         }
@@ -458,12 +481,12 @@ public class MapGen_Layout : MonoBehaviour
 
                     if(floorModuleId != -1)
                     {
-                        this.floor.SetTile(tilePos, this.generatorSettings.modules[floorModuleId]);
+                        this.floor.SetTile(tilePos, this.step3Settings.modules[floorModuleId]);
                     }
 
                     if(obstrModuleId != -1)
                     {
-                        this.obstr.SetTile(tilePos, this.generatorSettings.modules[obstrModuleId]);
+                        this.obstr.SetTile(tilePos, this.step3Settings.modules[obstrModuleId]);
                     }
                 }
             }

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 [CreateAssetMenu(menuName = "MapGen/Step1")]
-public class Step1Settings : MapGenStepSettings
+public class Step1Settings : MapGenStepSettings<Step1>
 {
     public Vector2Int   pathStart;
     public int          pathLength;
