@@ -7,7 +7,7 @@ namespace tg.level
 {
     /// <summary>
     /// A commonly shared data object between level generation steps. Each step may add its own
-    /// relevant level data to the partial struct and can access data declared by other steps.
+    /// relevant level data to the partial struct and can access data declared by other steps. 
     /// </summary>
     public partial struct LevelData
     {
