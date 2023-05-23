@@ -24,6 +24,11 @@ namespace tg.level.generator
         public  int                                 maxFrameProcessTimeMs   = 5;
 
         /// <summary>
+        /// Available tiles that can be used to construct a level.
+        /// </summary>
+        public List<Module>                         modules                 = new List<Module>();
+
+        /// <summary>
         /// Generator steps. Order matters!
         /// </summary>
         public  List<LevelGeneratorStepSettings>    steps;

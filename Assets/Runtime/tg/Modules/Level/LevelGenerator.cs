@@ -18,6 +18,7 @@ namespace tg.level
 
         protected override void OnStartRunning()
         {
+            // look for an initially placed LevelGeneratorData component, if it exists fire-up the generator
             if(SystemAPI.ManagedAPI.TryGetSingleton<LevelGeneratorData>(out LevelGeneratorData data))
             {
                 this.generator = new Generator(data.settings);
@@ -31,11 +32,17 @@ namespace tg.level
             }
         }
 
+        /// <summary>
+        /// As long as the previously started generator isn't finsihed, update it.
+        /// </summary>
         protected override void OnUpdate()
         {
             this.executor?.MoveNext();
         }
 
+        /// <summary>
+        /// Automatically dispose of any active generator. This includes also any allocated memory for LevelData.
+        /// </summary>
         protected override void OnDestroy()
         {
             this.generator?.Dispose();

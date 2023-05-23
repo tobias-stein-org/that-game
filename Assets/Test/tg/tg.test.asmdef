@@ -1,0 +1,18 @@
+{
+    "name": "tg.test",
+    "rootNamespace": "",
+    "references": [
+        "GUID:922463416228d412ab0a4e2ebe318ccd"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

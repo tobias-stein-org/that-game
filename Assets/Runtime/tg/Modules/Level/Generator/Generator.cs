@@ -13,7 +13,7 @@ namespace tg.level.generator
 
         public class Context
         {
-            private readonly GeneratorSettings  settings;
+            public  readonly GeneratorSettings  settings;
 
             public  System.Random               random  { get; private set; }
 
@@ -138,11 +138,11 @@ namespace tg.level.generator
 
             // update current pipeline step
             var maxSubStepDuration  = TimeSpan.FromMilliseconds(this.frameTimeBudget);
-            var t0                  = DateTime.Now;
 
             // note: its imperical that we check 'isBudy' first otherwise we might run into a "race condition" of previously scheduled async jobs
             while(this.isBusy || pipelineExecutor.MoveNext())
             {
+                var t0                  = DateTime.Now;
                 while(pipelineExecutor.Current != null && DateTime.Now - t0 < maxSubStepDuration)
                 {
 

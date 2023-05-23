@@ -12,7 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32d8008b8bfbb46e9894b48cfd938ac7, type: 3}
   m_Name: GeneratorSettings
   m_EditorClassIdentifier: 
-  seed: 0
+  seed: 5
   maxFrameProcessTimeMs: 5
+  modules:
+  - {fileID: 11400000, guid: 81819a43f9ec5436bbdcca28892369b8, type: 2}
+  - {fileID: 11400000, guid: e9c784ba9ebc742dc8b338c8d9aff966, type: 2}
   steps:
   - {fileID: 11400000, guid: 422f80dab8b564c1c8fa6f7f5d3b0394, type: 2}
+  - {fileID: 11400000, guid: efbaebc853690487a97a00fed9a646ab, type: 2}
+  - {fileID: 11400000, guid: 4d737943cb2774f88a234eb6ca8344ec, type: 2}
+  - {fileID: 11400000, guid: 73e532a214934426f873cbf5b2affd63, type: 2}
