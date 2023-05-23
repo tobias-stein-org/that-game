@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CreateMazeStep
   m_EditorClassIdentifier: 
   pathStart: {x: 0, y: 0}
-  pathLength: 10
+  pathLength: 15
   pathStraightness: 0.14999999
   pathCurvature: 0.7
   pathDensity: 0.14999999

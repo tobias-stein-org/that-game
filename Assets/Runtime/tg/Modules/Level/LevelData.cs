@@ -46,6 +46,7 @@ namespace tg.level
             public int CompareTo(Layer other) { return this.index.CompareTo(other.index); }
 
             public static implicit operator int(Layer layer) { return layer.index; }
+            public static implicit operator Layer(int id) { return new Layer(id); }
 
             #endregion
         }

@@ -22,7 +22,30 @@ namespace tg.level
             if(SystemAPI.ManagedAPI.TryGetSingleton<LevelGeneratorData>(out LevelGeneratorData data))
             {
                 this.generator = new Generator(data.settings);
-                generator.onLevelGeneratorFinished += (in LevelData levelData) => { this.Enabled = false; };
+                //generator.pipeline.onStepUpdated += (in LevelGeneratorStep step, in LevelData data) =>
+                //{
+                //    if(step.GetType() == typeof(generator.step.RenderMazeStep))
+                //    {
+                //        var e = this.EntityManager.CreateEntity(typeof(RenderLevelData));
+                //        this.EntityManager.AddComponentData<RenderLevelData>(e, new RenderLevelData
+                //        {
+                //            levelData   = data,
+                //            modules     = this.generator.context.settings.modules
+                //        });
+                //    }
+                //};
+
+                generator.onLevelGeneratorFinished += (in LevelData levelData) =>
+                {
+                    var e = this.EntityManager.CreateEntity(typeof(RenderLevelData));
+                    this.EntityManager.AddComponentData<RenderLevelData>(e, new RenderLevelData
+                    {
+                        levelData   = levelData,
+                        modules     = this.generator.context.settings.modules
+                    });
+
+                    this.Enabled = false;
+                };
 
                 this.executor = generator.execute();
             }
@@ -49,12 +72,14 @@ namespace tg.level
         }
     }
 
-    #region Component authoring
+    
 
     public class LevelGeneratorData : IComponentData
     {
         public GeneratorSettings    settings;
     }
+
+    #region Component authoring
 
     public class LevelGenerator : MonoBehaviour
     {

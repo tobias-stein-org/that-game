@@ -103,7 +103,7 @@ namespace tg.level.generator
         #endregion
 
         [NonSerialized]
-        private readonly Context                        context;
+        public  readonly Context                        context;
 
         [NonSerialized]
         public  readonly Pipeline                       pipeline;
