@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32d8008b8bfbb46e9894b48cfd938ac7, type: 3}
+  m_Name: GeneratorSettings
+  m_EditorClassIdentifier: 
+  seed: 5
+  maxFrameProcessTimeMs: 5
+  modules:
+  - {fileID: 11400000, guid: 54ddf53b13e2b40c789c113231427545, type: 2}
+  - {fileID: 11400000, guid: 5b53d3c996d114f12a98124bc3127108, type: 2}
+  steps:
+  - {fileID: 11400000, guid: 422f80dab8b564c1c8fa6f7f5d3b0394, type: 2}
+  - {fileID: 11400000, guid: efbaebc853690487a97a00fed9a646ab, type: 2}
+  - {fileID: 11400000, guid: 4d737943cb2774f88a234eb6ca8344ec, type: 2}
+  - {fileID: 11400000, guid: 73e532a214934426f873cbf5b2affd63, type: 2}
