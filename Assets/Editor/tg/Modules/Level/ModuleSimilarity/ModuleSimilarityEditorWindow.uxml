@@ -4,7 +4,7 @@
         <ui:VisualElement name="panel" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-wrap: nowrap; align-items: flex-start;">
             <uie:ObjectField label="Module A" name="moduleA" style="height: auto;" />
             <uie:ObjectField label="Module B" name="moduleB" style="height: auto;" />
-            <ui:EnumField label="Sim. Score Method" type="tg.editor.level.ModuleSimilarityEditorWindow+SimScoreFunction, Assembly-CSharp-Editor" value="PCT" name="simFunc" />
+            <ui:EnumField label="Sim. Score Method" type="tg.editor.level.ModuleSimilarityEditorWindow+SimScoreFunction, tg.editor" name="simFunc" />
             <ui:Slider picking-mode="Ignore" label="Percentile" value="95" high-value="100" page-size="0" inverted="false" show-input-field="true" name="percentile" style="height: 34px; width: 252px;" />
             <ui:SliderInt picking-mode="Ignore" label="Blur Size" value="3" high-value="16" name="blurSize" show-input-field="true" style="width: 252px;" />
             <ui:Slider picking-mode="Ignore" label="Blur Strength" value="1" high-value="16" name="blurStrength" show-input-field="true" style="flex-grow: 0; height: 38px; width: 251px;" />
