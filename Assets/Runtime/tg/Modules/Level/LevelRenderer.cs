@@ -29,16 +29,15 @@ namespace tg.level
                 destroy.Add(entity);
 
                 if(this.renderData == null) { continue; }
-                foreach(var chunkInfo in data.levelData.chunkInfo)
+                for(int chunkId = 0; chunkId < data.levelData.numChunks; chunkId++)
                 {
-                    var chunkData = data.levelData.getChunkData(chunkInfo.id);
-
-                    for(int y = 0; y < chunkInfo.bounds.height; y++)
-                    for(int x = 0; x < chunkInfo.bounds.width; x++)
+                    var chunk = data.levelData.getChunk(chunkId);
+                    for(int y = 0; y < chunk.bounds.height; y++)
+                    for(int x = 0; x < chunk.bounds.width; x++)
                     {
-                        var chunkTileId = (y * chunkInfo.bounds.width) + x;
-                        var chunkTile   = chunkData[chunkTileId];
-                        var tilePos     = new Vector3Int(chunkInfo.bounds.x + x, -(chunkInfo.bounds.y + y), 0);
+                        var chunkTileId = (y * chunk.bounds.width) + x;
+                        var chunkTile   = chunk.data[chunkTileId];
+                        var tilePos     = new Vector3Int(chunk.bounds.x + x, -(chunk.bounds.y + y), 0);
                         foreach(var (layer, tilemap) in this.renderData.layers)
                         {
                             var module = chunkTile[layer].id;

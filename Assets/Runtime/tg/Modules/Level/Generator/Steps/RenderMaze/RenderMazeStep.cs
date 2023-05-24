@@ -732,10 +732,7 @@ namespace tg.level
                 public  LevelData.Layer                 layer;
 
                 [ReadOnly]
-                public  NativeSlice<LevelData.Tile>     chunkData;
-
-                [ReadOnly]
-                public  LevelData.ChunkInfo             chunkInfo;
+                public  LevelData.Chunk                 chunk;
 
                 [ReadOnly]
                 public  NativeSlice<LevelData.Tile>     chunkLeft;
@@ -806,14 +803,14 @@ namespace tg.level
                             // left
                             if(this.hasLeft             && x == 0)
                             {
-                                this.grid[this.layer, cellId]   = GridCell.Create((LevelData.Tile*)this.chunkLeft.GetUnsafeReadOnlyPtr() + ((cy * this.chunkInfo.bounds.width) + this.chunkInfo.bounds.width - 1), this.layer);
+                                this.grid[this.layer, cellId]   = GridCell.Create((LevelData.Tile*)this.chunkLeft.GetUnsafeReadOnlyPtr() + ((cy * this.chunk.bounds.width) + this.chunk.bounds.width - 1), this.layer);
                                 continue;
                             }
 
                             // right
                             if(this.hasRight            && x == this.grid.width - 1)
                             {
-                                this.grid[this.layer, cellId]   = GridCell.Create((LevelData.Tile*)this.chunkRight.GetUnsafeReadOnlyPtr() + (cy * this.chunkInfo.bounds.width), this.layer);
+                                this.grid[this.layer, cellId]   = GridCell.Create((LevelData.Tile*)this.chunkRight.GetUnsafeReadOnlyPtr() + (cy * this.chunk.bounds.width), this.layer);
                                 continue;
                             }
 
@@ -832,8 +829,8 @@ namespace tg.level
                             }
 
                             // else process current chunk data
-                            var chunkTileId                     = (cy * this.chunkInfo.bounds.width) + cx;
-                            this.grid[this.layer, cellId]       = GridCell.Create((LevelData.Tile*)this.chunkData.GetUnsafeReadOnlyPtr() + chunkTileId, this.layer);
+                            var chunkTileId                     = (cy * this.chunk.bounds.width) + cx;
+                            this.grid[this.layer, cellId]       = GridCell.Create((LevelData.Tile*)this.chunk.data.GetUnsafeReadOnlyPtr() + chunkTileId, this.layer);
                         }
                     }
                 }
@@ -1297,7 +1294,7 @@ namespace tg.level
                 public Grid                         grid;
                 public LevelData.Layer              layer;
 
-                public NativeReference<StateWFC>  state;
+                public NativeReference<StateWFC>    state;
 
                 [BurstCompile]
                 public void Execute()
@@ -1319,7 +1316,7 @@ namespace tg.level
             private ModuleConstraints                       constraints;
             private ModuleConstraints                       passTwoConstraints;
 
-            private NativeReference<StateWFC>             state;
+            private NativeReference<StateWFC>               state;
                                                     
             private Grid                                    grid;
 
@@ -1348,9 +1345,9 @@ namespace tg.level
 
                 var dependsOn = context.schedule(constraintsJob, this.modules.Length, this.modules.Length);
 
-                for(int chunkId = 0; chunkId < context.data.numChunks; chunkId++)
+                for(int chunkId = 0; chunkId < context.level.numChunks; chunkId++)
                 {
-                    var chunkInfo = context.data.getChunkInfo(chunkId);
+                    var chunkInfo = context.level.getChunk(chunkId);
                     if(this.processedMapChunks.Contains(chunkInfo.bounds.position)) { continue; }
                     this.processedMapChunks.Add(chunkInfo.bounds.position);
 
@@ -1385,36 +1382,35 @@ namespace tg.level
 
             private IEnumerator<State> initializeGrid(int chunkId, Generator.Context context)
             {
-                var chunkInfo                               = context.data.getChunkInfo(chunkId);
-                var chunkData                               = context.data.getChunkData(chunkId);
+                var chunk                               = context.level.getChunk(chunkId);
         
-                var chunkInfoLeft                           = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, 0));
-                var chunkInfoRight                          = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, 0));
-                var chunkInfoTop                            = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(0, -chunkInfo.bounds.height));
-                var chunkInfoBottom                         = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(0, chunkInfo.bounds.height));
+                var chunkLeft                           = context.level.getChunk(chunk.bounds.position + new Vector2Int(-chunk.bounds.width, 0));
+                var chunkRight                          = context.level.getChunk(chunk.bounds.position + new Vector2Int(chunk.bounds.width, 0));
+                var chunkTop                            = context.level.getChunk(chunk.bounds.position + new Vector2Int(0, -chunk.bounds.height));
+                var chunkBottom                         = context.level.getChunk(chunk.bounds.position + new Vector2Int(0, chunk.bounds.height));
 
-                var chunkInfoTopLeft                        = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, -chunkInfo.bounds.height));
-                var chunkInfoTopRight                       = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, -chunkInfo.bounds.height));
-                var chunkInfoBottomLeft                     = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(-chunkInfo.bounds.width, chunkInfo.bounds.height));
-                var chunkInfoBottomRight                    = context.data.getChunkInfo(chunkInfo.bounds.position + new Vector2Int(chunkInfo.bounds.width, chunkInfo.bounds.height));
+                var chunkTopLeft                        = context.level.getChunk(chunk.bounds.position + new Vector2Int(-chunk.bounds.width, -chunk.bounds.height));
+                var chunkTopRight                       = context.level.getChunk(chunk.bounds.position + new Vector2Int(chunk.bounds.width, -chunk.bounds.height));
+                var chunkBottomLeft                     = context.level.getChunk(chunk.bounds.position + new Vector2Int(-chunk.bounds.width, chunk.bounds.height));
+                var chunkBottomRight                    = context.level.getChunk(chunk.bounds.position + new Vector2Int(chunk.bounds.width, chunk.bounds.height));
 
                 // note: this will ensure we only use already generated neighbouring cells
-                if(chunkInfoLeft.HasValue && chunkInfoLeft.Value.id > chunkInfo.id) { chunkInfoLeft = null; }
-                if(chunkInfoRight.HasValue && chunkInfoRight.Value.id > chunkInfo.id) { chunkInfoRight = null; }
-                if(chunkInfoTop.HasValue && chunkInfoTop.Value.id > chunkInfo.id) { chunkInfoTop = null; }
-                if(chunkInfoBottom.HasValue && chunkInfoBottom.Value.id > chunkInfo.id) { chunkInfoBottom = null; }
-                if(chunkInfoTopLeft.HasValue && chunkInfoTopLeft.Value.id > chunkInfo.id) { chunkInfoTopLeft = null; }
-                if(chunkInfoTopRight.HasValue && chunkInfoTopRight.Value.id > chunkInfo.id) { chunkInfoTopRight = null; }
-                if(chunkInfoBottomLeft.HasValue && chunkInfoBottomLeft.Value.id > chunkInfo.id) { chunkInfoBottomLeft = null; }
-                if(chunkInfoBottomRight.HasValue && chunkInfoBottomRight.Value.id > chunkInfo.id) { chunkInfoBottomRight = null; }
+                if(chunkLeft.HasValue && chunkLeft.Value.id > chunk.id) { chunkLeft = null; }
+                if(chunkRight.HasValue && chunkRight.Value.id > chunk.id) { chunkRight = null; }
+                if(chunkTop.HasValue && chunkTop.Value.id > chunk.id) { chunkTop = null; }
+                if(chunkBottom.HasValue && chunkBottom.Value.id > chunk.id) { chunkBottom = null; }
+                if(chunkTopLeft.HasValue && chunkTopLeft.Value.id > chunk.id) { chunkTopLeft = null; }
+                if(chunkTopRight.HasValue && chunkTopRight.Value.id > chunk.id) { chunkTopRight = null; }
+                if(chunkBottomLeft.HasValue && chunkBottomLeft.Value.id > chunk.id) { chunkBottomLeft = null; }
+                if(chunkBottomRight.HasValue && chunkBottomRight.Value.id > chunk.id) { chunkBottomRight = null; }
 
-                var gridWidth                               = chunkInfo.bounds.width;
-                var gridHeight                              = chunkInfo.bounds.height;
+                var gridWidth                           = chunk.bounds.width;
+                var gridHeight                          = chunk.bounds.height;
 
-                if(chunkInfoLeft.HasValue)                  { gridWidth++; }
-                if(chunkInfoRight.HasValue)                 { gridWidth++; }
-                if(chunkInfoTop.HasValue)                   { gridHeight++; }
-                if(chunkInfoBottom.HasValue)                { gridHeight++; }
+                if(chunkLeft.HasValue)                  { gridWidth++; }
+                if(chunkRight.HasValue)                 { gridWidth++; }
+                if(chunkTop.HasValue)                   { gridHeight++; }
+                if(chunkBottom.HasValue)                { gridHeight++; }
 
 
                 this.grid                                   = Grid.Create(gridWidth, gridHeight);
@@ -1427,39 +1423,37 @@ namespace tg.level
                     {
                         grid                                = this.grid,
                         layer                               = layer,
-                        chunkData                           = chunkData,
-                        chunkInfo                           = chunkInfo,
+                        chunk                               = chunk,
 
-                        chunkLeft                           = chunkInfoLeft.HasValue
+                        chunkLeft                           = chunkLeft.HasValue
                             // get slice of the bottom border of the top neighbour map chunk
-                            ? context.data.chunkData.Slice(chunkInfoLeft.Value.dataIndex0, chunkInfoLeft.Value.dataSize)
-                            : chunkData.Slice(0, 0),
-                        chunkRight                          = chunkInfoRight.HasValue
+                            ? chunkLeft.Value.data
+                            : chunk.data.Slice(0, 0),
+                        chunkRight                          = chunkRight.HasValue
                             // get slice of the left border of the right neighbour map chunk
-                            ? context.data.chunkData.Slice(chunkInfoRight.Value.dataIndex0, chunkInfoRight.Value.dataSize)
-                            : chunkData.Slice(0, 0),
-                        chunkTop                            = chunkInfoTop.HasValue
+                            ? chunkRight.Value.data
+                            : chunk.data.Slice(0, 0),
+                        chunkTop                            = chunkTop.HasValue
                             // get slice of the bottom border of the top neighbour map chunk
-                            ? context.data.chunkData.Slice(chunkInfoTop.Value.dataIndex0 + chunkInfoTop.Value.dataSize - chunkInfoTop.Value.bounds.width, chunkInfoTop.Value.bounds.width)
-                            : chunkData.Slice(0, 0),
-                        chunkBottom                         = chunkInfoBottom.HasValue
+                            ? chunkTop.Value.data.Slice(chunkTop.Value.dataSize - chunkTop.Value.bounds.width, chunkTop.Value.bounds.width)
+                            : chunk.data.Slice(0, 0),
+                        chunkBottom                         = chunkBottom.HasValue
                             // get slice of the top border of the bottom neighbour map chunk
-                            ? context.data.chunkData.Slice(chunkInfoBottom.Value.dataIndex0, chunkInfoBottom.Value.bounds.width)
-                            : chunkData.Slice(0, 0),
+                            ? chunkBottom.Value.data.Slice(0, chunkBottom.Value.bounds.width)
+                            : chunk.data.Slice(0, 0),
 
-                        chunkTopLeft                        = chunkInfoTopLeft.HasValue
-                            ? context.data.chunkData.Slice(chunkInfoTopLeft.Value.dataIndex0 + chunkInfoTopLeft.Value.dataSize - 1, 1)
-                            : chunkData.Slice(0, 0),
-                        chunkTopRight                       = chunkInfoTopRight.HasValue
-                            ? context.data.chunkData.Slice(chunkInfoTopRight.Value.dataIndex0 + chunkInfoTopRight.Value.dataSize - chunkInfoTopRight.Value.bounds.width, 1)
-                            : chunkData.Slice(0, 0),
-                        chunkBottomLeft                     = chunkInfoBottomLeft.HasValue
-                            ? context.data.chunkData.Slice(chunkInfoBottomLeft.Value.dataIndex0 + chunkInfoBottomLeft.Value.bounds.width - 1, 1)
-                            : chunkData.Slice(0, 0),
-                        chunkBottomRight                    = chunkInfoBottomRight.HasValue
-                            ? context.data.chunkData.Slice(chunkInfoBottomRight.Value.dataIndex0, 1)
-                            : chunkData.Slice(0, 0),
-
+                        chunkTopLeft                        = chunkTopLeft.HasValue
+                            ? chunkTopLeft.Value.data.Slice(chunkTopLeft.Value.dataSize - 1, 1)
+                            : chunk.data.Slice(0, 0),
+                        chunkTopRight                       = chunkTopRight.HasValue
+                            ? chunkTopRight.Value.data.Slice(chunkTopRight.Value.dataSize - chunkTopRight.Value.bounds.width, 1)
+                            : chunk.data.Slice(0, 0),
+                        chunkBottomLeft                     = chunkBottomLeft.HasValue
+                            ? chunkBottomLeft.Value.data.Slice(chunkBottomLeft.Value.bounds.width - 1, 1)
+                            : chunk.data.Slice(0, 0),
+                        chunkBottomRight                    = chunkBottomRight.HasValue
+                            ? chunkBottomRight.Value.data.Slice(0, 1)
+                            : chunk.data.Slice(0, 0),
                     };
 
                     context.scheduleBatch(initializeGridJob, this.grid.size, this.grid.width);
@@ -1738,7 +1732,7 @@ namespace tg.level
                 this.modules                    = new NativeArray<ModuleMeta>(context.settings.modules.Select(m => (ModuleMeta)m).ToArray(), Allocator.Persistent);
                 this.minEntropyQueue            = new NativeQueue<int>(Allocator.Persistent);
                 this.minEntropyCell             = new NativeReference<int>(Allocator.Persistent);
-                this.processedMapChunks         = new NativeHashSet<Vector2Int>(context.data.numChunks, Allocator.Persistent);
+                this.processedMapChunks         = new NativeHashSet<Vector2Int>(context.level.numChunks, Allocator.Persistent);
             }
 
             public override void release(Generator.Context context)

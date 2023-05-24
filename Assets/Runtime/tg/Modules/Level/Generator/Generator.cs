@@ -11,7 +11,7 @@ namespace tg.level.generator
     {
         #region Generator context
 
-        public class Context
+        public class Context : IDisposable
         {
             public  readonly GeneratorSettings  settings;
 
@@ -24,7 +24,7 @@ namespace tg.level.generator
                                                 
             private Queue<JobHandle>            pendingJobs;
                                                 
-            public  ref LevelData               data { get { return ref this.unmanaged; } }
+            public  ref LevelData               level { get { return ref this.unmanaged; } }
 
 
             public Context(GeneratorSettings settings)
@@ -88,6 +88,11 @@ namespace tg.level.generator
 
                 return handle;
             }
+
+            public void Dispose()
+            {
+                this.unmanaged.Dispose();
+            }
         }
 
         #endregion
@@ -110,7 +115,7 @@ namespace tg.level.generator
 
         private readonly int                            frameTimeBudget;
 
-        public  LevelData                               data { get { return this.context.data; } }
+        public  LevelData                               data { get { return this.context.level; } }
 
         /// <summary>
         /// Busy flag indicates, if it is safe to access LevelData. If its true level data should not be accessed.
@@ -157,7 +162,7 @@ namespace tg.level.generator
             }
 
             Debug.Log($"Generator finished in: {DateTime.Now - generatorStarted}");
-            this.onLevelGeneratorFinished?.Invoke(this.context.data);
+            this.onLevelGeneratorFinished?.Invoke(this.context.level);
         }
 
         public void Dispose()
@@ -171,6 +176,9 @@ namespace tg.level.generator
                 step.release(this.context);
                 Debug.Log($"Generator step {step.GetType()} released.");
             }
+
+            Debug.Log("Dispose of generator context.");
+            this.context.Dispose();
         }
     }
 }
