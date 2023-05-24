@@ -1,9 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using Unity.Entities;
+using static tg.level.generator.Generator;
+using System.Linq;
 
 namespace tg.level
 {
@@ -11,7 +15,7 @@ namespace tg.level
     /// A commonly shared data object between level generation steps. Each step may add its own
     /// relevant level data to the partial struct and can access data declared by other steps. 
     /// </summary>
-    public partial struct LevelData
+    public partial struct LevelData : IDisposable
     {
         /// <summary>
         /// Level tiles can be build of multiple layers. Each layer has a certains index which determines, if a layer
@@ -55,7 +59,7 @@ namespace tg.level
         /// Auxilary struct that holds more information of a certain chunk in the
         /// global data array.
         /// </summary>
-        public struct ChunkInfo
+        public struct Chunk : IDisposable, IComponentData
         {
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
@@ -90,10 +94,15 @@ namespace tg.level
             public int                              dataSize;
 
             /// <summary>
+            /// Reference to the chunk owned tile data.
+            /// </summary>
+            public NativeSlice<Tile>                data;
+
+            /// <summary>
             /// Creates a new chunk info element.
             /// </summary>
             /// <param name="chunkId"></param>
-            public ChunkInfo(int chunkId)
+            public Chunk(int chunkId)
             {
                 this.id             = chunkId;
 
@@ -104,6 +113,12 @@ namespace tg.level
                 this.dataSize       = 0;
 
                 this.pathExit       = default;
+                this.data           = default;
+            }
+
+            public void Dispose()
+            {
+                
             }
         }
 
@@ -218,5 +233,99 @@ namespace tg.level
                 set { this.layers[layer] = value; }
             }
         }
+
+        /// <summary>
+        /// Seperate parts (chunks) of the entire level. Basically rooms.
+        /// </summary>
+        internal UnsafeList<Chunk>      chunks;
+
+        /// <summary>
+        /// The actual tile data array. Chunks will hold a reference to their slice of data into this array.
+        /// </summary>
+        private NativeArray<Tile>       data;
+
+        public void addChunk(ref Chunk chunk)
+        {
+            if(!this.chunks.IsCreated)
+            {
+                this.chunks = new UnsafeList<Chunk>(8, Allocator.Persistent);
+            }
+
+            if(this.data.IsCreated)
+            {
+                var currentSize = this.data.Length;
+                var newData     = new NativeArray<Tile>(Enumerable.Range(0, currentSize + chunk.dataSize).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
+
+                newData.Slice(0, currentSize).CopyFrom(this.data);
+                this.data.Dispose();
+                this.data       = newData;
+            }
+            else
+            {
+                this.data = new NativeArray<Tile>(Enumerable.Range(0, chunk.dataSize).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
+            }
+
+            // since we have resized the data array, all chunk data slices are invalid and need to be updated
+            for(int chunkId = 0; chunkId < this.chunks.Length; chunkId++)
+            {
+                ref var c       = ref this.chunks.ElementAt(chunkId);
+                c.data          = this.data.Slice(c.dataIndex0, c.dataSize);
+            }
+
+            chunk.dataIndex0    = this.data.Length - chunk.dataSize;
+            chunk.data          = this.data.Slice(chunk.dataIndex0, chunk.dataSize);
+            this.chunks.Add(chunk);
+        }
+
+        public void Dispose()
+        {
+            // dispose of all chunk data
+            if(this.chunks.IsCreated)
+            {
+                Debug.Log($"Dispose of {this.chunks.Length} level chunks.");
+                foreach(var chunk in this.chunks) { chunk.Dispose(); }
+                this.chunks.Dispose();
+            }
+
+            // dispose all tile data
+            if(this.data.IsCreated)
+            {
+                Debug.Log($"Dispose of {this.data.Length} level tiles.");
+                foreach(var tile in this.data) { tile.Dispose(); }
+                this.data.Dispose();
+            }
+        }
+
+
+        #region Convenient methods
+
+        public int                      numChunks { get { return this.chunks.Length; } }
+
+        /// <summary>
+        /// Get chunk by its id.
+        /// </summary>
+        /// <param name="chunkId"></param>
+        /// <returns></returns>
+        public ref Chunk                getChunk(int chunkId) { return ref this.chunks.ElementAt(chunkId); }
+
+        /// <summary>
+        /// Retruns the first matching chunk at this position.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public Chunk?                   getChunk(Vector2Int position)
+        {
+            foreach(var chunkInfo in this.chunks)
+            {
+                if(chunkInfo.bounds.Contains(position))
+                {
+                    return chunkInfo;
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
     }
 }

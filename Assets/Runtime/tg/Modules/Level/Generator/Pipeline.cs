@@ -48,17 +48,17 @@ namespace tg.level.generator
                 var stepStarted = DateTime.Now;
 
                 step.initialize(context);
-                this.onStepStarted?.Invoke(step, context.data);
+                this.onStepStarted?.Invoke(step, context.level);
 
                 var stepExecutor = step.execute(context);
                 while(stepExecutor.MoveNext())
                 {
                     yield return stepExecutor.Current;
-                    this.onStepUpdated?.Invoke(step, context.data);
+                    this.onStepUpdated?.Invoke(step, context.level);
                 }
 
                 Debug.Log($"Generator step {step} finished in: {DateTime.Now - stepStarted}");
-                this.onStepFinished?.Invoke(step, context.data);
+                this.onStepFinished?.Invoke(step, context.level);
             }
         }
        

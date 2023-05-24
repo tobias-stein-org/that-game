@@ -71,7 +71,6 @@ namespace tg.level
             this.generator?.Dispose();
         }
     }
-
     
 
     public class LevelGeneratorData : IComponentData

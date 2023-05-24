@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
@@ -15,53 +14,52 @@ namespace tg.level
         {
             public override IEnumerator<State> execute(Generator.Context context)
             {
-                for(int i = 0; i < context.data.numChunks; i++)
+                for(int i = 0; i < context.level.numChunks; i++)
                 {
-                    var chunkInfo                       = context.data.getChunkInfo(i);
-                    var chunkData                       = context.data.getChunkData(i);
-                    var start                           = context.data.getChunkInfo(0).bounds.size / 2;
+                    var chunk                           = context.level.getChunk(i);
+                    var start                           = context.level.getChunk(0).bounds.size / 2;
 
                     if(i > 0)
                     {
-                        var lastChunkInfo               = context.data.getChunkInfo(i - 1);
-                        var offset                      = lastChunkInfo.bounds.position - chunkInfo.bounds.position;
+                        var lastChunkInfo               = context.level.getChunk(i - 1);
+                        var offset                      = lastChunkInfo.bounds.position - chunk.bounds.position;
                         offset                          += new Vector2Int(offset.x != 0 ? -(int)Mathf.Sign(offset.x) : 0, offset.y != 0 ? -(int)Mathf.Sign(offset.y) : 0);
 
                         start                           = lastChunkInfo.pathExit + offset;
                     }
 
-                    var tileId                          = (start.y * chunkInfo.bounds.width) + start.x;
-                    var tileData                        = chunkData[tileId];
+                    var tileId                          = (start.y * chunk.bounds.width) + start.x;
+                    var tileData                        = chunk.data[tileId];
 
                     tileData.constructionType           = LevelData.Tile.ConstructionType.Walkable;
-                    chunkData[tileId]                   = tileData;
+                    chunk.data[tileId]                  = tileData;
 
-                    var exit                            = chunkInfo.pathExit;
+                    var exit                            = chunk.pathExit;
 
-                    var camefrom                        = i > 0                                 ? -context.data.pathSteps[i - 1] : Vector2Int.zero;
-                    var goTo                            = i < context.data.pathSteps.Length     ?  context.data.pathSteps[i]     : Vector2Int.zero;
+                    var camefrom                        = i > 0                                 ? -context.level.pathSteps[i - 1] : Vector2Int.zero;
+                    var goTo                            = i < context.level.pathSteps.Length     ?  context.level.pathSteps[i]     : Vector2Int.zero;
 
 
                     // extends the entry from the wall intp the chunk (room)
-                    for(int s = 0; s < chunkInfo.wallSize + 1; s++)
+                    for(int s = 0; s < chunk.wallSize + 1; s++)
                     {
-                        tileId                          = (start.y * chunkInfo.bounds.width) + start.x;
-                        tileData                        = chunkData[tileId];
+                        tileId                          = (start.y * chunk.bounds.width) + start.x;
+                        tileData                        = chunk.data[tileId];
 
                         tileData.constructionType       = LevelData.Tile.ConstructionType.Walkable;
-                        chunkData[tileId]               = tileData;
+                        chunk.data[tileId]              = tileData;
 
                         start                           -= camefrom;
                     }
 
                     // extends the exit path from the wall into the chunk (room)
-                    for(int s = 0; s < chunkInfo.wallSize + 1; s++)
+                    for(int s = 0; s < chunk.wallSize + 1; s++)
                     {
-                        tileId                          = (exit.y * chunkInfo.bounds.width) + exit.x;
-                        tileData                        = chunkData[tileId];
+                        tileId                          = (exit.y * chunk.bounds.width) + exit.x;
+                        tileData                        = chunk.data[tileId];
 
                         tileData.constructionType       = LevelData.Tile.ConstructionType.Walkable;
-                        chunkData[tileId]               = tileData;
+                        chunk.data[tileId]          = tileData;
 
                         exit                            -= goTo;
                     }
@@ -70,19 +68,19 @@ namespace tg.level
                     { 
                         RectInt                 area    = new RectInt
                         {
-                            x                           = chunkInfo.wallSize        + 1,
-                            y                           = chunkInfo.wallSize        + 1,
-                            width                       = chunkInfo.bounds.width    - chunkInfo.wallSize - 1,
-                            height                      = chunkInfo.bounds.height   - chunkInfo.wallSize - 1
+                            x                           = chunk.wallSize        + 1,
+                            y                           = chunk.wallSize        + 1,
+                            width                       = chunk.bounds.width    - chunk.wallSize - 1,
+                            height                      = chunk.bounds.height   - chunk.wallSize - 1
                         };
                         NativeList<Vector2Int>  options = new NativeList<Vector2Int>(4, Allocator.Persistent);
 
                         var currentPos                  = start;
-                        tileId                          = (currentPos.y * chunkInfo.bounds.width) + currentPos.x;
-                        tileData                        = chunkData[tileId];
+                        tileId                          = (currentPos.y * chunk.bounds.width) + currentPos.x;
+                        tileData                        = chunk.data[tileId];
 
                         tileData.constructionType       = LevelData.Tile.ConstructionType.Walkable;
-                        chunkData[tileId]               = tileData;
+                        chunk.data[tileId]              = tileData;
 
                         while(currentPos != exit)
                         {
@@ -90,11 +88,11 @@ namespace tg.level
 
                             currentPos                  = options[context.random.Next(0, options.Length)];
 
-                            tileId                      = (currentPos.y * chunkInfo.bounds.width) + currentPos.x;
-                            tileData                    = chunkData[tileId];
+                            tileId                      = (currentPos.y * chunk.bounds.width) + currentPos.x;
+                            tileData                    = chunk.data[tileId];
 
                             tileData.constructionType   = LevelData.Tile.ConstructionType.Walkable;
-                            chunkData[tileId]           = tileData;
+                            chunk.data[tileId]          = tileData;
                         }
 
                         options.Dispose();
@@ -105,8 +103,7 @@ namespace tg.level
                 // are getting merged, again.
                 var mergeJob                = new CreateMazeWallsStep.MergeOverlappingChunksJob
                 {
-                    chunkInfo               = context.data.chunkInfo,
-                    chunkData               = context.data.chunkData,
+                    chunks                  = context.level.chunks,
                 };
                 context.schedule(mergeJob);
 

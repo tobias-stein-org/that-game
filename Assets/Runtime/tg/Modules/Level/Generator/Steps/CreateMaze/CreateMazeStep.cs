@@ -231,21 +231,21 @@ namespace tg.level
                         this.path.Add(nextStep);
                     }
 
-                    for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
+                    for(int i = 0; i < this.path.Length - 1; i++) { context.level.pathSteps[i] = this.path[i + 1] - this.path[i]; }
                 }
-                for(int i = 0; i < this.path.Length - 1; i++) { context.data.pathSteps[i] = this.path[i + 1] - this.path[i]; }
+                for(int i = 0; i < this.path.Length - 1; i++) { context.level.pathSteps[i] = this.path[i + 1] - this.path[i]; }
             }
 
             public override void initialize(Generator.Context context)
             {
-                context.data.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
+                context.level.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
             }
 
             public override void release(Generator.Context context)
             {
                 this.cleanup();
 
-                if(context.data.pathSteps.IsCreated) { context.data.pathSteps.Dispose(); }
+                if(context.level.pathSteps.IsCreated) { context.level.pathSteps.Dispose(); }
             }
 
 
