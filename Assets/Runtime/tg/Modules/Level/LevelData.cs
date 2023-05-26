@@ -1,13 +1,11 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 
+using UnityEngine;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine;
 using Unity.Entities;
-using static tg.level.generator.Generator;
-using System.Linq;
+using Unity.Mathematics;
 
 namespace tg.level
 {
@@ -72,6 +70,12 @@ namespace tg.level
             public RectInt                          bounds;
 
             /// <summary>
+            /// Holds the ids of accessable neighbouring chunks. If neighbour doesn't exist of is not accessable since its blocked
+            /// through a wall the id is -1.
+            /// </summary>
+            public int4                             neighbours;
+
+            /// <summary>
             /// Wall size in for a certain chunk
             /// </summary>
             public int                              wallSize;
@@ -98,6 +102,7 @@ namespace tg.level
             /// </summary>
             public NativeSlice<Tile>                data;
 
+
             /// <summary>
             /// Creates a new chunk info element.
             /// </summary>
@@ -105,14 +110,14 @@ namespace tg.level
             public Chunk(int chunkId)
             {
                 this.id             = chunkId;
+                this.neighbours     = -1;
 
                 this.bounds         = default;
                 this.wallSize       = 0;
+                this.pathExit       = default;
 
                 this.dataIndex0     = 0;
                 this.dataSize       = 0;
-
-                this.pathExit       = default;
                 this.data           = default;
             }
 
@@ -120,6 +125,11 @@ namespace tg.level
             {
                 
             }
+
+            public int leftChunkNeighbour   { get { return this.neighbours[0]; } set { this.neighbours[0] = value; } }
+            public int RightChunkNeighbour  { get { return this.neighbours[1]; } set { this.neighbours[1] = value; } }
+            public int topChunkNeighbour    { get { return this.neighbours[2]; } set { this.neighbours[2] = value; } }
+            public int bottomChunkNeighbour { get { return this.neighbours[3]; } set { this.neighbours[3] = value; } }
         }
 
         /// <summary>
@@ -161,18 +171,18 @@ namespace tg.level
                 /// <summary>
                 /// Declares a tile as obstructed and no moving entity can pass it.
                 /// </summary>
-                Obstructed      = 1 << 0,
+                Obstructed,
 
                 /// <summary>
                 /// Decales a tile beeing walkable, that is, no object is placed here to obstruct
                 /// a moving entity.
                 /// </summary>
-                Walkable        = 1 << 1,
+                Walkable,
 
                 /// <summary>
                 /// Declares a tile not being part of the level.
                 /// </summary>
-                Empty           = 1 << 2
+                Empty
             }
 
             #region Tile data
