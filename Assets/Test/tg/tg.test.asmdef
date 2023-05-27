@@ -1,14 +1,12 @@
 {
     "name": "tg.test",
-    "rootNamespace": "",
+    "rootNamespace": "tg.test",
     "references": [
         "GUID:922463416228d412ab0a4e2ebe318ccd"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false,
+    "allowUnsafeCode": true,
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
