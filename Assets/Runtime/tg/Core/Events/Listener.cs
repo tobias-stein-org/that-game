@@ -9,13 +9,25 @@ namespace tg.events
     using tg.util;
 
     /// <summary>
+    /// Syntactic sugar to alias a plain int type to a more meaningful type name.
+    /// </summary>
+    public struct ListenerType : IEquatable<ListenerType>
+    {
+        private int typeId;
+
+        public static implicit operator ListenerType(Type TListener)  { return new ListenerType { typeId = TListener.FullName.GetHashCode() }; }
+
+        public bool Equals(ListenerType other) { return this.typeId.Equals(other.typeId); }
+    }
+
+    /// <summary>
     /// Marker interface for automatically event lister collection.
     /// </summary>
     public interface IEventListener { }
 
     public interface IEventListener<T> : IEventListener
     {
-        public static readonly int ListenerID = typeof(T).GetHashCode();
+        public static readonly ListenerType ListenerID = typeof(T);
     }
 
     /// <summary>
@@ -26,7 +38,7 @@ namespace tg.events
         /// <summary>
         /// Contains information about all available event listener types and their handler methods.
         /// </summary>
-        public static readonly Dictionary<int, Dictionary<EventType, RuntimeMethodHandle>> registry = new Dictionary<int, Dictionary<EventType, RuntimeMethodHandle>>();
+        public static readonly Dictionary<ListenerType, Dictionary<EventType, RuntimeMethodHandle>> registry = new Dictionary<ListenerType, Dictionary<EventType, RuntimeMethodHandle>>();
 
         static Listener()
         {
@@ -57,7 +69,7 @@ namespace tg.events
                     .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventListener<>))
                     .GetGenericArguments().First();
 
-                int TListenerID = (int)TIEventListener.MakeGenericType(T).GetField("ListenerID", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                ListenerType TListenerID = (ListenerType)TIEventListener.MakeGenericType(T).GetField("ListenerID", BindingFlags.Static | BindingFlags.Public).GetValue(null);
 
                 // Make sure we perform this process only once.
                 if(Listener.registry.ContainsKey(TListenerID)) { return; }
@@ -82,7 +94,7 @@ namespace tg.events
                     .Select(group => new { EventType = group.Key, Handler = group.Select(z => z.Name) })
                     .ToList();
 
-                foreach (var duplicates in DuplicatedEventHandlers) { UnityEngine.Debug.LogError($"{duplicates.EventType.Name} event is handled by multiple handlers: {String.Join(", ", duplicates.Handler)}"); }
+                foreach (var duplicates in DuplicatedEventHandlers) { UnityEngine.Debug.LogError($"{duplicates.EventType.Name} event is handled by multiple handlers: {String.Join(", ", duplicates.Handler)}. Ony one handler per event type is allowed."); }
                 UnityEngine.Debug.Assert(DuplicatedEventHandlers.Count == 0, $"{ThisClass.FullName} event listener has multiple event handler for the same event type. There can only by one event handler method per event type!");
             
                 // store result in cache

@@ -8,20 +8,19 @@ namespace tg.events
     /// <summary>
     /// Syntactic sugar to alias a plain int type to a more meaningful type name.
     /// </summary>
-    public struct EventType
+    public struct EventType : IEquatable<EventType>
     {
         private int typeId;
 
         public static implicit operator EventType(Type EventT)  { return new EventType { typeId = EventT.FullName.GetHashCode() }; }
 
-        public override string ToString() { return this.typeId.ToString(); }
+        public bool Equals(EventType other) { return this.typeId.Equals(other.typeId); }
     }
 
 
     public interface IEvent
     {
         public EventType    type { get { return this.GetType(); } }
-
         public string       Name { get { return this.GetType().Name; } }
     }
 
