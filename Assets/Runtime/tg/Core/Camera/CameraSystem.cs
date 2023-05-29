@@ -4,21 +4,30 @@ using UnityEngine;
 
 namespace tg.camera
 {
-    public partial struct CameraSystem : ISystem
+    using tg.player;
+
+    public partial class CameraSystem : SystemBase
     {
-        public void OnUpdate(ref SystemState state)
+        protected override void OnCreate()
         {
-            foreach(var (data, entity) in SystemAPI.Query<CameraData>().WithAll<CameraDataChanged>().WithEntityAccess())
+            this.RequireForUpdate<PlayerData>();
+        }
+
+        protected override void OnUpdate()
+        {
+            var playerDataEntity = SystemAPI.ManagedAPI.GetSingletonEntity<PlayerData>();
+            var playerData = SystemAPI.ManagedAPI.GetComponent<PlayerData>(playerDataEntity);
+
+            var entity = tg.spawn.SpawnRequest.create(playerData.prefab, new Unity.Mathematics.float3(24.0f, 13.5f, 0.0f), out EntityCommandBuffer ECB, 1);
             {
-                state.EntityManager.SetComponentEnabled<CameraDataChanged>(entity, false);
+                ECB.AddComponent<Player>(entity, new Player
+                {
+                    playerData = playerDataEntity
+                });
             }
 
+            this.Enabled = false;
         }
-    }
-
-
-    public partial struct CameraDataChanged : IComponentData, IEnableableComponent
-    {
     }
 }
 
