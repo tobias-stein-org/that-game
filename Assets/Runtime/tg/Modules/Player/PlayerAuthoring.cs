@@ -70,11 +70,13 @@ namespace tg.player
 
                 // entity that holds the player data, since its not going to move or render transform canm be set None.
                 var playerData = GetEntity(TransformUsageFlags.None);
+                var playerPref = GetEntity(authoring.prefab, TransformUsageFlags.Dynamic);
                 AddComponentObject(playerData, new PlayerData
                 {
                     companion                       = companionPlayer,
                     camera                          = vcam,
-                    prefab                          = GetEntity(authoring.prefab, TransformUsageFlags.Dynamic)
+                    prefab                          = playerPref,
+                    isAlive                         = false
                 });
             }
         }
@@ -92,7 +94,12 @@ namespace tg.player
         /// </summary>
         public CinemachineVirtualCamera camera;
 
+        /// <summary>
+        /// player model.
+        /// </summary>
         public Entity                   prefab;
+
+        public bool                     isAlive;
     }
 
     /// <summary>
