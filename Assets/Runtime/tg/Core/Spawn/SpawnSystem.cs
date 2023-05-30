@@ -113,8 +113,6 @@ namespace tg.spawn
 			var world						= World.DefaultGameObjectInjectionWorld;
 			var entityManager				= world.EntityManager;
 
-			var spawner						= world.GetExistingSystemManaged<SpawnSystem>();
-
 			var spawnRequest				= entityManager.CreateEntity(typeof(SpawnRequest));
 			{
 				entityManager.SetComponentData(spawnRequest, new SpawnRequest
@@ -124,6 +122,7 @@ namespace tg.spawn
 				});
 			}
 
+			var spawner						= world.GetExistingSystemManaged<SpawnSystem>();
 			ECB = spawner.create(spawnRequestId);
 			
 			// after processing the spawn request, make sure to destroy the initial entity of this request.
