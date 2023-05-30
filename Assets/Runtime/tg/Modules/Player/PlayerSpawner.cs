@@ -24,7 +24,7 @@ namespace tg.player
                 if(!playerData.isAlive)
                 {
                     // instantiate a new player entity
-                    var entity              = tg.spawn.SpawnRequest.create(playerData.prefab, new Unity.Mathematics.float3(24.0f, 13.5f, 0.0f), out EntityCommandBuffer ECB);
+                    var entity              = tg.spawn.SpawnRequest.create(playerData.prefab, new Unity.Mathematics.float3(24.0f, 13.5f, -1.0f), out EntityCommandBuffer ECB);
                     {
                         ECB.AddComponent<Player>(entity, new Player
                         {
