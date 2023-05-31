@@ -11,11 +11,8 @@ namespace tg.player
         {
             public override void Bake(PlayerAuthoring authoring)
             {
-                var playerEntity        = GetEntity(TransformUsageFlags.Dynamic);
-                
-                //AddComponent<URPMaterialPropertyBaseColor>(playerEntity);
-                //SetComponent<URPMaterialPropertyBaseColor>(playerEntity, new URPMaterialPropertyBaseColor { Value = new float4(1.0f, 0.0f, 0.0f, 1.0f) });
             }
         }
     }
 }
+

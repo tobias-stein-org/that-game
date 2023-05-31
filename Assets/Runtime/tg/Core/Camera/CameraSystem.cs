@@ -14,7 +14,7 @@ namespace tg.camera
 
         protected override void OnUpdate()
         {
-            this.Enabled = false;
+            
         }
     }
 }
