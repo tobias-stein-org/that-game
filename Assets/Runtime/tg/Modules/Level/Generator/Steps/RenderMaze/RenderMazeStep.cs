@@ -20,9 +20,11 @@ namespace tg.level
         /// Wave-Function-Collapse (WFC) algorithm to render each tile in the maze giving a
         /// set of constraints and input modules (sprites).
         /// </summary>
+        [BurstCompile]
         public class RenderMazeStep : LevelGeneratorStep<RenderMazeStepSettings>
         {
             public  const float                     EPSILONE = 1e-6f;
+
 
             /// <summary>
             /// Utitliy struct that stores the current state of the WFC algorithm. This state
@@ -1435,7 +1437,7 @@ namespace tg.level
                             : chunk.data.Slice(0, 0),
                         chunkTop                            = chunkTop.HasValue
                             // get slice of the bottom border of the top neighbour map chunk
-                            ? chunkTop.Value.data.Slice(chunkTop.Value.dataSize - chunkTop.Value.bounds.width, chunkTop.Value.bounds.width)
+                            ? chunkTop.Value.data.Slice(chunkTop.Value.data.Length - chunkTop.Value.bounds.width, chunkTop.Value.bounds.width)
                             : chunk.data.Slice(0, 0),
                         chunkBottom                         = chunkBottom.HasValue
                             // get slice of the top border of the bottom neighbour map chunk
@@ -1443,10 +1445,10 @@ namespace tg.level
                             : chunk.data.Slice(0, 0),
 
                         chunkTopLeft                        = chunkTopLeft.HasValue
-                            ? chunkTopLeft.Value.data.Slice(chunkTopLeft.Value.dataSize - 1, 1)
+                            ? chunkTopLeft.Value.data.Slice(chunkTopLeft.Value.data.Length - 1, 1)
                             : chunk.data.Slice(0, 0),
                         chunkTopRight                       = chunkTopRight.HasValue
-                            ? chunkTopRight.Value.data.Slice(chunkTopRight.Value.dataSize - chunkTopRight.Value.bounds.width, 1)
+                            ? chunkTopRight.Value.data.Slice(chunkTopRight.Value.data.Length - chunkTopRight.Value.bounds.width, 1)
                             : chunk.data.Slice(0, 0),
                         chunkBottomLeft                     = chunkBottomLeft.HasValue
                             ? chunkBottomLeft.Value.data.Slice(chunkBottomLeft.Value.bounds.width - 1, 1)

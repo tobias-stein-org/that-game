@@ -243,21 +243,20 @@ namespace tg.level
             public override void initialize(Generator.Context context)
             {
                 int numChunks               = context.level.pathSteps.Length + 1;
-
                 // create level chunks from previously generated path and pre-compute chunk bounds and data index.
                 {
                     for(int chunkId = 0; chunkId < numChunks; chunkId++)
                     {
-                        var chunkInfo           = new LevelData.Chunk(chunkId);
                         var chunkWidth          = this.settings.mapChunkDimensions.x;
                         var chunkHeight         = this.settings.mapChunkDimensions.y;
+                        ref var chunk           = ref context.level.createNewChunk(chunkWidth, chunkHeight);
 
                         if(chunkId > 0)
                         {
                             var last            = context.level.getChunk(chunkId - 1);
                             var from            = -context.level.pathSteps[chunkId - 1];
 
-                            chunkInfo.bounds    = new RectInt
+                            chunk.bounds    = new RectInt
                             {
                                 x               = from.x != 0
                                     ? from.x == -1
@@ -280,11 +279,8 @@ namespace tg.level
                         // first chunk
                         else
                         {
-                            chunkInfo.bounds    = new RectInt(Vector2Int.zero, new Vector2Int(chunkWidth, chunkHeight));
+                            chunk.bounds    = new RectInt(Vector2Int.zero, new Vector2Int(chunkWidth, chunkHeight));
                         }
-
-                        chunkInfo.dataSize      = chunkInfo.bounds.width * chunkInfo.bounds.height;
-                        context.level.addChunk(ref chunkInfo);
 
                         //Debug.Log($"Chunk[{chunkId}]: {chunkInfo.bounds} (Index0: {chunkInfo.dataIndex0}, size: {chunkInfo.dataSize})");
                     }
