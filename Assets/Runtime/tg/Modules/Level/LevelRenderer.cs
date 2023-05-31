@@ -50,6 +50,9 @@ namespace tg.level
 
         private void renderTilemap(in LevelData levelData, in List<Module> modules)
         {
+            // clear previous tilemap rendering
+            foreach(var (layer, tilemap) in this.renderData.layers) { tilemap.ClearAllTiles(); }
+
             for(int chunkId = 0; chunkId < levelData.numChunks; chunkId++)
             {
                 var chunk = levelData.getChunk(chunkId);
