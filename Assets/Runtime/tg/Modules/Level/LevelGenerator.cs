@@ -13,42 +13,14 @@ namespace tg.level
     /// <summary>
     /// Simple managed system that drives the level generator.
     /// </summary>
-    public partial class LevelGeneratorSystem : SystemBase
+    public partial class LevelGeneratorSystem : SystemBase, IEventListener<LevelGeneratorSystem>
     {
         private Generator                               generator;
         private IEnumerator<LevelGeneratorStep.State>   executor;
 
         protected override void OnStartRunning()
         {
-            // look for an initially placed LevelGeneratorData component, if it exists fire-up the generator
-            if(SystemAPI.ManagedAPI.TryGetSingleton<LevelGeneratorData>(out LevelGeneratorData data))
-            {
-                this.generator = new Generator(data.settings);
-                generator.pipeline.onStepUpdated += (in LevelGeneratorStep step, in LevelData data) =>
-                {
-                    if(step.GetType() == typeof(generator.step.RenderMazeStep))
-                    {
-                        //EventQueue.publish(new RequestRenderLevelEvent { levelData = data, modules = this.generator.context.settings.modules });
-                    }
-                };
-
-                generator.onLevelGeneratorFinished += (in LevelData levelData) =>
-                {
-                    // expose LevelData as singleton
-                    this.EntityManager.SetComponentData(this.EntityManager.CreateSingleton<LevelData>(), levelData);
-
-                    // let the LevelRenderer know, we want the new data drawn.
-                    EventQueue.publish(new RequestRenderLevelEvent { levelData = levelData, modules = this.generator.context.settings.modules });
-
-                    this.Enabled = false;
-                };
-
-                this.executor = generator.execute();
-            }
-            else
-            {
-                this.Enabled = false;
-            }
+            EventQueue.subscribe(this);
         }
 
         /// <summary>
@@ -56,7 +28,10 @@ namespace tg.level
         /// </summary>
         protected override void OnUpdate()
         {
-            this.executor?.MoveNext();
+            if(!this.executor?.MoveNext() ?? false)
+            {
+                this.Enabled = false;
+            }
         }
 
         /// <summary>
@@ -64,36 +39,61 @@ namespace tg.level
         /// </summary>
         protected override void OnDestroy()
         {
-            this.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<LevelData>());
+            this.destroyLastLevel();
+
+            EventQueue.unsubscribe(this);
+        }
+
+        private void destroyLastLevel()
+        {
+            if(SystemAPI.TryGetSingletonEntity<LevelData>(out Entity levelData)) { this.EntityManager.DestroyEntity(levelData); }
 
             this.generator?.Dispose();
         }
-    }
-    
 
-    public class LevelGeneratorData : IComponentData
-    {
-        public GeneratorSettings    settings;
-    }
-
-    #region Component authoring
-
-    public class LevelGenerator : MonoBehaviour
-    {
-        public GeneratorSettings    settings;
-
-        public class Baker : Baker<LevelGenerator>
+        /// <summary>
+        /// Generate a new random level.
+        /// </summary>
+        /// <param name="e"></param>
+        private void onRequestNewLevel(RequestNewLevel e)
         {
-            public override void Bake(LevelGenerator authoring)
+            this.destroyLastLevel();
+
+            if(e.settings != null)
             {
-                var entity = GetEntity(TransformUsageFlags.None);
-                AddComponentObject(entity, new LevelGeneratorData
+                this.generator      = new Generator(e.settings);
+
+                this.generator.onLevelGeneratorFinished += (in LevelData levelData) =>
                 {
-                    settings = authoring.settings
-                });
+                    this.Enabled    = false;
+
+                    // expose LevelData as singleton
+                    this.EntityManager.SetComponentData(this.EntityManager.CreateSingleton<LevelData>(), levelData);
+
+                    // let the LevelRenderer know, we want the new data drawn.
+                    EventQueue.publish(new RequestRenderLevelEvent { levelData = levelData, modules = this.generator.context.settings.modules });
+                };
             }
+
+            this.executor       = this.generator.execute();
+            this.Enabled        = true;
         }
     }
 
-    #endregion
+
+    public class LevelGenerator : MonoBehaviour
+    {
+        public GeneratorSettings settings;
+
+        public void Start()
+        {
+            EventQueue.publish(new RequestNewLevel { settings = this.settings });
+        }
+
+        public void Update()
+        {
+            // regenerate a new random level
+            if(Input.GetKeyDown(KeyCode.Space)) { EventQueue.publish(new RequestNewLevel { settings = null }); }
+        }
+    }
 }
