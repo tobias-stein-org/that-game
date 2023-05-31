@@ -13,7 +13,7 @@ namespace tg.level
     /// A commonly shared data object between level generation steps. Each step may add its own
     /// relevant level data to the partial struct and can access data declared by other steps. 
     /// </summary>
-    public partial struct LevelData : IDisposable
+    public partial struct LevelData : IComponentData, IDisposable
     {
         /// <summary>
         /// Level tiles can be build of multiple layers. Each layer has a certains index which determines, if a layer
@@ -57,7 +57,7 @@ namespace tg.level
         /// Auxilary struct that holds more information of a certain chunk in the
         /// global data array.
         /// </summary>
-        public struct Chunk : IDisposable, IComponentData
+        public struct Chunk : IDisposable
         {
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
@@ -102,6 +102,15 @@ namespace tg.level
             /// </summary>
             public NativeSlice<Tile>                data;
 
+            public Tile                             this[int tileId]
+            {
+                get { return this.data[tileId]; }
+            }
+
+            public Tile                             this[int x, int y]
+            {
+                get { return this.data[(this.bounds.width * y) + x]; }
+            }
 
             /// <summary>
             /// Creates a new chunk info element.

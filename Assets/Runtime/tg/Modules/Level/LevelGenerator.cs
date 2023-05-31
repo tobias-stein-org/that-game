@@ -6,7 +6,9 @@ using UnityEngine;
 
 namespace tg.level
 {
+    using tg.events;
     using tg.level.generator;
+    using tg.level.events;
 
     /// <summary>
     /// Simple managed system that drives the level generator.
@@ -22,27 +24,21 @@ namespace tg.level
             if(SystemAPI.ManagedAPI.TryGetSingleton<LevelGeneratorData>(out LevelGeneratorData data))
             {
                 this.generator = new Generator(data.settings);
-                //generator.pipeline.onStepUpdated += (in LevelGeneratorStep step, in LevelData data) =>
-                //{
-                //    if(step.GetType() == typeof(generator.step.RenderMazeStep))
-                //    {
-                //        var e = this.EntityManager.CreateEntity(typeof(RenderLevelData));
-                //        this.EntityManager.AddComponentData<RenderLevelData>(e, new RenderLevelData
-                //        {
-                //            levelData   = data,
-                //            modules     = this.generator.context.settings.modules
-                //        });
-                //    }
-                //};
+                generator.pipeline.onStepUpdated += (in LevelGeneratorStep step, in LevelData data) =>
+                {
+                    if(step.GetType() == typeof(generator.step.RenderMazeStep))
+                    {
+                        //EventQueue.publish(new RequestRenderLevelEvent { levelData = data, modules = this.generator.context.settings.modules });
+                    }
+                };
 
                 generator.onLevelGeneratorFinished += (in LevelData levelData) =>
                 {
-                    var e = this.EntityManager.CreateEntity(typeof(RenderLevelData));
-                    this.EntityManager.AddComponentData<RenderLevelData>(e, new RenderLevelData
-                    {
-                        levelData   = levelData,
-                        modules     = this.generator.context.settings.modules
-                    });
+                    // expose LevelData as singleton
+                    this.EntityManager.SetComponentData(this.EntityManager.CreateSingleton<LevelData>(), levelData);
+
+                    // let the LevelRenderer know, we want the new data drawn.
+                    EventQueue.publish(new RequestRenderLevelEvent { levelData = levelData, modules = this.generator.context.settings.modules });
 
                     this.Enabled = false;
                 };
@@ -68,6 +64,8 @@ namespace tg.level
         /// </summary>
         protected override void OnDestroy()
         {
+            this.EntityManager.DestroyEntity(SystemAPI.GetSingletonEntity<LevelData>());
+
             this.generator?.Dispose();
         }
     }

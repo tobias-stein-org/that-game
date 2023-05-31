@@ -3,6 +3,8 @@ using UnityEngine.Scripting;
 
 namespace tg.player
 {
+    using tg.level;
+
     /// <summary>
     /// Simple player spawn system. 
     /// </summary>
@@ -11,6 +13,7 @@ namespace tg.player
         void OnCreate (ref SystemState state)
 		{
 			state.RequireForUpdate<PlayerData>();
+            state.RequireForUpdate<LevelData>();
 		}
 
 		void OnDestroy (ref SystemState state)
@@ -23,8 +26,15 @@ namespace tg.player
             {
                 if(!playerData.isAlive)
                 {
+                    var chunk0              = SystemAPI.GetSingleton<LevelData>().getChunk(0);
+
+                    var spawnLocation       = new Unity.Mathematics.float3(
+                        chunk0.bounds.x     + (chunk0.bounds.width  / 2),
+                        chunk0.bounds.y     + (chunk0.bounds.height / 2),
+                        -1.0f);
+
                     // instantiate a new player entity
-                    var entity              = tg.spawn.SpawnRequest.create(playerData.prefab, new Unity.Mathematics.float3(24.0f, 13.5f, -1.0f), out EntityCommandBuffer ECB);
+                    var entity              = tg.spawn.SpawnRequest.create(playerData.prefab, spawnLocation, out EntityCommandBuffer ECB);
                     {
                         ECB.AddComponent<Player>(entity, new Player
                         {

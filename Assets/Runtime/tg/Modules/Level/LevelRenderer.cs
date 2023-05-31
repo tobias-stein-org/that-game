@@ -3,13 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Unity.Entities;
-
+using Unity.Jobs;
 
 namespace tg.level
 {
+    using System.Runtime.InteropServices;
+    using tg.events;
+    using tg.level.events;
+    using static tg.level.LevelData;
+
     [RequireMatchingQueriesForUpdate]
     [UpdateAfter(typeof(LevelGeneratorSystem))]
-    public partial class LevelRendererSystem : SystemBase
+    public partial class LevelRendererSystem : SystemBase, IEventListener<LevelRendererSystem>
     {
         private LevelRenderData renderData;
 
@@ -19,47 +24,53 @@ namespace tg.level
             {
                 this.renderData = data;
             }
+
+            EventQueue.subscribe(this);
         }
 
+        protected override void OnDestroy()
+        {
+            EventQueue.unsubscribe(this);
+        }
         protected override void OnUpdate()
         {
-            var destroy = new List<Entity>();
-            foreach(var (data, entity) in SystemAPI.Query<RenderLevelData>().WithEntityAccess())
-            {
-                destroy.Add(entity);
+            // nothing to do at the moment, so prevent this system from further updating.
+            this.Enabled = false;
+        }
 
-                if(this.renderData == null) { continue; }
-                for(int chunkId = 0; chunkId < data.levelData.numChunks; chunkId++)
+
+        /// <summary>
+        /// Repaint entire tilemap.
+        /// </summary>
+        /// <param name="e"></param>
+        private void onRequestRenderLevelEvent(RequestRenderLevelEvent e)
+        {
+            this.renderTilemap(e.levelData, e.modules);
+        }
+
+        private void renderTilemap(in LevelData levelData, in List<Module> modules)
+        {
+            for(int chunkId = 0; chunkId < levelData.numChunks; chunkId++)
+            {
+                var chunk = levelData.getChunk(chunkId);
+                for(int y = 0; y < chunk.bounds.height; y++)
+                for(int x = 0; x < chunk.bounds.width; x++)
                 {
-                    var chunk = data.levelData.getChunk(chunkId);
-                    for(int y = 0; y < chunk.bounds.height; y++)
-                    for(int x = 0; x < chunk.bounds.width; x++)
+                    var tileId  = (y * chunk.bounds.width) + x;
+                    var tile    = chunk[tileId];
+                    var tilePos = new Vector3Int(chunk.bounds.x + x, chunk.bounds.y + y, 0);
+                    foreach(var (layer, tilemap) in this.renderData.layers)
                     {
-                        var chunkTileId = (y * chunk.bounds.width) + x;
-                        var chunkTile   = chunk.data[chunkTileId];
-                        var tilePos     = new Vector3Int(chunk.bounds.x + x, -(chunk.bounds.y + y), 0);
-                        foreach(var (layer, tilemap) in this.renderData.layers)
+                        var module = tile[layer].id;
+                        if(module != LevelData.Module.INVALID)
                         {
-                            var module = chunkTile[layer].id;
-                            if(module != LevelData.Module.INVALID)
-                            {
-                                tilemap.SetTile(tilePos, data.modules[module]);
-                            }
+                            tilemap.SetTile(tilePos, modules[module]);
                         }
                     }
                 }
             }
-
-            foreach(var e in destroy) { this.EntityManager.DestroyEntity(e); }
         }
     }
-
-    public class RenderLevelData : IComponentData
-    {
-        public LevelData        levelData;
-        public List<Module>     modules;
-    }
-
     public class LevelRenderData : IComponentData
     {
         public Dictionary<int, Tilemap> layers;
@@ -78,7 +89,6 @@ namespace tg.level
                 var gridGO = new GameObject("Level.Grid");
                 {
                     var grid = gridGO.AddComponent<Grid>();
-                    grid.cellSize *= 0.16f;
 
                     foreach(var layer in new[] { LevelData.Layer.Floor, LevelData.Layer.Obstructable })
                     {

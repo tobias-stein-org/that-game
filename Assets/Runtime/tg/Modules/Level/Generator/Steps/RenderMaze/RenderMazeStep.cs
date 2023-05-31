@@ -83,7 +83,7 @@ namespace tg.level
 
             public  struct ModuleMeta : IDisposable
             {
-                public LevelData.Module               module { get; private set; }
+                public LevelData.Module                 module { get; private set; }
 
                 [ReadOnly]
                 public UnsafeList<Color>                pixels;
@@ -656,7 +656,7 @@ namespace tg.level
                             break;
                         }
 
-                        case ModuleConstraints.Side.Top:
+                        case ModuleConstraints.Side.Bottom:
                         {
                             borderA = new NativeArray<Color>(width, Allocator.Temp);
                             borderB = new NativeArray<Color>(width, Allocator.Temp);
@@ -674,7 +674,7 @@ namespace tg.level
                             break;
                         }
 
-                        case ModuleConstraints.Side.Bottom:
+                        case ModuleConstraints.Side.Top:
                         {
                             borderA = new NativeArray<Color>(width, Allocator.Temp);    
                             borderB = new NativeArray<Color>(width, Allocator.Temp);    
