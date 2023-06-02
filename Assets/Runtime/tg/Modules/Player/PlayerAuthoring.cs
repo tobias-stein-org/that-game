@@ -11,6 +11,7 @@ namespace tg.player
         {
             public override void Bake(PlayerAuthoring authoring)
             {
+                if(!Application.isPlaying) { return; }
             }
         }
     }

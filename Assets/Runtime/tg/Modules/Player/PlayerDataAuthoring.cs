@@ -44,7 +44,7 @@ namespace tg.player
                         {
                             ppCamera.refResolutionX = 1920;
                             ppCamera.refResolutionY = 1080;
-                            ppCamera.assetsPPU      = 40;
+                            ppCamera.assetsPPU      = 80;
                             ppCamera.cropFrame      = PixelPerfectCamera.CropFrame.StretchFill;
                         }
                     }
@@ -54,8 +54,9 @@ namespace tg.player
                         {
                             transposer.m_LookaheadTime      = 0.2f;
                             transposer.m_LookaheadSmoothing = 4.0f;
-                            transposer.m_DeadZoneWidth      = 0.2f;
-                            transposer.m_DeadZoneHeight     = 0.2f;
+
+                            transposer.m_DeadZoneWidth      = 0.0f;
+                            transposer.m_DeadZoneHeight     = 0.0f;
                         }
 
                         var pixelPerfect            = companionPlayerCamera.AddComponent<CinemachinePixelPerfect>();
@@ -80,7 +81,7 @@ namespace tg.player
                     companion                       = companionPlayer,
                     camera                          = vcam,
                     prefab                          = playerPref,
-                    isAlive                         = false
+                    possedPlayerEntity              = Entity.Null
                 });
             }
         }
@@ -103,7 +104,10 @@ namespace tg.player
         /// </summary>
         public Entity                   prefab;
 
-        public bool                     isAlive;
+        /// <summary>
+        /// Reference to the actual "possed" player entity.
+        /// </summary>
+        public Entity                   possedPlayerEntity;
     }
 
     /// <summary>

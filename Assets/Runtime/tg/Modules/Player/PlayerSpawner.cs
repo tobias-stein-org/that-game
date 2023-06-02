@@ -4,6 +4,8 @@ using UnityEngine.Scripting;
 namespace tg.player
 {
     using tg.level;
+    using Unity.Mathematics;
+    using Unity.Transforms;
 
     /// <summary>
     /// Simple player spawn system. 
@@ -24,7 +26,7 @@ namespace tg.player
 		{
             foreach(var (playerData, playerDataEntity) in SystemAPI.Query<PlayerData>().WithEntityAccess())
             {
-                if(!playerData.isAlive)
+                if(playerData.possedPlayerEntity == Entity.Null)
                 {
                     var chunk0              = SystemAPI.GetSingleton<LevelData>().getChunk(0);
 
@@ -33,17 +35,17 @@ namespace tg.player
                         chunk0.bounds.y     + (chunk0.bounds.height / 2),
                         -1.0f);
 
-                    // instantiate a new player entity
-                    var entity              = tg.spawn.SpawnRequest.create(playerData.prefab, spawnLocation, out EntityCommandBuffer ECB);
+                    // request to spawn a new player entity
+                    var entity = tg.spawn.SpawnRequest.create(playerData.prefab, spawnLocation, out EntityCommandBuffer ECB);
                     {
                         ECB.AddComponent<Player>(entity, new Player
                         {
-                            playerData      = playerDataEntity
+                            playerData = playerDataEntity
                         });
                     }
 
-                    // set isAlive flag true, when player entity is spawned.
-                    playerData.isAlive      = true;
+                    // when spawned set the possed player entity
+                    playerData.possedPlayerEntity = entity;
                     ECB.SetComponent<PlayerData>(playerDataEntity, playerData);
                 }
             }
