@@ -13,6 +13,7 @@ namespace tg.spawn
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
     /// </summary>
+	//[BurstCompile]
 	[UpdateInGroup(typeof(InitializationSystemGroup))]
 	internal partial class SpawnSystem : SystemBase
 	{
@@ -35,7 +36,7 @@ namespace tg.spawn
 			this.pending.Dispose();
         }
 
-		[BurstCompile]
+		//[BurstCompile]
 		private partial struct CheckSpawnJob : IJobEntity
 		{
 			public double time;
@@ -51,7 +52,7 @@ namespace tg.spawn
 			}
 		}
 
-		[BurstCompile]
+		//[BurstCompile]
 		private partial struct RemoveCompletedSpawnRequestsJob : IJobEntity
 		{
 			public EntityCommandBuffer.ParallelWriter			ecb;
@@ -66,6 +67,7 @@ namespace tg.spawn
 			}
 		}
 
+		//[BurstCompile]
 		protected override void OnUpdate()
         {
 			// Check spawn timers and spawn due objects.
