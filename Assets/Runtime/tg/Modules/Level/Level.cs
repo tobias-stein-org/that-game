@@ -54,6 +54,11 @@ namespace tg.level
             EventQueue.unsubscribe(this);
         }
 
+        void OnDestroy()
+        {
+            this.disposeCurrentLevel();
+        }
+
         private void setupTilemap()
         {
             this.layers = new Dictionary<LevelData.Layer, Tilemap>(LevelData.Layer.MAX_LAYERS);
@@ -78,8 +83,7 @@ namespace tg.level
 
         private void initializeNewGenerator(GeneratorSettings settings)
         {
-            
-            this.abortCurrentGenerator();
+            this.disposeCurrentLevel();
 
             this.generator = new Generator(settings);
 
@@ -87,32 +91,33 @@ namespace tg.level
 
             this.generator.onLevelGeneratorFinished += (in LevelData data) =>
             {
-                // expose LevelData as singleton
-                this.entityManager.SetComponentData(this.entityManager.CreateSingleton<LevelData>(), data);
+                // expose level data to DOTS
+                this.entityManager.CreateSingleton<LevelData>(data);
 
                 EventQueue.publish(new NewLevelGeneratedEvent { levelData = data });
                 this.renderTilemap(in data);
             };
         }
 
-        private void abortCurrentGenerator()
+        private void disposeCurrentLevel()
         {
-            if(this.entityManager.CreateEntityQuery(typeof(LevelData)).TryGetSingletonEntity<LevelData>(out Entity levelData)) { this.entityManager.DestroyEntity(levelData); }
+
+            if(World.DefaultGameObjectInjectionWorld != null && this.entityManager.CreateEntityQuery(typeof(LevelData)).TryGetSingletonEntity<LevelData>(out Entity levelData)) { this.entityManager.DestroyEntity(levelData); }
 
             if(this.executor != null)
             {
                 this.StopCoroutine(this.executor);
                 this.executor = null;
 
+                this.generator?.Dispose();
+
                 EventQueue.publish(new LevelGenerationAbortedEvent {});
             }
-
-            this.generator?.Dispose();
         }
 
         private void startGenerator()
         {
-            this.abortCurrentGenerator();
+            this.disposeCurrentLevel();
             this.executor = this.StartCoroutine(this.generator.execute());
         }
 
