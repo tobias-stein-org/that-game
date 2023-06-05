@@ -65,7 +65,7 @@ namespace tg.level
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
             /// </summary>
-            public readonly int                     id;
+            public int                              id { get; private set; }
 
             /// <summary>
             /// Logical boundaries of a chunk in the virtual world.
@@ -122,6 +122,15 @@ namespace tg.level
 
                 this.data           = new NativeArray<Tile>(Enumerable.Range(0, width * height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
             }
+
+            public static readonly Chunk INVALID = new Chunk
+            {
+                id          = -1,
+                neighbours  = -1,
+                bounds      = default
+            };
+
+            public bool valid { get { return this.id != -1; } }
 
             public void Dispose()
             {
@@ -282,7 +291,6 @@ namespace tg.level
                 this.chunks.Dispose();
             }
         }
-
 
         #region Convenient methods
 
