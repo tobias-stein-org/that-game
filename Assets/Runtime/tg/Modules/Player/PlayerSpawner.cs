@@ -50,7 +50,6 @@ namespace tg.player
                     ECB.SetComponent<PlayerData>(playerDataEntity, playerData);
                 }
             }
-
 		}
     }
 }

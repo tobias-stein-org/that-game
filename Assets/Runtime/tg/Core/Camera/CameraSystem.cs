@@ -10,22 +10,22 @@ namespace tg.camera
     using tg.player.events;
     using tg.spawn.events;
 
+    [CreateAfter(typeof(EventQueue))]
     public partial class CameraSystem : SystemBase, IEventListener<CameraSystem>
     {
         protected override void OnCreate()
         {
-        }
-
-        protected override void OnStartRunning()
-        {
+            this.RequireForUpdate<Player>();
             EventQueue.subscribe(this);
-            this.Enabled = false;
         }
 
+        protected override void OnStopRunning()
+        {
+            EventQueue.unsubscribe(this);
+        }
 
         protected override void OnDestroy()
         {
-            EventQueue.unsubscribe(this);
         }
 
         protected override void OnUpdate()

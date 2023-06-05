@@ -8,7 +8,6 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace tg.spawn
 {
 	using tg.spawn.events;
-    using static UnityEditor.FilePathAttribute;
 
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
