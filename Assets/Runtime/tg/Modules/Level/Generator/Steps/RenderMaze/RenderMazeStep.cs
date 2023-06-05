@@ -462,15 +462,18 @@ namespace tg.level
             {
                 [NativeDisableUnsafePtrRestriction]
                 private readonly unsafe void*       weights;
-                private readonly AtomicSafetyHandle weightsNativeSafetyHandle;
                 private readonly int                numModules;
-
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                private readonly AtomicSafetyHandle weightsNativeSafetyHandle;
+#endif
                 public GridCellModuleWeights(in NativeArray<float> weights, int numModules)
                 {
                     unsafe
                     {
                         this.weights                    = weights.GetUnsafePtr();
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         this.weightsNativeSafetyHandle  = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(weights);
+#endif
                     }
 
                     this.numModules                     = numModules;
@@ -481,7 +484,9 @@ namespace tg.level
                     unsafe
                     {
                         this.weights                    = weights.GetUnsafePtr();
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         this.weightsNativeSafetyHandle  = NativeSliceUnsafeUtility.GetAtomicSafetyHandle(weights);
+#endif
                     }
 
                     this.numModules                     = numModules;
@@ -492,9 +497,10 @@ namespace tg.level
                     unsafe
                     {
                         var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<float>((float*)this.weights + (cellId * this.numModules), sizeof(float), this.numModules);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         // note: this is necessary to ensure all Unity Collection safety checks pass. It basically states that this slice object will be valid as long as the array is valid.
                         NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, this.weightsNativeSafetyHandle);
-
+#endif
                         return slice;
                     }
                 }
