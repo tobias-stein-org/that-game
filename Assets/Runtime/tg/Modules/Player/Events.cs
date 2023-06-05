@@ -13,4 +13,22 @@ namespace tg.player.events
     {
         public Entity   player;
     }
+
+    /// <summary>
+    /// Fired by the PlayerTracker system, when player walked from on level chunk into another.
+    /// </summary>
+    public struct PlayerLevelChunkChangeEvent : IEvent
+    {
+        public Entity   player;
+
+        /// <summary>
+        /// Level chunk id the player entered.
+        /// </summary>
+        public int      enter;
+
+        /// <summary>
+        /// Level chunk id the player left.
+        /// </summary>
+        public int      exit;
+    }
 }
