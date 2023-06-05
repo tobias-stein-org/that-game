@@ -40,7 +40,8 @@ namespace tg.player
                     {
                         ECB.AddComponent<Player>(entity, new Player
                         {
-                            playerData = playerDataEntity
+                            playerData          = playerDataEntity,
+                            currentLevelChunk   = LevelData.Chunk.INVALID.id
                         });
                     }
 

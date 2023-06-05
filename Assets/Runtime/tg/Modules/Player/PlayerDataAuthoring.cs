@@ -115,6 +115,14 @@ namespace tg.player
     /// </summary>
     public struct Player : IComponentData
     {
+        /// <summary>
+        /// Reference to managed player data.
+        /// </summary>
         public Entity                   playerData;
+
+        /// <summary>
+        /// Contains a level chunk id the player is currently located.
+        /// </summary>
+        public int                      currentLevelChunk;
     }
 }
