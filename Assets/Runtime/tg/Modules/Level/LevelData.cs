@@ -303,7 +303,25 @@ namespace tg.level
         /// </summary>
         /// <param name="chunkId"></param>
         /// <returns></returns>
-        public ref Chunk                getChunk(int chunkId) { return ref this.chunks.ElementAt(chunkId); }
+        public ref Chunk                getChunk(int index) { return ref this.chunks.ElementAt(index); }
+        public ref Chunk                getChunkById(int id)
+        {
+            for(int i = 0; i < this.numChunks; i++)
+            {
+                ref var chunk = ref this.chunks.ElementAt(i);
+                if(chunk.id > id)
+                {
+                    break;
+                }
+
+                if(chunk.id == id)
+                {
+                    return ref chunk;
+                }
+            }
+
+            throw new Exception($"Chunk with id {id} does not exist.");
+        }
 
         /// <summary>
         /// Retruns the first matching chunk at this position.
