@@ -6,12 +6,12 @@ namespace tg.player.events
 
     public struct PlayerSpawnedEvent : IEvent
     {
-        public Entity   player;
+        public Player   player;
     }
 
     public struct PlayerDiedEvent : IEvent
     {
-        public Entity   player;
+        public Player   player;
     }
 
     /// <summary>
@@ -19,7 +19,7 @@ namespace tg.player.events
     /// </summary>
     public struct PlayerLevelChunkChangeEvent : IEvent
     {
-        public Entity   player;
+        public Player   player;
 
         /// <summary>
         /// Level chunk id the player entered.

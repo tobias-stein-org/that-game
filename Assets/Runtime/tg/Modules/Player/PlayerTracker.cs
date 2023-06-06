@@ -15,6 +15,7 @@ namespace tg.player
 	using tg.level;
 	using tg.player.events;
 	using tg.level.events;
+    using tg.spawn.events;
 
 	using RectInt = UnityEngine.RectInt;
 
@@ -230,21 +231,21 @@ namespace tg.player
 		{
             var quadtree = SystemAPI.GetSingleton<LevelChunkQuadtree>();
 
-            foreach(var (player, localTransform, entity) in SystemAPI.Query<RefRW<Player>, LocalTransform>().WithEntityAccess())
+            foreach(var (player, localTransform, playerLevelChunk) in SystemAPI.Query<Player, LocalTransform, RefRW<PlayerLevelChunkData>>())
             {
                 var chunkId = quadtree.query(in localTransform.Position).id;
 
-                if(player.ValueRO.currentLevelChunk != chunkId)
+                if(playerLevelChunk.ValueRO.value != chunkId)
                 {
                     EventQueue.publish(new PlayerLevelChunkChangeEvent
                     {
-                        player  = entity,
+                        player  = player,
                         enter   = chunkId,
-                        exit    = player.ValueRO.currentLevelChunk
+                        exit    = playerLevelChunk.ValueRO.value
                     });
                 }
 
-                player.ValueRW.currentLevelChunk = chunkId;
+                playerLevelChunk.ValueRW.value = chunkId;
             }
 		}
 
@@ -263,5 +264,19 @@ namespace tg.player
             this.destroyOldQuadtreeData();
             World.DefaultGameObjectInjectionWorld.EntityManager.CreateSingleton<LevelChunkQuadtree>(new LevelChunkQuadtree(e.levelData));
         }
+
+        void onEntitySpawnedEvent(EntitySpawnedEvent e)
+        {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            if(entityManager.HasComponent<Player>(e.entity))
+            {
+                entityManager.AddComponentData<PlayerLevelChunkData>(e.entity, new PlayerLevelChunkData { value = LevelData.Chunk.INVALID.id });
+            }
+        }
+    }
+
+    public struct PlayerLevelChunkData : IComponentData
+    {
+        public int value;
     }
 }

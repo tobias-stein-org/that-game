@@ -3,6 +3,9 @@ using Unity.Transforms;
 using Unity.Entities;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
+using UnityEngine.Jobs;
+using Unity.Jobs;
 
 namespace tg.player
 {
@@ -12,10 +15,20 @@ namespace tg.player
 	[UpdateInGroup(typeof(TransformSystemGroup))]
     public partial struct UpdatePlayerCompanion : ISystem
     {
-		void OnCreate(ref SystemState state)
-		{
-			state.RequireForUpdate<Player>();
-		}
+		EntityQuery query;
+
+        public void OnCreate(ref SystemState state)
+        {
+            query = state.GetEntityQuery(new EntityQueryDesc
+            {
+                All = new ComponentType[]
+                {
+                    typeof(Player),
+                    typeof(UnityEngine.Transform),
+                    typeof(LocalTransform)
+                }
+            });
+        }
 
 		void OnDestroy(ref SystemState state)
 		{
@@ -23,14 +36,27 @@ namespace tg.player
 
 		void OnUpdate(ref SystemState state)
 		{
-			foreach(var (player, localTransform) in SystemAPI.Query<Player, LocalTransform>())
-			{
-				var playerData = SystemAPI.ManagedAPI.GetComponent<PlayerData>(player.playerData);
-
-				playerData.companion.transform.position = localTransform.Position;
-				playerData.companion.transform.rotation = localTransform.Rotation;
-			}
+            var localTransforms = this.query.ToComponentDataListAsync<LocalTransform>(state.World.UpdateAllocator.ToAllocator, out var jobHandle);
+            var inputDependency = JobHandle.CombineDependencies(state.Dependency, jobHandle);
+            
+			state.Dependency = new SyncPlayerCompanionTransforms
+            {
+                localTransforms = localTransforms
+            }.Schedule(this.query.GetTransformAccessArray(), inputDependency);
 		}
+
+		[BurstCompile]
+        struct SyncPlayerCompanionTransforms : IJobParallelForTransform
+        {
+            [ReadOnly]
+			public NativeList<LocalTransform> localTransforms;
+            
+            public void Execute(int index, TransformAccess transform)
+            {
+                transform.position = this.localTransforms[index].Position;
+                transform.rotation = this.localTransforms[index].Rotation;
+            }
+        }
     }
 }
 
