@@ -60,8 +60,6 @@ namespace tg.level
         /// </summary>
         public struct Chunk : IDisposable
         {
-            internal static int                     nextChunkId = 0;
-
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
             /// </summary>
@@ -268,6 +266,8 @@ namespace tg.level
         /// </summary>
         internal UnsafeList<Chunk>      chunks;
 
+        private int                     nextChunkId;
+
         public ref Chunk createNewChunk(int width, int height)
         {
             if(!this.chunks.IsCreated)
@@ -275,7 +275,7 @@ namespace tg.level
                 this.chunks = new UnsafeList<Chunk>(8, Allocator.Persistent);
             }
 
-            var newChunk = new LevelData.Chunk(LevelData.Chunk.nextChunkId++, width, height);
+            var newChunk = new LevelData.Chunk(this.nextChunkId++, width, height);
 
             this.chunks.Add(newChunk);
             return ref this.chunks.ElementAt(this.chunks.Length - 1);
@@ -290,6 +290,8 @@ namespace tg.level
                 foreach(var chunk in this.chunks) { chunk.Dispose(); }
                 this.chunks.Dispose();
             }
+
+            this.nextChunkId = 0;
         }
 
         #region Convenient methods
