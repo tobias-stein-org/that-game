@@ -143,10 +143,10 @@ namespace tg.level
                 }
             }
 
-            public int leftChunkNeighbour   { get { return this.neighbours[0]; } set { this.neighbours[0] = value; } }
-            public int RightChunkNeighbour  { get { return this.neighbours[1]; } set { this.neighbours[1] = value; } }
-            public int topChunkNeighbour    { get { return this.neighbours[2]; } set { this.neighbours[2] = value; } }
-            public int bottomChunkNeighbour { get { return this.neighbours[3]; } set { this.neighbours[3] = value; } }
+            public int leftNeighbour   { get { return this.neighbours[0]; } set { this.neighbours[0] = value; } }
+            public int rightNeighbour  { get { return this.neighbours[1]; } set { this.neighbours[1] = value; } }
+            public int topNeighbour    { get { return this.neighbours[2]; } set { this.neighbours[2] = value; } }
+            public int bottomNeighbour { get { return this.neighbours[3]; } set { this.neighbours[3] = value; } }
         }
 
         /// <summary>

@@ -113,7 +113,7 @@ namespace tg.level
                             chunk.data[tileId] = tile;
                         }
 
-                        chunk.pathExit = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
+                        chunk.pathExit              = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
                     }
                     else if(to == Vector2Int.right)
                     {
@@ -156,6 +156,31 @@ namespace tg.level
                         }
 
                         chunk.pathExit = new Vector2Int(pathStart + this.mapPathThickness / 2, 0);
+                    }
+
+                    // set chunk neighbours
+                    {
+                        // previous chunk
+                        if(chunkId > 0)
+                        {
+                            ref var prevChunk = ref this.chunks.ElementAt(chunkId - 1);
+
+                                 if(from == Vector2Int.up)      { chunk.topNeighbour    = prevChunk.id; }
+                            else if(from == Vector2Int.down)    { chunk.bottomNeighbour = prevChunk.id; }
+                            else if(from == Vector2Int.left)    { chunk.leftNeighbour   = prevChunk.id; }
+                            else if(from == Vector2Int.right)   { chunk.rightNeighbour  = prevChunk.id; }
+                        }
+
+                        // next chunk
+                        if(chunkId < this.chunks.Length - 2)
+                        {
+                            ref var nextChunk = ref this.chunks.ElementAt(chunkId + 1);
+
+                                 if(to == Vector2Int.up)        { chunk.topNeighbour    = nextChunk.id; }
+                            else if(to == Vector2Int.down)      { chunk.bottomNeighbour = nextChunk.id; }
+                            else if(to == Vector2Int.left)      { chunk.leftNeighbour   = nextChunk.id; }
+                            else if(to == Vector2Int.right)     { chunk.rightNeighbour  = nextChunk.id; }
+                        }
                     }
                 }
             }
