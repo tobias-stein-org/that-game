@@ -4,6 +4,11 @@ namespace tg.player.events
 {
     using tg.events;
 
+    public struct SpawnPlayerRequestEvent : IEvent
+    {
+
+    }
+
     public struct PlayerSpawnedEvent : IEvent
     {
         public Player   player;

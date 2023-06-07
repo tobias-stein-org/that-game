@@ -38,12 +38,6 @@ namespace tg.level
             this.startGenerator();
         }
 
-        void Update()
-        {
-            if(Input.GetKeyDown(KeyCode.Space)) { this.startGenerator(); }
-
-        }
-
         void OnEnable()
         {
             EventQueue.subscribe(this);
