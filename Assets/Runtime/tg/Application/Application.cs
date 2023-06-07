@@ -20,7 +20,7 @@ namespace tg.application
 
 	    void OnDestroy(ref SystemState state)
 	    {
-            this.query.Dispose();
+
 	    }
 
 	    void OnUpdate(ref SystemState state)
