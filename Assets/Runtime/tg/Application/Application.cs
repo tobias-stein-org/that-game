@@ -1,21 +1,19 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+
 using Unity.Entities;
 using Unity.Entities.Content;
 using Unity.Entities.Serialization;
-using UnityEngine.Scripting;
+
 
 namespace tg.application
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial struct ApplicationManager : ISystem
+    public partial struct ApplicationManager : ISystem, ISystemStartStop
     {
-        private EntityQuery query;
-
         void OnCreate(ref SystemState state)
 	    {
-            state.EntityManager.AddComponentData<LoadApplicationData>(state.SystemHandle, new LoadApplicationData {});
             state.RequireForUpdate<ApplicationData>();
-            state.RequireForUpdate<LoadApplicationData>();
 	    }
 
 	    void OnDestroy(ref SystemState state)
@@ -25,14 +23,29 @@ namespace tg.application
 
 	    void OnUpdate(ref SystemState state)
 	    {
+            var appData = SystemAPI.GetSingleton<ApplicationData>();
+
+            if(appData.inputActions.LoadingStatus != ObjectLoadingStatus.Completed) { return; }
+
+            // activa 'tg.input.actions' 
+            appData.inputActions.Result.Enable();
+
+            state.Enabled = false;
+	    }
+
+        public void OnStartRunning(ref SystemState state)
+        {
             // Initialize app data ...
             var appData = SystemAPI.GetSingleton<ApplicationData>();
 
             // load player prefab ...
             appData.playerPrefab.LoadAsync();
+            appData.inputActions.LoadAsync();
+        }
 
-            state.EntityManager.RemoveComponent<LoadApplicationData>(state.SystemHandle);
-	    }
+        public void OnStopRunning(ref SystemState state)
+        {
+        }
     }
 
     /// <summary>
@@ -43,7 +56,9 @@ namespace tg.application
         /// <summary>
         /// Player prefab asset.
         /// </summary>
-        public GameObject   playerPrefab;
+        public GameObject           playerPrefab;
+
+        public InputActionAsset     inputActions;
 
 #if UNITY_EDITOR
         class Baker : Baker<Application>
@@ -51,13 +66,16 @@ namespace tg.application
             public override void Bake(Application authoring)
             {
                 this.DependsOn(authoring.playerPrefab);
+                this.DependsOn(authoring.inputActions);
 
                 if(authoring.playerPrefab == null) { return; }
+                if(authoring.inputActions == null) { return; }
 
                 var appData = GetEntity(TransformUsageFlags.None);
                 AddComponent<ApplicationData>(appData, new ApplicationData
                 {
-                    playerPrefab = new WeakObjectReference<GameObject>(authoring.playerPrefab)
+                    playerPrefab    = new WeakObjectReference<GameObject>(authoring.playerPrefab),
+                    inputActions    = new WeakObjectReference<InputActionAsset>(authoring.inputActions)
                 });
             }
         }
@@ -67,7 +85,9 @@ namespace tg.application
     [System.Serializable]
     public struct ApplicationData : IComponentData
     {
-        public WeakObjectReference<GameObject>   playerPrefab;
+        public WeakObjectReference<GameObject>          playerPrefab;
+
+        public WeakObjectReference<InputActionAsset>    inputActions;
     }
 
     public struct LoadApplicationData : IComponentData {}

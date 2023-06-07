@@ -1,34 +1,37 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
 
 namespace tg.player
 {
+    using tg.application;
+
     public partial class PlayerInputController : SystemBase
     {
-        private static readonly float3 UP       = new float3(0.0f,  1.0f, 0.0f);
-        private static readonly float3 DOWN     = new float3(0.0f, -1.0f, 0.0f);
-        private static readonly float3 LEFT     = new float3(-1.0f, 0.0f, 0.0f);
-        private static readonly float3 RIGHT    = new float3( 1.0f, 0.0f, 0.0f);
+        private InputActionMap  playerActions;
 
         protected override void OnCreate()
         {
             this.RequireForUpdate<Player>();
+            this.RequireForUpdate<ApplicationData>();
+        }
+
+        protected override void OnStartRunning()
+        {
+            this.playerActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.Result.FindActionMap("Player");
         }
 
         protected override void OnUpdate()
         {
-            float speed = 10.0f * this.World.Time.DeltaTime;
+            var speed   = 10.0f * this.World.Time.DeltaTime;
+            var move    = playerActions.FindAction("move").ReadValue<Vector2>();
 
             foreach(var localTransform in SystemAPI.Query<RefRW<LocalTransform>>().WithAll<Player>())
             {
-                if(Input.GetKey(KeyCode.W)) { localTransform.ValueRW.Position += UP * speed; }
-                if(Input.GetKey(KeyCode.S)) { localTransform.ValueRW.Position += DOWN * speed; }
-                if(Input.GetKey(KeyCode.A)) { localTransform.ValueRW.Position += LEFT * speed; }
-                if(Input.GetKey(KeyCode.D)) { localTransform.ValueRW.Position += RIGHT * speed; }
+                localTransform.ValueRW.Position += new float3(move.x, move.y, 0.0f) * speed;
             }
         }
     }
 }
-
