@@ -18,7 +18,7 @@ namespace tg.events
     {
         private static EventQueue                                   Instance        = null;
 
-        private bool                                                isDisposed      = false;
+        public bool                                                 isDisposed      { get; private set; } = false;
 
         private readonly HashSet<int>                               subscriber      = new HashSet<int>();
         private readonly Dictionary<EventType, List<EventHandler>>  eventHandler    = new Dictionary<EventType, List<EventHandler>>();
@@ -100,7 +100,7 @@ namespace tg.events
 
             if(Instance.subscriber.Contains(instnaceId))
             {
-                Debug.LogWarning($"Event listener {TListener.FullName} instance [{instnaceId}] already subscribed.");
+                //Debug.Log($"Event listener {TListener.FullName} instance [{instnaceId}] already subscribed.");
                 return;
             }
 

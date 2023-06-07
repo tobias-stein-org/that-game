@@ -20,9 +20,11 @@ namespace tg.level
         /// Wave-Function-Collapse (WFC) algorithm to render each tile in the maze giving a
         /// set of constraints and input modules (sprites).
         /// </summary>
+        [BurstCompile]
         public class RenderMazeStep : LevelGeneratorStep<RenderMazeStepSettings>
         {
             public  const float                     EPSILONE = 1e-6f;
+
 
             /// <summary>
             /// Utitliy struct that stores the current state of the WFC algorithm. This state
@@ -83,7 +85,7 @@ namespace tg.level
 
             public  struct ModuleMeta : IDisposable
             {
-                public LevelData.Module               module { get; private set; }
+                public LevelData.Module                 module { get; private set; }
 
                 [ReadOnly]
                 public UnsafeList<Color>                pixels;
@@ -460,15 +462,18 @@ namespace tg.level
             {
                 [NativeDisableUnsafePtrRestriction]
                 private readonly unsafe void*       weights;
-                private readonly AtomicSafetyHandle weightsNativeSafetyHandle;
                 private readonly int                numModules;
-
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                private readonly AtomicSafetyHandle weightsNativeSafetyHandle;
+#endif
                 public GridCellModuleWeights(in NativeArray<float> weights, int numModules)
                 {
                     unsafe
                     {
                         this.weights                    = weights.GetUnsafePtr();
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         this.weightsNativeSafetyHandle  = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(weights);
+#endif
                     }
 
                     this.numModules                     = numModules;
@@ -479,7 +484,9 @@ namespace tg.level
                     unsafe
                     {
                         this.weights                    = weights.GetUnsafePtr();
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         this.weightsNativeSafetyHandle  = NativeSliceUnsafeUtility.GetAtomicSafetyHandle(weights);
+#endif
                     }
 
                     this.numModules                     = numModules;
@@ -490,9 +497,10 @@ namespace tg.level
                     unsafe
                     {
                         var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<float>((float*)this.weights + (cellId * this.numModules), sizeof(float), this.numModules);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                         // note: this is necessary to ensure all Unity Collection safety checks pass. It basically states that this slice object will be valid as long as the array is valid.
                         NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, this.weightsNativeSafetyHandle);
-
+#endif
                         return slice;
                     }
                 }
@@ -656,7 +664,7 @@ namespace tg.level
                             break;
                         }
 
-                        case ModuleConstraints.Side.Top:
+                        case ModuleConstraints.Side.Bottom:
                         {
                             borderA = new NativeArray<Color>(width, Allocator.Temp);
                             borderB = new NativeArray<Color>(width, Allocator.Temp);
@@ -674,7 +682,7 @@ namespace tg.level
                             break;
                         }
 
-                        case ModuleConstraints.Side.Bottom:
+                        case ModuleConstraints.Side.Top:
                         {
                             borderA = new NativeArray<Color>(width, Allocator.Temp);    
                             borderB = new NativeArray<Color>(width, Allocator.Temp);    
@@ -1435,7 +1443,7 @@ namespace tg.level
                             : chunk.data.Slice(0, 0),
                         chunkTop                            = chunkTop.HasValue
                             // get slice of the bottom border of the top neighbour map chunk
-                            ? chunkTop.Value.data.Slice(chunkTop.Value.dataSize - chunkTop.Value.bounds.width, chunkTop.Value.bounds.width)
+                            ? chunkTop.Value.data.Slice(chunkTop.Value.data.Length - chunkTop.Value.bounds.width, chunkTop.Value.bounds.width)
                             : chunk.data.Slice(0, 0),
                         chunkBottom                         = chunkBottom.HasValue
                             // get slice of the top border of the bottom neighbour map chunk
@@ -1443,10 +1451,10 @@ namespace tg.level
                             : chunk.data.Slice(0, 0),
 
                         chunkTopLeft                        = chunkTopLeft.HasValue
-                            ? chunkTopLeft.Value.data.Slice(chunkTopLeft.Value.dataSize - 1, 1)
+                            ? chunkTopLeft.Value.data.Slice(chunkTopLeft.Value.data.Length - 1, 1)
                             : chunk.data.Slice(0, 0),
                         chunkTopRight                       = chunkTopRight.HasValue
-                            ? chunkTopRight.Value.data.Slice(chunkTopRight.Value.dataSize - chunkTopRight.Value.bounds.width, 1)
+                            ? chunkTopRight.Value.data.Slice(chunkTopRight.Value.data.Length - chunkTopRight.Value.bounds.width, 1)
                             : chunk.data.Slice(0, 0),
                         chunkBottomLeft                     = chunkBottomLeft.HasValue
                             ? chunkBottomLeft.Value.data.Slice(chunkBottomLeft.Value.bounds.width - 1, 1)

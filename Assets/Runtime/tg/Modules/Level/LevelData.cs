@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
+using static tg.level.LevelData;
 
 namespace tg.level
 {
@@ -13,7 +14,7 @@ namespace tg.level
     /// A commonly shared data object between level generation steps. Each step may add its own
     /// relevant level data to the partial struct and can access data declared by other steps. 
     /// </summary>
-    public partial struct LevelData : IDisposable
+    public partial struct LevelData : IComponentData, IDisposable
     {
         /// <summary>
         /// Level tiles can be build of multiple layers. Each layer has a certains index which determines, if a layer
@@ -57,12 +58,12 @@ namespace tg.level
         /// Auxilary struct that holds more information of a certain chunk in the
         /// global data array.
         /// </summary>
-        public struct Chunk : IDisposable, IComponentData
+        public struct Chunk : IDisposable
         {
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
             /// </summary>
-            public readonly int                     id;
+            public int                              id { get; private set; }
 
             /// <summary>
             /// Logical boundaries of a chunk in the virtual world.
@@ -88,26 +89,27 @@ namespace tg.level
             public Vector2Int                       pathExit;
 
             /// <summary>
-            /// Holds the index of the very first data entry in the global chunk data array for this particular chunk.
-            /// </summary>
-            public int                              dataIndex0;
-
-            /// <summary>
-            /// The number of data entries in the global data array (this is basically bounds.width * bounds.height).
-            /// </summary>
-            public int                              dataSize;
-
-            /// <summary>
             /// Reference to the chunk owned tile data.
             /// </summary>
-            public NativeSlice<Tile>                data;
+            public NativeArray<Tile>                data;
 
+            public Tile                             this[int tileId]
+            {
+                get { return this.data[tileId]; }
+                set { this.data[tileId] = value; }
+            }
+
+            public Tile                             this[int x, int y]
+            {
+                get { return this.data[(this.bounds.width * y) + x]; }
+                set { this.data[(this.bounds.width * y) + x] = value; }
+            }
 
             /// <summary>
             /// Creates a new chunk info element.
             /// </summary>
             /// <param name="chunkId"></param>
-            public Chunk(int chunkId)
+            internal Chunk(int chunkId, int width, int height)
             {
                 this.id             = chunkId;
                 this.neighbours     = -1;
@@ -116,20 +118,35 @@ namespace tg.level
                 this.wallSize       = 0;
                 this.pathExit       = default;
 
-                this.dataIndex0     = 0;
-                this.dataSize       = 0;
-                this.data           = default;
+                this.data           = new NativeArray<Tile>(Enumerable.Range(0, width * height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
             }
+
+            public static readonly Chunk INVALID = new Chunk
+            {
+                id          = -1,
+                neighbours  = -1,
+                bounds      = default
+            };
+
+            public bool valid { get { return this.id != -1; } }
 
             public void Dispose()
             {
-                
+                if(this.data.IsCreated)
+                {
+                    foreach(var tile in this.data)
+                    {
+                        if(tile.IsCreated) { tile.Dispose(); }
+                    }
+
+                    this.data.Dispose();
+                }
             }
 
-            public int leftChunkNeighbour   { get { return this.neighbours[0]; } set { this.neighbours[0] = value; } }
-            public int RightChunkNeighbour  { get { return this.neighbours[1]; } set { this.neighbours[1] = value; } }
-            public int topChunkNeighbour    { get { return this.neighbours[2]; } set { this.neighbours[2] = value; } }
-            public int bottomChunkNeighbour { get { return this.neighbours[3]; } set { this.neighbours[3] = value; } }
+            public int leftNeighbour   { get { return this.neighbours[0]; } set { this.neighbours[0] = value; } }
+            public int rightNeighbour  { get { return this.neighbours[1]; } set { this.neighbours[1] = value; } }
+            public int topNeighbour    { get { return this.neighbours[2]; } set { this.neighbours[2] = value; } }
+            public int bottomNeighbour { get { return this.neighbours[3]; } set { this.neighbours[3] = value; } }
         }
 
         /// <summary>
@@ -249,42 +266,19 @@ namespace tg.level
         /// </summary>
         internal UnsafeList<Chunk>      chunks;
 
-        /// <summary>
-        /// The actual tile data array. Chunks will hold a reference to their slice of data into this array.
-        /// </summary>
-        private NativeArray<Tile>       data;
+        private int                     nextChunkId;
 
-        public void addChunk(ref Chunk chunk)
+        public ref Chunk createNewChunk(int width, int height)
         {
             if(!this.chunks.IsCreated)
             {
                 this.chunks = new UnsafeList<Chunk>(8, Allocator.Persistent);
             }
 
-            if(this.data.IsCreated)
-            {
-                var currentSize = this.data.Length;
-                var newData     = new NativeArray<Tile>(Enumerable.Range(0, currentSize + chunk.dataSize).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
+            var newChunk = new LevelData.Chunk(this.nextChunkId++, width, height);
 
-                newData.Slice(0, currentSize).CopyFrom(this.data);
-                this.data.Dispose();
-                this.data       = newData;
-            }
-            else
-            {
-                this.data = new NativeArray<Tile>(Enumerable.Range(0, chunk.dataSize).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
-            }
-
-            // since we have resized the data array, all chunk data slices are invalid and need to be updated
-            for(int chunkId = 0; chunkId < this.chunks.Length; chunkId++)
-            {
-                ref var c       = ref this.chunks.ElementAt(chunkId);
-                c.data          = this.data.Slice(c.dataIndex0, c.dataSize);
-            }
-
-            chunk.dataIndex0    = this.data.Length - chunk.dataSize;
-            chunk.data          = this.data.Slice(chunk.dataIndex0, chunk.dataSize);
-            this.chunks.Add(chunk);
+            this.chunks.Add(newChunk);
+            return ref this.chunks.ElementAt(this.chunks.Length - 1);
         }
 
         public void Dispose()
@@ -292,20 +286,13 @@ namespace tg.level
             // dispose of all chunk data
             if(this.chunks.IsCreated)
             {
-                Debug.Log($"Dispose of {this.chunks.Length} level chunks.");
+                Debug.Log($"Dispose of {this.chunks.Length} level chunks [{this.chunks.Length * this.chunks[0].data.Length} tiles].");
                 foreach(var chunk in this.chunks) { chunk.Dispose(); }
                 this.chunks.Dispose();
             }
 
-            // dispose all tile data
-            if(this.data.IsCreated)
-            {
-                Debug.Log($"Dispose of {this.data.Length} level tiles.");
-                foreach(var tile in this.data) { tile.Dispose(); }
-                this.data.Dispose();
-            }
+            this.nextChunkId = 0;
         }
-
 
         #region Convenient methods
 
@@ -316,7 +303,25 @@ namespace tg.level
         /// </summary>
         /// <param name="chunkId"></param>
         /// <returns></returns>
-        public ref Chunk                getChunk(int chunkId) { return ref this.chunks.ElementAt(chunkId); }
+        public ref Chunk                getChunk(int index) { return ref this.chunks.ElementAt(index); }
+        public ref Chunk                getChunkById(int id)
+        {
+            for(int i = 0; i < this.numChunks; i++)
+            {
+                ref var chunk = ref this.chunks.ElementAt(i);
+                if(chunk.id > id)
+                {
+                    break;
+                }
+
+                if(chunk.id == id)
+                {
+                    return ref chunk;
+                }
+            }
+
+            throw new Exception($"Chunk with id {id} does not exist.");
+        }
 
         /// <summary>
         /// Retruns the first matching chunk at this position.

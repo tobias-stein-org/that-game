@@ -39,65 +39,63 @@ namespace tg.level
                 public void Execute(int chunkId)
                 {
                     var from        = chunkId > 0                       ? -this.pathSteps[chunkId - 1]  : Vector2Int.zero;
-                    var to          = chunkId < this.pathSteps.Length   ? this.pathSteps[chunkId]       : Vector2Int.zero;
+                    var to          = chunkId < this.pathSteps.Length   ?  this.pathSteps[chunkId]      : Vector2Int.zero;
 
                     ref var chunk   = ref this.chunks.ElementAt(chunkId);
 
                     // draw walls
                     chunk.wallSize = this.mapChunkWallSize;
                     for(int y = 0; y < chunk.bounds.height; y++)
+                    for(int x = 0; x < chunk.bounds.width;  x++)
                     {
-                        for(int x = 0; x < chunk.bounds.width; x++)
+                        var tileId  = (y * chunk.bounds.width) + x;
+                        var tile    = chunk.data[tileId];
+
+                        // top-left
+                        if(x < this.mapChunkWallSize && y < this.mapChunkWallSize)
                         {
-                            var tileId  = (y * chunk.bounds.width) + x;
-                            var tile    = chunk.data[tileId];
-
-                            // top-left
-                            if(x < this.mapChunkWallSize && y < this.mapChunkWallSize)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-                            // top-right
-                            else if(x > chunk.bounds.width - this.mapChunkWallSize - 1 && y < this.mapChunkWallSize)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-                            // bottom-left
-                            else if(x < this.mapChunkWallSize && y > chunk.bounds.height - this.mapChunkWallSize - 1)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-                            // bottom-right
-                            else if(x > chunk.bounds.width - this.mapChunkWallSize - 1 && y > chunk.bounds.height - this.mapChunkWallSize - 1)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-                            // left wall
-                            else if(x < this.mapChunkWallSize && from != Vector2Int.left && to != Vector2Int.left)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-
-                            // right wall
-                            else if(x >= (chunk.bounds.width - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-
-                            // top wall
-                            else if(y >= (chunk.bounds.height - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-
-                            // bottom wall
-                            else if(y < this.mapChunkWallSize && from != Vector2Int.down && to != Vector2Int.down)
-                            {
-                                tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
-                            }
-
-                            chunk.data[tileId] = tile;
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
                         }
+                        // top-right
+                        else if(x > chunk.bounds.width - this.mapChunkWallSize - 1 && y < this.mapChunkWallSize)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+                        // bottom-left
+                        else if(x < this.mapChunkWallSize && y > chunk.bounds.height - this.mapChunkWallSize - 1)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+                        // bottom-right
+                        else if(x > chunk.bounds.width - this.mapChunkWallSize - 1 && y > chunk.bounds.height - this.mapChunkWallSize - 1)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+                        // left wall
+                        else if(x < this.mapChunkWallSize && from != Vector2Int.left && to != Vector2Int.left)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+
+                        // right wall
+                        else if(x >= (chunk.bounds.width - this.mapChunkWallSize) && from != Vector2Int.right && to != Vector2Int.right)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+
+                        // top wall
+                        else if(y >= (chunk.bounds.height - this.mapChunkWallSize) && from != Vector2Int.up && to != Vector2Int.up)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+
+                        // bottom wall
+                        else if(y < this.mapChunkWallSize && from != Vector2Int.down && to != Vector2Int.down)
+                        {
+                            tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
+                        }
+
+                        chunk.data[tileId] = tile;
                     }
 
                     // draw path
@@ -115,7 +113,7 @@ namespace tg.level
                             chunk.data[tileId] = tile;
                         }
 
-                        chunk.pathExit = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
+                        chunk.pathExit              = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
                     }
                     else if(to == Vector2Int.right)
                     {
@@ -158,6 +156,31 @@ namespace tg.level
                         }
 
                         chunk.pathExit = new Vector2Int(pathStart + this.mapPathThickness / 2, 0);
+                    }
+
+                    // set chunk neighbours
+                    {
+                        // previous chunk
+                        if(chunkId > 0)
+                        {
+                            ref var prevChunk = ref this.chunks.ElementAt(chunkId - 1);
+
+                                 if(from == Vector2Int.up)      { chunk.topNeighbour    = prevChunk.id; }
+                            else if(from == Vector2Int.down)    { chunk.bottomNeighbour = prevChunk.id; }
+                            else if(from == Vector2Int.left)    { chunk.leftNeighbour   = prevChunk.id; }
+                            else if(from == Vector2Int.right)   { chunk.rightNeighbour  = prevChunk.id; }
+                        }
+
+                        // next chunk
+                        if(chunkId < this.chunks.Length - 2)
+                        {
+                            ref var nextChunk = ref this.chunks.ElementAt(chunkId + 1);
+
+                                 if(to == Vector2Int.up)        { chunk.topNeighbour    = nextChunk.id; }
+                            else if(to == Vector2Int.down)      { chunk.bottomNeighbour = nextChunk.id; }
+                            else if(to == Vector2Int.left)      { chunk.leftNeighbour   = nextChunk.id; }
+                            else if(to == Vector2Int.right)     { chunk.rightNeighbour  = nextChunk.id; }
+                        }
                     }
                 }
             }
@@ -233,7 +256,7 @@ namespace tg.level
 
                 var mergeJob                = new MergeOverlappingChunksJob
                 {
-                    chunks               = context.level.chunks,
+                    chunks                  = context.level.chunks,
                 };
                 context.schedule(mergeJob, dependsOn);
 
@@ -245,36 +268,34 @@ namespace tg.level
             public override void initialize(Generator.Context context)
             {
                 int numChunks               = context.level.pathSteps.Length + 1;
-
                 // create level chunks from previously generated path and pre-compute chunk bounds and data index.
                 {
                     for(int chunkId = 0; chunkId < numChunks; chunkId++)
                     {
-                        var chunkInfo           = new LevelData.Chunk(chunkId);
                         var chunkWidth          = this.settings.mapChunkDimensions.x;
                         var chunkHeight         = this.settings.mapChunkDimensions.y;
+                        ref var chunk           = ref context.level.createNewChunk(chunkWidth, chunkHeight);
 
                         if(chunkId > 0)
                         {
-                            //var last            = context.level.chunks[chunkId - 1];
                             var last            = context.level.getChunk(chunkId - 1);
-                            var from            = context.level.pathSteps[chunkId - 1];
+                            var from            = -context.level.pathSteps[chunkId - 1];
 
-                            chunkInfo.bounds    = new RectInt
+                            chunk.bounds    = new RectInt
                             {
                                 x               = from.x != 0
                                     ? from.x == -1
-                                        // came from right
-                                        ? last.bounds.x - chunkWidth
                                         // came from left
-                                        : last.bounds.x + last.bounds.width
+                                        ? last.bounds.x + chunkWidth
+                                        // came from right
+                                        : last.bounds.x - chunkWidth
                                     : last.bounds.x,
                                 y               = from.y != 0
                                     ? from.y == -1
                                         // came from bottom
-                                        ? last.bounds.y - chunkHeight
+                                        ? last.bounds.y + chunkHeight
                                         // came from top
-                                        : last.bounds.y + last.bounds.height
+                                        : last.bounds.y - chunkHeight
                                     : last.bounds.y,
                                 width           = chunkWidth,
                                 height          = chunkHeight
@@ -283,11 +304,8 @@ namespace tg.level
                         // first chunk
                         else
                         {
-                            chunkInfo.bounds    = new RectInt(Vector2Int.zero, new Vector2Int(chunkWidth, chunkHeight));
+                            chunk.bounds    = new RectInt(Vector2Int.zero, new Vector2Int(chunkWidth, chunkHeight));
                         }
-
-                        chunkInfo.dataSize      = chunkInfo.bounds.width * chunkInfo.bounds.height;
-                        context.level.addChunk(ref chunkInfo);
 
                         //Debug.Log($"Chunk[{chunkId}]: {chunkInfo.bounds} (Index0: {chunkInfo.dataIndex0}, size: {chunkInfo.dataSize})");
                     }
