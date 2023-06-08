@@ -25,7 +25,6 @@ namespace tg.camera
     {
         private GameObject                      cameraLevelBoundsGO     = null;
         private Dictionary<int, BoxCollider2D>  levelChunkBounds        = new Dictionary<int, BoxCollider2D>(16);
-        private CinemachineConfiner             confiner                = null;
         private int                             currentLevelChunk       = LevelData.Chunk.INVALID.id;
 
         protected override void OnCreate()
@@ -46,21 +45,22 @@ namespace tg.camera
 
         protected override void OnUpdate()
         {
-            if(this.confiner == null || this.currentLevelChunk == LevelData.Chunk.INVALID.id) { return; }
+            if(this.currentLevelChunk == LevelData.Chunk.INVALID.id) { return; }
 
+            foreach(var vcam in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<CinemachineVirtualCamera>>().WithAll<Player>())
+            {
+                var transposer                      = vcam.Value.GetCinemachineComponent<CinemachineFramingTransposer>();
+                var chunkBounds                     = this.levelChunkBounds[this.currentLevelChunk];
 
-            var vcam                            = (CinemachineVirtualCamera)this.confiner.VirtualCamera;
-            var transposer                      = vcam.GetCinemachineComponent<CinemachineFramingTransposer>();
-            var chunkBounds                     = this.levelChunkBounds[this.currentLevelChunk];
+                var offset                          = chunkBounds.offset - (UnityEngine.Vector2)vcam.Value.Follow.position;
+                var offsetNormalized                = new Vector2(offset.x / chunkBounds.size.x, offset.y / chunkBounds.size.y);
 
-            var offset                          = chunkBounds.offset - (UnityEngine.Vector2)vcam.Follow.position;
-            var offsetNormalized                = new Vector2(offset.x / chunkBounds.size.x, offset.y / chunkBounds.size.y);
+                // clamp offset to closest world axis (X or Y)
+                if(Mathf.Abs(offsetNormalized.x) < Mathf.Abs(offsetNormalized.y)) { offset.y = 0.0f; } else { offset.x = 0.0f; }
 
-            // clamp offset to closest world axis (X or Y)
-            if(Mathf.Abs(offsetNormalized.x) < Mathf.Abs(offsetNormalized.y)) { offset.y = 0.0f; } else { offset.x = 0.0f; }
-
-            // this will keep the camera focus aligned with the level bounds
-            transposer.m_TrackedObjectOffset    = Vector2.Lerp(transposer.m_TrackedObjectOffset, offset, SystemAPI.Time.DeltaTime * 2);
+                // this will keep the camera focus aligned with the level bounds
+                transposer.m_TrackedObjectOffset    = Vector2.Lerp(transposer.m_TrackedObjectOffset, offset, SystemAPI.Time.DeltaTime * 2);
+            }
         }
 
         private void createNewCameraLevelBounds(in LevelData data)
@@ -120,13 +120,11 @@ namespace tg.camera
             if(this.currentLevelChunk == LevelData.Chunk.INVALID.id) { return; }
         }
 
-        void onEntitySpawnedEvent(EntitySpawnedEvent e)
+        void onEntitySpawnedEvent(GameObjectSpawnedEvent e)
         {
-            if(this.EntityManager.HasComponent<Player>(e.entity))
+            if(e.gameObject.GetComponent<PlayerAuthoring>() != null)
             {
-                // very hacky, not proud about it.
-                this.confiner                   = this.EntityManager.GetComponentObject<UnityEngine.Transform>(e.entity).GetComponentInChildren<CinemachineConfiner>();
-                this.confiner.m_BoundingShape2D = this.cameraLevelBoundsGO.GetComponent<CompositeCollider2D>();
+                e.gameObject.GetComponentInChildren<CinemachineConfiner>().m_BoundingShape2D = this.cameraLevelBoundsGO.GetComponent<CompositeCollider2D>();
             }
         }
     }
