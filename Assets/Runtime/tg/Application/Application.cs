@@ -8,12 +8,19 @@ using Unity.Entities.Serialization;
 
 namespace tg.application
 {
+    using tg.events;
+    using tg.assets;
+    using tg.application.events;
+
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial struct ApplicationManager : ISystem, ISystemStartStop
+    [CreateAfter(typeof(EventQueue))]
+    public partial struct ApplicationManager : ISystem, ISystemStartStop, IEventListener<ApplicationManager>
     {
         void OnCreate(ref SystemState state)
 	    {
             state.RequireForUpdate<ApplicationData>();
+
+            EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<ApplicationManager>(state.SystemHandle));
 	    }
 
 	    void OnDestroy(ref SystemState state)
@@ -23,24 +30,31 @@ namespace tg.application
 
 	    void OnUpdate(ref SystemState state)
 	    {
-            var appData = SystemAPI.GetSingleton<ApplicationData>();
-
-            if(appData.inputActions.LoadingStatus != ObjectLoadingStatus.Completed) { return; }
-
-            // activa 'tg.input.actions' 
-            appData.inputActions.Result.Enable();
-
             state.Enabled = false;
 	    }
-
+       
         public void OnStartRunning(ref SystemState state)
         {
             // Initialize app data ...
-            var appData = SystemAPI.GetSingleton<ApplicationData>();
+            var appData         = SystemAPI.GetSingleton<ApplicationData>();
+            var appDataEntity   = SystemAPI.GetSingletonEntity<ApplicationData>();
 
-            // load player prefab ...
-            appData.playerPrefab.LoadAsync();
-            appData.inputActions.LoadAsync();
+            reqeust.load(new UntypedWeakReferenceId[]
+            {
+                appData.playerPrefab,
+                appData.inputActions
+            },
+            (hadErrors) =>
+            {
+                if(hadErrors) { throw new System.Exception("Failed to load application data."); }
+
+                // activate 'tg.input.actions' 
+                appData.inputActions.result.Enable();
+
+                World.DefaultGameObjectInjectionWorld.EntityManager.AddComponent<ApplicationDataLoaded>(appDataEntity);
+
+                EventQueue.publish(new ApplicationDataLoadedEvent { appData = appData });
+            });
         }
 
         public void OnStopRunning(ref SystemState state)
@@ -83,22 +97,21 @@ namespace tg.application
                 var appData = GetEntity(TransformUsageFlags.None);
                 AddComponent<ApplicationData>(appData, new ApplicationData
                 {
-                    playerPrefab    = new WeakObjectReference<GameObject>(authoring.playerPrefab),
-                    inputActions    = new WeakObjectReference<InputActionAsset>(authoring.inputActions)
+                    playerPrefab    = new WeakAssetReference<GameObject>(authoring.playerPrefab),
+                    inputActions    = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
                 });
             }
         }
 #endif
     }
 
-    [System.Serializable]
     public struct ApplicationData : IComponentData
     {
-        public WeakObjectReference<GameObject>          playerPrefab;
+        public WeakAssetReference<GameObject>          playerPrefab;
 
-        public WeakObjectReference<InputActionAsset>    inputActions;
+        public WeakAssetReference<InputActionAsset>    inputActions;
     }
 
-    public struct LoadApplicationData : IComponentData {}
+    struct ApplicationDataLoaded : IComponentData {}
 }
 

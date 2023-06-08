@@ -15,12 +15,12 @@ namespace tg.player
         protected override void OnCreate()
         {
             this.RequireForUpdate<Player>();
-            this.RequireForUpdate<ApplicationData>();
+            this.RequireForUpdate<ApplicationDataLoaded>();
         }
 
         protected override void OnStartRunning()
         {
-            this.playerActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.Result.FindActionMap("Player");
+            this.playerActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Player");
         }
 
         protected override void OnUpdate()

@@ -19,6 +19,7 @@ namespace tg.player
         void OnCreate (ref SystemState state)
 		{
             state.RequireForUpdate<LevelData>();
+            state.RequireForUpdate<ApplicationDataLoaded>();
 
             EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
 		}
@@ -39,7 +40,7 @@ namespace tg.player
                 chunk0.bounds.y + (chunk0.bounds.height / 2),
                 -1.0f);
 
-            tg.spawn.request.create(appData.playerPrefab.Result, in spawnLocation);
+            tg.spawn.request.create(appData.playerPrefab, in spawnLocation);
         }
     }
 

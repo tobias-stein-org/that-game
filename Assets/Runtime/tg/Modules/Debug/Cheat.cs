@@ -9,20 +9,18 @@ namespace tg.debug
 
     using tg.level.events;
     using tg.player.events;
+    using tg.application.events;
 
     public partial class Cheat : SystemBase
     {
         protected override void OnCreate()
         {
-            this.RequireForUpdate<ApplicationData>();
+            this.RequireForUpdate<ApplicationDataLoaded>();
         }
 
         protected override void OnUpdate()
         {
-            while(SystemAPI.GetSingleton<ApplicationData>().inputActions.LoadingStatus != Unity.Entities.Content.ObjectLoadingStatus.Completed) { return; }
-
-
-            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.Result.FindActionMap("Debug");
+            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
 
             debugActions.FindAction("quit").performed += onQuit;
             debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
