@@ -31,9 +31,9 @@ namespace tg.debug
             this.Enabled = false;
         }
 
-        protected override void OnDestroy()
+        void onApplicationQuitEvent(ApplicationQuitEvent e)
         {
-            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.Result.FindActionMap("Debug");
+            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
             
             debugActions.FindAction("quit").performed -= onQuit;
             debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
@@ -52,11 +52,7 @@ namespace tg.debug
 
         private void onQuit(InputAction.CallbackContext obj)
         {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            UnityEngine.Application.Quit();
-#endif
+            EventQueue.publish(new ApplicationQuitEvent {});
         }
     }
 }

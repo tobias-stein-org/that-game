@@ -46,6 +46,15 @@ namespace tg.application
         public void OnStopRunning(ref SystemState state)
         {
         }
+
+        void onApplicationQuitEvent(ApplicationQuitEvent e)
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            UnityEngine.Application.Quit();
+#endif
+        }
     }
 
     /// <summary>
