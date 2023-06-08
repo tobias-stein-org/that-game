@@ -31,6 +31,15 @@ namespace tg.debug
             this.Enabled = false;
         }
 
+        protected override void OnDestroy()
+        {
+            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.Result.FindActionMap("Debug");
+            
+            debugActions.FindAction("quit").performed -= onQuit;
+            debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
+            debugActions.FindAction("new_level").performed -= onNewLevel;
+        }
+
         private void onNewLevel(InputAction.CallbackContext obj)
         {
             EventQueue.publish(new RequestNewLevelEvent {});
@@ -38,7 +47,7 @@ namespace tg.debug
 
         private void onSpawnPlayer(InputAction.CallbackContext obj)
         {
-            EventQueue.publish(new SpawnPlayerRequestEvent {});   
+            EventQueue.publish(new SpawnPlayerRequestEvent { });   
         }
 
         private void onQuit(InputAction.CallbackContext obj)
