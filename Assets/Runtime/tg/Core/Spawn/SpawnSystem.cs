@@ -10,55 +10,71 @@ namespace tg.spawn
 {
     using System.Runtime.InteropServices;
     using tg.spawn.events;
+    using static UnityEditor.FilePathAttribute;
+    using static UnityEngine.EventSystems.EventTrigger;
 
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
     /// </summary>
-	//[BurstCompile]
+    //[BurstCompile]
 	[UpdateInGroup(typeof(InitializationSystemGroup))]
 	internal partial class SpawnSystem : SystemBase
 	{
 		/// <summary>
 		/// Processed by the SpawnSystem.
 		/// </summary>
-		private struct SpawnRequest : IComponentData
+		private struct SpawnRequest : IComponentData, System.IEquatable<SpawnRequest>
 		{
+			public int					id;
+
 			/// <summary>
 			/// When.
 			/// </summary>
 			public double				spawnTime;
 
 			/// <summary>
+			/// Where.
+			/// </summary>
+			public float3				location;
+
+			/// <summary>
 			/// Placeholder id to the actual entity to be spawned.
 			/// </summary>
 			public Entity				entity;
 
+			/// <summary>
+			/// If a GameObject is created instead of an entity, this GCHandle will hold a valid reference to the prefab.
+			/// </summary>
 			public GCHandle				prefabGO;
-		}
+
+            public bool Equals(SpawnRequest other) { return this.id.Equals(other.id); }
+        }
 
 		private struct SpawnRequestComplete : IComponentData {}
 
 
-		private UnsafeHashMap<Entity, EntityCommandBuffer>	pending;
+		private UnsafeHashMap<SpawnRequest, EntityCommandBuffer>	pending;
+
+		private int													nextRequestId;
 
 		protected override void OnCreate()
 		{
 			this.RequireForUpdate<SpawnRequest>();
 
-			this.pending	= new UnsafeHashMap<Entity, EntityCommandBuffer>(1, Allocator.Persistent);
+			this.pending		= new UnsafeHashMap<SpawnRequest, EntityCommandBuffer>(1, Allocator.Persistent);
+			this.nextRequestId	= 0;
 		}
 
         protected override void OnDestroy()
         {
 			foreach(var KVP in this.pending)
 			{
-				var sr = this.EntityManager.GetComponentData<SpawnRequest>(KVP.Key);
-				if(sr.prefabGO.IsAllocated)
+				if(KVP.Key.prefabGO.IsAllocated)
 				{
-					sr.prefabGO.Free();
+					KVP.Key.prefabGO.Free();
 				}
 
-				KVP.Value.Dispose();
+				//if(KVP.Value.IsCreated) { KVP.Value.Dispose(); }
 			}
 
 			this.pending.Dispose();
@@ -70,13 +86,13 @@ namespace tg.spawn
 			public double time;
 
 			[ReadOnly]
-			public UnsafeHashMap<Entity, EntityCommandBuffer>	pending;
+			public UnsafeHashMap<SpawnRequest, EntityCommandBuffer>	pending;
 
-			public NativeQueue<Entity>.ParallelWriter			process;
+			public NativeQueue<SpawnRequest>.ParallelWriter			process;
 
-			public void Execute(in Entity entity, in SpawnRequest spawnRequest)
+			public void Execute(in SpawnRequest spawnRequest)
 			{
-				if(spawnRequest.spawnTime < this.time) { this.process.Enqueue(entity); }
+				if(spawnRequest.spawnTime < this.time) { this.process.Enqueue(spawnRequest); }
 			}
 		}
 
@@ -89,7 +105,11 @@ namespace tg.spawn
 			public void Execute([ChunkIndexInQuery] int index, in Entity entity, in SpawnRequest spawnRequest)
 			{
 				this.ecb.DestroyEntity(index, entity);
-				tg.events.EventQueue.publish(new EntitySpawnedEvent { entity = spawnRequest.entity });
+
+				if(spawnRequest.entity != Entity.Null)
+				{
+					tg.events.EventQueue.publish(new EntitySpawnedEvent { entity = spawnRequest.entity });
+				}
 			}
 		}
 
@@ -97,7 +117,7 @@ namespace tg.spawn
 		protected override void OnUpdate()
         {
 			// Check spawn timers and spawn due objects.
-			using(var process = new NativeQueue<Entity>(Allocator.TempJob))
+			using(var process = new NativeQueue<SpawnRequest>(Allocator.TempJob))
 			{
 				new CheckSpawnJob
 				{
@@ -107,22 +127,29 @@ namespace tg.spawn
 				}.ScheduleParallel(this.Dependency).Complete();
 
 
-				while(process.TryDequeue(out Entity spawnRequest))
+				while(process.TryDequeue(out SpawnRequest spawnRequest))
 				{
 					var ECB = this.pending[spawnRequest];
 
-					var sr = this.EntityManager.GetComponentData<SpawnRequest>(spawnRequest);
-					if(sr.prefabGO.IsAllocated)
+					if(spawnRequest.prefabGO.IsAllocated)
 					{
-						var instanceGO = UnityEngine.GameObject.Instantiate((GameObject)sr.prefabGO.Target);
-						sr.prefabGO.Free();
+						var instanceGO = UnityEngine.GameObject.Instantiate(
+							(GameObject)spawnRequest.prefabGO.Target,
+							new Vector3(spawnRequest.location.x, spawnRequest.location.y, spawnRequest.location.z),
+							Quaternion.identity);
 
-						ECB.AddComponent(sr.entity, instanceGO.transform);
+                        spawnRequest.prefabGO.Free();
+
+						tg.events.EventQueue.publish(new GameObjectSpawnedEvent { gameObject = instanceGO });
+                    }
+
+					if(spawnRequest.entity != Entity.Null)
+                    {
+						ECB.SetComponent(spawnRequest.entity, LocalTransform.FromPosition(spawnRequest.location));
 					}
 
 					ECB.Playback(this.EntityManager);
 					ECB.Dispose();
-
 
 					this.pending.Remove(spawnRequest);
 				}
@@ -131,13 +158,46 @@ namespace tg.spawn
 			// remove completed spawn reqeusts
 			using(var ecb = new EntityCommandBuffer(Allocator.TempJob))
 			{
-				new RemoveCompletedSpawnRequestsJob
-				{
-                    ecb	= ecb.AsParallelWriter()
-				}.ScheduleParallel(this.Dependency).Complete();
-
+				new RemoveCompletedSpawnRequestsJob { ecb = ecb.AsParallelWriter() }.ScheduleParallel(this.Dependency).Complete();
 				ecb.Playback(this.EntityManager);
 			}
+		}
+
+
+		internal Entity create(in float3 location, out EntityCommandBuffer ECB, double delay = 0)
+		{
+			ECB							= new EntityCommandBuffer(Allocator.Persistent, PlaybackPolicy.SinglePlayback);
+
+            var entity					= ECB.CreateEntity();
+			{
+				ECB.AddComponent<Unity.Transforms.LocalTransform>(entity);
+			}
+
+			var spawnRequestEntity		= this.EntityManager.CreateEntity(typeof(SpawnRequest));
+
+			var spawnRequest			= new SpawnRequest
+			{
+				id						= this.nextRequestId++,
+				entity					= entity,
+				prefabGO				= default,
+				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
+				location				= location
+			};
+
+			this.EntityManager.SetComponentData(spawnRequestEntity, spawnRequest);
+
+			// once the request is processed ...
+			{
+				// this will ensure the placeholder entity field gets updated
+				ECB.SetComponent<SpawnRequest>(spawnRequestEntity, spawnRequest);
+
+				// mark it completed
+				ECB.AddComponent<SpawnRequestComplete>(spawnRequestEntity);
+			}
+
+			this.pending.Add(spawnRequest, ECB);
+
+			return entity;
 		}
 
 		/// <summary>
@@ -150,30 +210,29 @@ namespace tg.spawn
 		/// <returns></returns>
 		internal Entity create(in Entity prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0)
 		{
-			var spawnRequest			= this.EntityManager.CreateEntity(typeof(SpawnRequest));
 			ECB							= new EntityCommandBuffer(Allocator.Persistent, PlaybackPolicy.SinglePlayback);
 
-			
-            var entity = ECB.Instantiate(prefab);
-            {
-				ECB.SetComponent(entity, LocalTransform.FromPosition(location));
-			}
+            var entity					= ECB.Instantiate(prefab);
+			var spawnRequestEntity		= this.EntityManager.CreateEntity(typeof(SpawnRequest));
 
-			this.EntityManager.SetComponentData(spawnRequest, new SpawnRequest
+			var spawnRequest			= new SpawnRequest
 			{
+				id						= this.nextRequestId++,
 				entity					= entity,
 				prefabGO				= default,
-				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay
-			});
+				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
+				location				= location
+			};
 
-			ECB.SetComponent<SpawnRequest>(spawnRequest, new SpawnRequest
+			this.EntityManager.SetComponentData(spawnRequestEntity, spawnRequest);
+
+			// once the request is processed ...
 			{
-				entity					= entity,
-				prefabGO				= default,	
-				spawnTime				= float.NaN
-			});
-
-			ECB.AddComponent<SpawnRequestComplete>(spawnRequest);
+				// this will ensure the placeholder entity field gets updated
+				ECB.SetComponent<SpawnRequest>(spawnRequestEntity, spawnRequest);
+				// mark it completed
+				ECB.AddComponent<SpawnRequestComplete>(spawnRequestEntity);
+			}
 
 			this.pending.Add(spawnRequest, ECB);
 
@@ -188,36 +247,30 @@ namespace tg.spawn
 		/// <param name="ECB"></param>
 		/// <param name="delay"></param>
 		/// <returns></returns>
-		internal Entity create(GameObject prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0)
+		internal void create(GameObject prefab, in float3 location, double delay = 0)
 		{
-			var spawnRequest			= this.EntityManager.CreateEntity(typeof(SpawnRequest));
-			ECB							= new EntityCommandBuffer(Allocator.Persistent, PlaybackPolicy.SinglePlayback);
+			var ECB						= new EntityCommandBuffer(Allocator.Persistent, PlaybackPolicy.SinglePlayback);
 
-            var entity = ECB.CreateEntity();
-            {
-				ECB.AddComponent<LocalTransform>(entity);
-				ECB.SetComponent(entity, LocalTransform.FromPosition(location));
+			var spawnRequestEntity		= this.EntityManager.CreateEntity(typeof(SpawnRequest));
+
+			var spawnRequest			= new SpawnRequest
+			{
+				id						= this.nextRequestId++,
+				entity					= Entity.Null,
+				prefabGO				= GCHandle.Alloc(prefab),
+				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
+				location				= location
+			};
+
+			this.EntityManager.SetComponentData(spawnRequestEntity, spawnRequest);
+
+			// once the request is processed ...
+			{
+				// mark it completed
+				ECB.AddComponent<SpawnRequestComplete>(spawnRequestEntity);
 			}
 
-			this.EntityManager.SetComponentData(spawnRequest, new SpawnRequest
-			{
-				entity					= entity,
-				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
-				prefabGO				= GCHandle.Alloc(prefab)
-			});
-
-			ECB.SetComponent<SpawnRequest>(spawnRequest, new SpawnRequest
-			{
-				entity					= entity,
-				spawnTime				= float.NaN,
-				prefabGO				= GCHandle.Alloc(prefab)
-			});
-
-			ECB.AddComponent<SpawnRequestComplete>(spawnRequest);
-
 			this.pending.Add(spawnRequest, ECB);
-
-			return entity;
 		}
     }
 
@@ -226,19 +279,25 @@ namespace tg.spawn
 		private static SpawnSystem spawner { get { return World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<SpawnSystem>(); } }
 
 		/// <summary>
-		/// Schedules a new spawn request for an entity at a given location. Optionally a spawn delay can be provded.
+		/// Spawns a new entity. Also provides access to the new enities ECB for further changes.
+		/// </summary>
+		/// <param name="location"></param>
+		/// <param name="delay"></param>
+		/// <returns></returns>
+		public static Entity create(out EntityCommandBuffer ECB, in float3 location = default, double delay = 0) { return spawner.create(in location, out ECB, delay); }
+
+
+		/// <summary>
+		/// Spawns a new entity from a prefab. Optionally a spawn delay can be provded.
 		/// </summary>
 		/// <param name="prefab"></param>
 		/// <param name="location"></param>
 		/// <param name="delay"></param>
 		/// <returns></returns>
-		public static Entity create(in Entity prefab, in float3 location, double delay = 0)
-		{
-			return create(in prefab, in location, out EntityCommandBuffer ECB, delay);
-		}
+		public static Entity create(in Entity prefab, in float3 location, double delay = 0) { return create(in prefab, in location, out EntityCommandBuffer ECB, delay); }
 
 		/// <summary>
-		/// Schedules a new spawn request for an entity at a given location. Provides access to the used EntityCommandBuffer, which
+		/// Spawn a new entity from a prefab. Provides access to the used EntityCommandBuffer, which
 		/// allows access to add more commands. Optionally a spawn delay can be provided.
 		/// </summary>
 		/// <param name="prefab"></param>
@@ -246,19 +305,14 @@ namespace tg.spawn
 		/// <param name="ECB"></param>
 		/// <param name="delay"></param>
 		/// <returns></returns>
-		public static Entity create(in Entity prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0)
-		{
-			return spawner.create(prefab, location, out ECB, delay);
-		}
+		public static Entity create(in Entity prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0) { return spawner.create(prefab, in location, out ECB, delay); }
 
-		public static Entity create(GameObject prefab, in float3 location, double delay = 0)
-		{
-			return create(prefab, in location, out EntityCommandBuffer ECB, delay);
-		}
-
-		public static Entity create(GameObject prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0)
-		{
-			return spawner.create(prefab, in location, out ECB, delay);
-		}
+		/// <summary>
+		/// Spawn GameObject from a prefab.
+		/// </summary>
+		/// <param name="prefab"></param>
+		/// <param name="location"></param>
+		/// <param name="delay"></param>
+		public static void create(GameObject prefab, in float3 location, double delay = 0) { spawner.create(prefab, in location, delay); }
 	}
 }

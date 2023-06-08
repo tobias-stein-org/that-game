@@ -1,3 +1,4 @@
+using UnityEngine;
 using Unity.Entities;
 
 namespace tg.spawn.events
@@ -6,6 +7,11 @@ namespace tg.spawn.events
 
     public struct EntitySpawnedEvent : IEvent
     {
-        public Entity   entity;   
+        public Entity       entity;   
+    }
+
+    public struct GameObjectSpawnedEvent : IEvent
+    {
+        public GameObject   gameObject;   
     }
 }
