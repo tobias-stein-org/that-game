@@ -55,6 +55,36 @@ namespace tg.player
                     vcam.Follow                         = this.transform;
                 }
             }
+
+            this.GetComponent<SpriteRenderer>().sortingOrder = tg.level.LevelData.Layer.Player;
+
+            this.createPlayerEntity();
+        }
+
+        private void createPlayerEntity()
+        {
+            var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
+            {
+                ECB.AddComponent(playerEntity, new ComponentTypeSet(
+                   typeof(Player),
+                   typeof(PlayerInputData)
+                ));
+
+                ECB.SetComponent<Player>(playerEntity, new Player
+                {
+                    entity      = playerEntity
+                });
+
+                ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
+                {
+                    moveSpeed   = 10.0f,
+                    moveXY      = UnityEngine.Vector2.zero
+                });
+
+                ECB.AddComponent(playerEntity, this.transform);
+                ECB.AddComponent(playerEntity, this.GetComponent<Rigidbody2D>());
+                ECB.AddComponent(playerEntity, this.GetComponentInChildren<CinemachineVirtualCamera>());
+            }
         }
     }
 }

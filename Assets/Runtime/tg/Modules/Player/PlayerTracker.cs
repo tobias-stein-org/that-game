@@ -118,6 +118,7 @@ namespace tg.player
             }
 
             public LevelData.Chunk query(in float3 position) { return this.query(0, in position); }
+            public LevelData.Chunk query(in UnityEngine.Vector3 position) { return this.query(0, new float3(position.x, position.y, position.z)); }
 
             private LevelData.Chunk query(int nodeIndex, in float3 position)
             {
@@ -231,9 +232,9 @@ namespace tg.player
 		{
             var quadtree = SystemAPI.GetSingleton<LevelChunkQuadtree>();
 
-            foreach(var (player, localTransform, playerLevelChunk) in SystemAPI.Query<Player, LocalTransform, RefRW<PlayerLevelChunkData>>())
+            foreach(var (player, transform, playerLevelChunk) in SystemAPI.Query<Player, SystemAPI.ManagedAPI.UnityEngineComponent<UnityEngine.Transform>, RefRW<PlayerLevelChunkData>>())
             {
-                var chunkId = quadtree.query(in localTransform.Position).id;
+                var chunkId = quadtree.query(transform.Value.position).id;
 
                 if(playerLevelChunk.ValueRO.value != chunkId)
                 {

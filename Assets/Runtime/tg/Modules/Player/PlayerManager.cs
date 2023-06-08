@@ -35,21 +35,11 @@ namespace tg.player
             var chunk0 = SystemAPI.GetSingleton<LevelData>().getChunk(0);
 
             var spawnLocation = new Unity.Mathematics.float3(
-                chunk0.bounds.x + (chunk0.bounds.width / 2),
+                chunk0.bounds.x + (chunk0.bounds.width  / 2),
                 chunk0.bounds.y + (chunk0.bounds.height / 2),
                 -1.0f);
 
-            var playerEntity = tg.spawn.request.create(appData.playerPrefab.Result, in spawnLocation, out EntityCommandBuffer ECB);
-            {
-                ECB.AddComponent(playerEntity, new ComponentTypeSet(
-                   typeof(Player)
-                ));
-
-                ECB.SetComponent<Player>(playerEntity, new Player
-                {
-                    entity = playerEntity
-                });
-            }
+            tg.spawn.request.create(appData.playerPrefab.Result, in spawnLocation);
         }
     }
 

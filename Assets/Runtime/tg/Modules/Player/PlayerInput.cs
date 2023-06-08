@@ -8,7 +8,7 @@ namespace tg.player
 {
     using tg.application;
 
-    public partial class PlayerInputController : SystemBase
+    public partial class PlayerInput : SystemBase
     {
         private InputActionMap  playerActions;
 
@@ -25,13 +25,17 @@ namespace tg.player
 
         protected override void OnUpdate()
         {
-            var speed   = 10.0f * this.World.Time.DeltaTime;
-            var move    = playerActions.FindAction("move").ReadValue<Vector2>();
-
-            foreach(var localTransform in SystemAPI.Query<RefRW<LocalTransform>>().WithAll<Player>())
+            foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
-                localTransform.ValueRW.Position += new float3(move.x, move.y, 0.0f) * speed;
+                playerInput.ValueRW.moveXY = playerActions.FindAction("move").ReadValue<Vector2>();
             }
         }
+    }
+
+    public struct PlayerInputData : IComponentData
+    {
+        public Vector2  moveXY;
+
+        public float    moveSpeed;
     }
 }
