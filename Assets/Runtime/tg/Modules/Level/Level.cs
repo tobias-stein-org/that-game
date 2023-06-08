@@ -113,7 +113,7 @@ namespace tg.level
 
                 this.generator?.Dispose();
 
-                EventQueue.publish(new LevelGenerationAbortedEvent {});
+                if(EventQueue.isValid) { EventQueue.publish(new LevelGenerationAbortedEvent {}); }
             }
         }
 

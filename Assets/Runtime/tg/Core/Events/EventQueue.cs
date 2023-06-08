@@ -17,8 +17,9 @@ namespace tg.events
     public partial class EventQueue : SystemBase
     {
         private static EventQueue                                   Instance        = null;
+        public  static bool                                         isValid         { get { return EventQueue.Instance != null && !EventQueue.Instance.isDisposed; } }
 
-        public bool                                                 isDisposed      { get; private set; } = false;
+        public  bool                                                isDisposed      { get; private set; } = false;
 
         private readonly HashSet<int>                               subscriber      = new HashSet<int>();
         private readonly Dictionary<EventType, List<EventHandler>>  eventHandler    = new Dictionary<EventType, List<EventHandler>>();
