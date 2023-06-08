@@ -25,7 +25,9 @@ namespace tg.level
             #region Layers
 
             public static Layer                 Floor                               = new Layer(0);
-            public static Layer                 Obstructable                        = new Layer(1);
+            public static Layer                 Obstructable                        = new Layer(1, true);
+            public static Layer                 Player                              = new Layer(2);
+
             // add more layer here...
 
             public static int                   MAX_LAYERS { get; private set; }    = 0;
@@ -34,11 +36,14 @@ namespace tg.level
 
             #region C'tor, internal data and logical operators
 
-            private readonly int                index;
+            public readonly int                index;
+            public readonly bool               collision;
 
-            private Layer(int index)
+            private Layer(int index, bool collision = false)
             {
-                this.index = index;
+                this.index      = index;
+                this.collision  = collision;
+
                 Layer.MAX_LAYERS++;
             }
 

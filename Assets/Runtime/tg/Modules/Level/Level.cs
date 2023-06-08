@@ -66,8 +66,16 @@ namespace tg.level
                     var layerGO = new GameObject($"Layer.{(int)layer}");
                     {
                         layerGO.transform.SetParent(gridGO.transform);
+
+                        if(layer.collision)
+                        {
+                            layerGO.AddComponent<TilemapCollider2D>();
+                        }
+
                         var renderer = layerGO.AddComponent<TilemapRenderer>();
-                        renderer.sortingOrder = layer;
+                        {
+                            renderer.sortingOrder = layer;
+                        }
 
                         layers.Add(layer, layerGO.GetComponent<Tilemap>());
                     }
