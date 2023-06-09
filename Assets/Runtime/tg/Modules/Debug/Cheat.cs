@@ -6,11 +6,13 @@ namespace tg.debug
 {
     using tg.events;
     using tg.application;
+    using tg.player;
 
     using tg.level.events;
     using tg.player.events;
     using tg.application.events;
 
+   
     public partial class Cheat : SystemBase
     {
         protected override void OnCreate()
@@ -24,6 +26,7 @@ namespace tg.debug
 
             debugActions.FindAction("quit").performed += onQuit;
             debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
+            debugActions.FindAction("kill_player").performed += onKillPlayer;
             debugActions.FindAction("new_level").performed += onNewLevel;
 
             this.Enabled = false;
@@ -35,6 +38,7 @@ namespace tg.debug
             
             debugActions.FindAction("quit").performed -= onQuit;
             debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
+            debugActions.FindAction("kill_player").performed -= onKillPlayer;
             debugActions.FindAction("new_level").performed -= onNewLevel;
         }
 
@@ -45,7 +49,19 @@ namespace tg.debug
 
         private void onSpawnPlayer(InputAction.CallbackContext obj)
         {
-            EventQueue.publish(new SpawnPlayerRequestEvent { });   
+            // only allow to spawn a single player entity
+            if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Player) } }).CalculateEntityCount() == 0)
+            {
+                EventQueue.publish(new SpawnPlayerRequestEvent {});   
+            }
+        }
+
+        private void onKillPlayer(InputAction.CallbackContext obj)
+        {
+            foreach(var player in SystemAPI.Query<Player>())
+            {
+                EventQueue.publish(new KillPlayerEvent { player = player });   
+            }
         }
 
         private void onQuit(InputAction.CallbackContext obj)

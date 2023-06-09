@@ -24,6 +24,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "kill_player",
+                    "type": "Button",
+                    "id": "93b0f794-11a6-4f32-b846-24fa43154468",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "new_level",
                     "type": "Button",
                     "id": "8d9cfe6c-b6f5-4cce-8506-65346fc64970",
@@ -64,6 +73,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "new_level",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "39f50ab2-3f6b-4f24-a73d-1943fe4b84cf",
+                    "path": "<Keyboard>/rightBracket",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "kill_player",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
