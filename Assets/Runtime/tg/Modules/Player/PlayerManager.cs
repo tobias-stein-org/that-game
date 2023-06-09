@@ -9,6 +9,7 @@ namespace tg.player
     using tg.application;
     using tg.level;
     using tg.player.events;
+    using tg.spawn.events;
 
     /// <summary>
     /// Simple player spawn system. 
@@ -42,17 +43,15 @@ namespace tg.player
 
             tg.spawn.request.create(appData.playerPrefab, in spawnLocation);
         }
-    }
 
-    /// <summary>
-    /// Added to spawned player entities.
-    /// </summary>
-    public struct Player : IComponentData
-    {
-        /// <summary>
-        /// Reference to managed player data.
-        /// </summary>
-        public Entity                   entity;
+        void onEntitySpawnedEvent(EntitySpawnedEvent e)
+        {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            if(entityManager.HasComponent<Player>(e.entity))
+            {
+                EventQueue.publish(new PlayerSpawnedEvent { player = entityManager.GetComponentData<Player>(e.entity) });
+            }
+        }
     }
 }
 

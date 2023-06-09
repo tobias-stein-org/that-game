@@ -14,6 +14,12 @@ namespace tg.player.events
         public Player   player;
     }
 
+
+    public struct KillPlayerEvent : IEvent
+    {
+        public Player   player;
+    }
+
     public struct PlayerDiedEvent : IEvent
     {
         public Player   player;

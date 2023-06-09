@@ -8,14 +8,24 @@ using UnityEngine.Experimental.Rendering.Universal;
 
 namespace tg.player
 {
-    public class PlayerAuthoring : MonoBehaviour
+    using tg.events;
+    using tg.player.events;
+
+    public class PlayerAuthoring : MonoBehaviour, IEventListener<PlayerAuthoring>
     {
+        /// <summary>
+        /// Reference to this players entity.
+        /// </summary>
+        private Player      player;
+
         private void Awake()
         {
+            EventQueue.subscribe(this);
+
             CinemachineVirtualCamera vcam               = null;
-            var companionPlayerCamera                   = new GameObject("Companion-Player-Camera");
+            var cameraGO                                = new GameObject("Player-Camera");
             {
-                companionPlayerCamera.transform.SetParent(this.transform);
+                cameraGO.transform.SetParent(this.transform);
 
                 // retrieve main camera or create default if non exists
                 var camera                              = GameObject.FindFirstObjectByType<UnityEngine.Camera>() ?? new GameObject("Camera").AddComponent<UnityEngine.Camera>();
@@ -29,7 +39,7 @@ namespace tg.player
                         ppCamera.cropFrame              = PixelPerfectCamera.CropFrame.StretchFill;
                     }
                 }
-                vcam                                    = companionPlayerCamera.AddComponent<CinemachineVirtualCamera>();
+                vcam                                    = cameraGO.AddComponent<CinemachineVirtualCamera>();
                 {
                     var transposer                      = vcam.AddCinemachineComponent<CinemachineFramingTransposer>();
                     {
@@ -40,12 +50,12 @@ namespace tg.player
                         transposer.m_DeadZoneHeight     = 0.0f;
                     }
 
-                    var pixelPerfect                    = companionPlayerCamera.AddComponent<CinemachinePixelPerfect>();
+                    var pixelPerfect                    = cameraGO.AddComponent<CinemachinePixelPerfect>();
                     {
                         vcam.AddExtension(pixelPerfect);
                     }
 
-                    var confiner                        = companionPlayerCamera.AddComponent<CinemachineConfiner>();
+                    var confiner                        = cameraGO.AddComponent<CinemachineConfiner>();
                     {
                         vcam.AddExtension(confiner);
 
@@ -61,6 +71,38 @@ namespace tg.player
             this.createPlayerEntity();
         }
 
+        private void OnDestroy()
+        {
+            EventQueue.unsubscribe(this);
+            World.DefaultGameObjectInjectionWorld.EntityManager.DestroyEntity(this.player.entity);
+        }
+
+        /// <summary>
+        /// Listen to spawn events, to fetch the player reference once the earlier spawn request for this player is done.
+        /// </summary>
+        /// <param name="e"></param>
+        void onPlayerSpawnedEvent(PlayerSpawnedEvent e)
+        {
+            var playerTransform = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.player.entity);
+            if(this.transform == playerTransform)
+            {
+                this.player = e.player;
+            }
+        }
+
+        void onKillPlayerEvent(KillPlayerEvent e)
+        {
+            // kill this player if entity matches
+            if(this.player.entity == e.player.entity)
+            {
+                EventQueue.publish(new PlayerDiedEvent { player = this.player });
+                GameObject.Destroy(this.gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Create a new player entity with its components
+        /// </summary>
         private void createPlayerEntity()
         {
             var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
@@ -86,6 +128,17 @@ namespace tg.player
                 ECB.AddComponent(playerEntity, this.GetComponentInChildren<CinemachineVirtualCamera>());
             }
         }
+    }
+
+     /// <summary>
+    /// Added to spawned player entities.
+    /// </summary>
+    public struct Player : IComponentData
+    {
+        /// <summary>
+        /// Reference to actual player entity.
+        /// </summary>
+        public Entity                   entity;
     }
 }
 
