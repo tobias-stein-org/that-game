@@ -11,6 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.player
 {
+    using tg.application;
 	using tg.events;
 	using tg.level;
 	using tg.player.events;
@@ -25,6 +26,7 @@ namespace tg.player
     /// </summary>
     [UpdateAfter(typeof(TransformSystemGroup))]
     [CreateAfter(typeof(EventQueue))]
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct PlayerTracker : ISystem, IEventListener<PlayerTracker>, ISystemStartStop
     {
         /// <summary>
@@ -208,6 +210,7 @@ namespace tg.player
 
 		void OnCreate(ref SystemState state)
 		{
+            state.RequireForUpdate(StateManager.state(this));
             state.RequireForUpdate<Player>();
             state.RequireForUpdate<LevelChunkQuadtree>();
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using Unity.Entities;
@@ -6,10 +7,16 @@ namespace tg.application
 {
     using tg.events;
 
+    using tg.application.events;
+    using tg.game.events;
 
-    [System.Flags]
+    [Flags]
     public enum ApplicationStateMask
     {
+        /// <summary>
+        /// A dummy state that will never occur. This can be used to programatically initialize a system OnCreate
+        /// to never run.
+        /// </summary>
         Never                       = 0,
 
         AllowRunWhenMenuOpen        = 1 << 0,
@@ -18,12 +25,21 @@ namespace tg.application
 
         AllowRunWhenInGame          = 1 << 2,
 
+        /// <summary>
+        /// Allow a system to run when the GameOver state is reached.
+        /// </summary>
         AllowRunWhenGameOver        = 1 << 3,
 
         AllowRunWhenLoading         = 1 << 4,
 
+        /// <summary>
+        /// Allow a system to run while the application is initializing.
+        /// </summary>
         AllowRunWhenInitializing    = 1 << 5,
 
+        /// <summary>
+        /// Allow a system to run when the application is quitting.
+        /// </summary>
         AllowRunWhenQuitting        = 1 << 6,
 
         Default                     = AllowRunWhenInGame
@@ -32,22 +48,33 @@ namespace tg.application
     /// <summary>
     /// A game state filter annotation that determine when a certain application system is allowed to update.
     /// </summary>
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-    public class ApplicationStateFilter : System.Attribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
+    public class ApplicationStateFilter : Attribute
     {
-        private ApplicationStateMask   mask;
+        public readonly ApplicationStateMask    mask;
+        public readonly bool                    strict;
 
-        public ApplicationStateFilter(ApplicationStateMask mask = ApplicationStateMask.Default) { this.mask = mask; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="mask"></param>
+        /// <param name="strict">If true, the mask has to exacly match the current active and inactive states. If false at least one active state has to match the mask.</param>
+        public ApplicationStateFilter(ApplicationStateMask mask = ApplicationStateMask.Default, bool strict = true)
+        {
+            this.mask   = mask;
+            this.strict = strict;
+        }
 
         public bool has(ApplicationStateMask flag) { return (this.mask & flag) != 0; }
     }
-
 
     /// <summary>
     /// Application state manager is responsible to create and destroy game state componentes that effect the RequireForUpdate state query
     /// of all application systems.
     /// </summary>
     [CreateAfter(typeof(EventQueue))]
+    [CreateBefore(typeof(ApplicationManager))]
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
     public partial class StateManager : SystemBase, IEventListener<StateManager>
     {
         /// <summary>
@@ -64,12 +91,10 @@ namespace tg.application
         /// <returns></returns>
         public static EntityQuery state(SystemBase system)  { return StateManager.state(system.GetType()); }
 
-
         private static EntityQuery state(System.Type system)
         {
-            var appStateFilter = System.Attribute.GetCustomAttribute(system, typeof(ApplicationStateFilter)) as ApplicationStateFilter;
+            var appStateFilter = Attribute.GetCustomAttribute(system, typeof(ApplicationStateFilter)) as ApplicationStateFilter;
             Unity.Assertions.Assert.IsNotNull(appStateFilter, $"System {system.Name} is missing a {typeof(ApplicationStateFilter).Name} annotation.");
-
 
             var filter2State = new Dictionary<ApplicationStateMask, ComponentType>
             {
@@ -83,19 +108,27 @@ namespace tg.application
                 { ApplicationStateMask.AllowRunWhenGameOver,       typeof(GameOverState) },
             };
 
-
             var allow    = new List<ComponentType>(4);
             var disallow = new List<ComponentType>(4);
             void check(ApplicationStateMask flag, ComponentType state) => (appStateFilter.has(flag) ? allow : disallow).Add(state);
 
             foreach(var (flag, state) in filter2State) { check(flag, state); }
 
-            return World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new EntityQueryDesc { Any = allow.ToArray(), None = disallow.ToArray() });
+            return World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new EntityQueryDesc
+            {
+                All     = appStateFilter.strict ? allow.ToArray()               : Array.Empty<ComponentType>(),
+                None    = appStateFilter.strict ? disallow.ToArray()            : Array.Empty<ComponentType>(),
+                Any     = appStateFilter.strict ? Array.Empty<ComponentType>()  : allow.ToArray(),
+                Options = EntityQueryOptions.IncludeSystems
+            });
         }
 
         protected override void OnCreate()
         {
             EventQueue.subscribe(this);
+
+            // once this system becomes active, it will put the application in the initialization state.
+            this.EntityManager.AddComponent<InitializingState>(this.SystemHandle);
         }
 
         protected override void OnUpdate()
@@ -103,8 +136,45 @@ namespace tg.application
             this.Enabled = false;
         }
 
+        /// <summary>
+        /// Listen to the applicaton's initialized state and transition to the "MenuOpen" state.
+        /// </summary>
+        /// <param name="e"></param>
+        void onApplicationInitializedEvent(ApplicationInitializedEvent e)
+        {
+            this.EntityManager.RemoveComponent<InitializingState>(this.SystemHandle);
+
+            // TODO: once we have UI, go into the menu state.
+            this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+        }
+
+        /// <summary>
+        /// Set the "Quitting" state. This will be the final application state before termination.
+        /// </summary>
+        /// <param name="e"></param>
+        void onApplicationQuitEvent(RequestApplicationQuitEvent e)
+        {
+            using(var states = this.EntityManager.GetComponentTypes(this.SystemHandle))
+            {
+                foreach(var state in states) { this.EntityManager.RemoveComponent(this.SystemHandle, state); }
+            }
+
+            this.EntityManager.AddComponent<QuittingState>(this.SystemHandle);
+        }
+
+        void onNewGameStartedEvent(NewGameStartedEvent e)
+        {
+            this.EntityManager.RemoveComponent<GameOverState>(this.SystemHandle);
+            this.EntityManager.AddComponent<InGameState>(this.SystemHandle);
+        }
+
+        void onGameOverEvent(GameOverEvent e)
+        {
+            this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+        }
 
         #region Game States
+
 
         private struct NeverState : IComponentData {}
 

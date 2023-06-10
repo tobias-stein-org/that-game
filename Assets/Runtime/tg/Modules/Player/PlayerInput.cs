@@ -8,6 +8,7 @@ namespace tg.player
 {
     using tg.application;
 
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial class PlayerInput : SystemBase
     {
         private InputActionMap  playerActions;
@@ -15,7 +16,7 @@ namespace tg.player
         protected override void OnCreate()
         {
             this.RequireForUpdate<Player>();
-            this.RequireForUpdate<ApplicationDataLoaded>();
+            this.RequireForUpdate(StateManager.state(this));
         }
 
         protected override void OnStartRunning()

@@ -4,11 +4,15 @@ using Unity.Entities;
 
 namespace tg.player
 {
+    using tg.application;
+
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct PlayerController : ISystem
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireAnyForUpdate(StateManager.state(this));
             state.RequireForUpdate<PlayerInputData>();
         }
 
