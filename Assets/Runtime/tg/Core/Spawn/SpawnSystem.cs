@@ -12,8 +12,6 @@ namespace tg.spawn
 {
 	using tg.application;
     using tg.spawn.events;
-    using static UnityEditor.FilePathAttribute;
-    using static UnityEngine.EventSystems.EventTrigger;
 
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
