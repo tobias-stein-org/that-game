@@ -32,8 +32,10 @@ namespace tg.camera
         protected override void OnCreate()
         {
             this.RequireAnyForUpdate(StateManager.state(this));
-            this.RequireForUpdate<Player>();
+        }
 
+        protected override void OnStartRunning()
+        {
             EventQueue.subscribe(this);
         }
 
@@ -41,6 +43,7 @@ namespace tg.camera
         {
             EventQueue.unsubscribe(this);
         }
+
 
         protected override void OnDestroy()
         {
