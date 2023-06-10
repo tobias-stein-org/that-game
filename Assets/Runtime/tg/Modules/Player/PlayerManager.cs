@@ -32,15 +32,7 @@ namespace tg.player
         void onSpawnPlayerRequestEvent(SpawnPlayerRequestEvent e)
         {
             var appData = SystemAPI.GetSingleton<ApplicationData>();
-
-            var chunk0 = SystemAPI.GetSingleton<LevelData>().getChunk(0);
-
-            var spawnLocation = new Unity.Mathematics.float3(
-                chunk0.bounds.x + (chunk0.bounds.width  / 2),
-                chunk0.bounds.y + (chunk0.bounds.height / 2),
-                -1.0f);
-
-            tg.spawn.request.create(appData.playerPrefab, in spawnLocation);
+            tg.spawn.request.create(appData.playerPrefab, in e.location);
         }
 
         void onEntitySpawnedEvent(EntitySpawnedEvent e)
