@@ -31,9 +31,11 @@ namespace tg.assets
 			    if (id.GenerationType != WeakReferenceGenerationType.UnityObject) {
 				    return false;
 			    }
+#if UNITY_EDITOR
 			    if (UntypedWeakReferenceId.GetEditorObject (id) == (UnityEngine.Object)null) {
 				    return false;
 			    }
+#endif
 			    return true;
 		    }
 	    }
@@ -42,7 +44,9 @@ namespace tg.assets
 
 	    public TObject result => RuntimeContentManager.GetObjectValue<TObject> (id);
 
+#if UNITY_EDITOR
 	    public WeakAssetReference (TObject unityObject) { id = UntypedWeakReferenceId.CreateFromObjectInstance ((UnityEngine.Object)(object)unityObject); }
+#endif
 
 	    public WeakAssetReference (UntypedWeakReferenceId id) { this.id = id; }
 
