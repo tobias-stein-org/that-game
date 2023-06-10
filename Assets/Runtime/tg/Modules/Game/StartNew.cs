@@ -47,7 +47,7 @@ namespace tg.game
                 -1.0f);
 
 			EventQueue.publish(new SpawnPlayerRequestEvent { location = spawnLocation });
-			//EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
+			EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
 		}
     }
 }
