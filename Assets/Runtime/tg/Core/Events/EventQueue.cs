@@ -13,7 +13,7 @@ namespace tg.events
     /// A global accessable EventQueue. IEventListener types can subscribe and unsubscribe to this event queue.
     /// Subscribed listener will automatically receive events for which they implemented a handler method for.
     /// </summary>
-    [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
+    [UpdateInGroup(typeof(LateSimulationSystemGroup), OrderFirst = true)]
     public partial class EventQueue : SystemBase
     {
         private static EventQueue                                   Instance        = null;
@@ -24,6 +24,7 @@ namespace tg.events
         private readonly HashSet<int>                               subscriber      = new HashSet<int>();
         private readonly Dictionary<EventType, List<EventHandler>>  eventHandler    = new Dictionary<EventType, List<EventHandler>>();
         private readonly ConcurrentQueue<IEvent>                    eventQueue      = new ConcurrentQueue<IEvent>();
+        private readonly ConcurrentQueue<Action>                    unsubscriptions = new ConcurrentQueue<Action>();
 
         /// <summary>
         /// Helper structure to hold the event listener instance and the event handler method.
@@ -51,6 +52,9 @@ namespace tg.events
 
         protected override void OnUpdate()
         {
+            // process any unsubscribers since last frame
+            while(Instance.unsubscriptions.TryDequeue(out Action unsubscription)) { unsubscription.Invoke(); }
+
             /**
                 Make a copy of the current event queue and clear the original queue.
                 We do this, because event listeners might put new events in the queue
@@ -67,7 +71,7 @@ namespace tg.events
                 EventType EventT = e.type;
 
                 // simple log of the fired event
-                Debug.Log($"Fire event '{e.Name}': {JsonUtility.ToJson(e)}");
+                Debug.Log($"[Frame: {UnityEngine.Time.frameCount}]: Fire event '{e.Name}': {JsonUtility.ToJson(e)}");
 
                 if(this.eventHandler.TryGetValue(EventT, out List<EventHandler> Handlers))
                 {
@@ -137,21 +141,25 @@ namespace tg.events
         public static void unsubscribe<T>(T listener)
             where T : IEventListener<T>
         {
-            Type    TListener   = listener.GetType();
-            int     instnaceId  = listener.GetHashCode();
-
-            if(Instance.subscriber.Contains(instnaceId))
+            // note: it might happen that an event listner unsubscribes while handling an event. This would cause an exception, hence we will delay the
+            // unsubscription until next frame.
+            Instance.unsubscriptions.Enqueue(() =>
             {
+                Type    TListener   = listener.GetType();
+                int     instnaceId  = listener.GetHashCode();
 
-                var EventHandlers = Listener.registry[IEventListener<T>.ListenerID];
+                if(Instance.subscriber.Contains(instnaceId))
+                {
+                    var EventHandlers = Listener.registry[IEventListener<T>.ListenerID];
 
-                // remove all listeners event handlers
-                foreach(var Handlers in Instance.eventHandler.Values) { Handlers.RemoveAll(x => x.instance.GetHashCode() == listener.GetHashCode()); }
+                    // remove all listeners event handlers
+                    foreach(var Handlers in Instance.eventHandler.Values) { Handlers.RemoveAll(x => x.instance.GetHashCode() == listener.GetHashCode()); }
 
-                Instance.subscriber.Remove(instnaceId);
-                Debug.Log($"EventListener '{TListener.FullName}' instance [{instnaceId}] unsubscribed.");
+                    Instance.subscriber.Remove(instnaceId);
+                    Debug.Log($"EventListener '{TListener.FullName}' instance [{instnaceId}] unsubscribed.");
 
-            }
+                }
+            });
         }
 
         /// <summary>

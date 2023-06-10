@@ -12,12 +12,13 @@ namespace tg.debug
     using tg.player.events;
     using tg.application.events;
 
-   
+
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial class Cheat : SystemBase
     {
         protected override void OnCreate()
         {
-            this.RequireForUpdate<ApplicationDataLoaded>();
+            this.RequireForUpdate(StateManager.state(this));
         }
 
         protected override void OnUpdate()
@@ -32,7 +33,7 @@ namespace tg.debug
             this.Enabled = false;
         }
 
-        void onApplicationQuitEvent(ApplicationQuitEvent e)
+        void onApplicationQuitEvent(RequestApplicationQuitEvent e)
         {
             var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
             
@@ -66,7 +67,7 @@ namespace tg.debug
 
         private void onQuit(InputAction.CallbackContext obj)
         {
-            EventQueue.publish(new ApplicationQuitEvent {});
+            EventQueue.publish(new RequestApplicationQuitEvent {});
         }
     }
 }

@@ -10,6 +10,7 @@ namespace tg.level
     using tg.events;
     using tg.level.generator;
     using tg.level.events;
+    using tg.application.events;
 
     /// <summary>
     /// The Level behaviour acts as a manager to generate new levels and repaint the tilemap layers.
@@ -29,13 +30,13 @@ namespace tg.level
         void Awake()
         {
             this.setupTilemap();
+
             this.entityManager  = World.DefaultGameObjectInjectionWorld.EntityManager;
         }
 
         void Start()
         {
             this.initializeNewGenerator(this.initialSettings);
-            this.startGenerator();
         }
 
         void OnEnable()
@@ -103,7 +104,6 @@ namespace tg.level
 
         private void disposeCurrentLevel()
         {
-
             if(World.DefaultGameObjectInjectionWorld != null && this.entityManager.CreateEntityQuery(typeof(LevelData)).TryGetSingletonEntity<LevelData>(out Entity levelData)) { this.entityManager.DestroyEntity(levelData); }
 
             if(this.executor != null)

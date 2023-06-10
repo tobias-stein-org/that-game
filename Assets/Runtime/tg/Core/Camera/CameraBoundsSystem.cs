@@ -9,6 +9,7 @@ using Cinemachine;
 
 namespace tg.camera
 {
+    using tg.application;
     using tg.events;
     using tg.level;
     using tg.player;
@@ -21,6 +22,7 @@ namespace tg.camera
     /// </summary>
     [CreateAfter(typeof(EventQueue))]
     [UpdateInGroup(typeof(TransformSystemGroup))]
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial class CameraBoundsSystem : SystemBase, IEventListener<CameraBoundsSystem>
     {
         private GameObject                      cameraLevelBoundsGO     = null;
@@ -29,14 +31,19 @@ namespace tg.camera
 
         protected override void OnCreate()
         {
+            this.RequireAnyForUpdate(StateManager.state(this));
+        }
+
+        protected override void OnStartRunning()
+        {
             EventQueue.subscribe(this);
-            this.RequireForUpdate<Player>();
         }
 
         protected override void OnStopRunning()
         {
             EventQueue.unsubscribe(this);
         }
+
 
         protected override void OnDestroy()
         {

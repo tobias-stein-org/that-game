@@ -2,10 +2,13 @@ namespace tg.application.events
 {
     using tg.events;
 
-    public struct ApplicationDataLoadedEvent : IEvent
+    /// <summary>
+    /// Fired by the app manager, once the initial application state is setup.
+    /// </summary>
+    public struct ApplicationInitializedEvent : IEvent
     {
         public ApplicationData appData;
     }
 
-    public struct ApplicationQuitEvent : IEvent {}
+    public struct RequestApplicationQuitEvent : IEvent {}
 }

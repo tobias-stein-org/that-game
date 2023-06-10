@@ -15,14 +15,13 @@ namespace tg.player
     /// Simple player spawn system. 
     /// </summary>
     [CreateAfter(typeof(EventQueue))]
-    public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>
+    [ApplicationStateFilter]
+    public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>, ISystemStartStop
     {
         void OnCreate (ref SystemState state)
 		{
+            state.RequireForUpdate(StateManager.state(this));
             state.RequireForUpdate<LevelData>();
-            state.RequireForUpdate<ApplicationDataLoaded>();
-
-            EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
 		}
 
 		void OnDestroy (ref SystemState state)
@@ -33,15 +32,7 @@ namespace tg.player
         void onSpawnPlayerRequestEvent(SpawnPlayerRequestEvent e)
         {
             var appData = SystemAPI.GetSingleton<ApplicationData>();
-
-            var chunk0 = SystemAPI.GetSingleton<LevelData>().getChunk(0);
-
-            var spawnLocation = new Unity.Mathematics.float3(
-                chunk0.bounds.x + (chunk0.bounds.width  / 2),
-                chunk0.bounds.y + (chunk0.bounds.height / 2),
-                -1.0f);
-
-            tg.spawn.request.create(appData.playerPrefab, in spawnLocation);
+            tg.spawn.request.create(appData.playerPrefab, in e.location);
         }
 
         void onEntitySpawnedEvent(EntitySpawnedEvent e)
@@ -51,6 +42,16 @@ namespace tg.player
             {
                 EventQueue.publish(new PlayerSpawnedEvent { player = entityManager.GetComponentData<Player>(e.entity) });
             }
+        }
+
+        public void OnStartRunning(ref SystemState state)
+        {
+            EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
+        }
+
+        public void OnStopRunning(ref SystemState state)
+        {
+            EventQueue.unsubscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
         }
     }
 }

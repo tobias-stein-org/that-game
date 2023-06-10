@@ -51,9 +51,7 @@ namespace tg.application
                 // activate 'tg.input.actions' 
                 appData.inputActions.result.Enable();
 
-                World.DefaultGameObjectInjectionWorld.EntityManager.AddComponent<ApplicationDataLoaded>(appDataEntity);
-
-                EventQueue.publish(new ApplicationDataLoadedEvent { appData = appData });
+                EventQueue.publish(new ApplicationInitializedEvent { appData = appData });
             });
         }
 
@@ -61,14 +59,26 @@ namespace tg.application
         {
         }
 
-        void onApplicationQuitEvent(ApplicationQuitEvent e)
+        void onApplicationQuitEvent(RequestApplicationQuitEvent e)
+        {
+            EventQueue.publish(new QuitApplicationEvent {});
+        }
+
+        void onQuitApplicationEvent(QuitApplicationEvent e)
         {
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.ExitPlaymode();
 #else
             UnityEngine.Application.Quit();
 #endif
         }
+
+
+        /// <summary>
+        /// Application internal evnet. Application manager will self induce this event once the "request quit" event has been received.
+        /// Having this extra internal event, will give other systems listening to the "request quit" event to perform clean-up.
+        /// </summary>
+        private struct QuitApplicationEvent : IEvent {}
     }
 
     /// <summary>
@@ -111,7 +121,5 @@ namespace tg.application
 
         public WeakAssetReference<InputActionAsset>    inputActions;
     }
-
-    struct ApplicationDataLoaded : IComponentData {}
 }
 

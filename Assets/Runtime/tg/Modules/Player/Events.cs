@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.player.events
 {
@@ -6,7 +7,7 @@ namespace tg.player.events
 
     public struct SpawnPlayerRequestEvent : IEvent
     {
-
+        public float3   location;
     }
 
     public struct PlayerSpawnedEvent : IEvent

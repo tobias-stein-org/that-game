@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 using UnityEngine;
 using Unity.Entities;
 using Unity.Burst;
@@ -8,16 +10,15 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.spawn
 {
-    using System.Runtime.InteropServices;
+	using tg.application;
     using tg.spawn.events;
-    using static UnityEditor.FilePathAttribute;
-    using static UnityEngine.EventSystems.EventTrigger;
 
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
     /// </summary>
     //[BurstCompile]
 	[UpdateInGroup(typeof(InitializationSystemGroup))]
+	[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
 	internal partial class SpawnSystem : SystemBase
 	{
 		/// <summary>
@@ -59,6 +60,7 @@ namespace tg.spawn
 
 		protected override void OnCreate()
 		{
+			this.RequireForUpdate(StateManager.state(this));
 			this.RequireForUpdate<SpawnRequest>();
 
 			this.pending		= new UnsafeHashMap<SpawnRequest, EntityCommandBuffer>(1, Allocator.Persistent);
