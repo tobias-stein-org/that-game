@@ -13,7 +13,7 @@ namespace tg.events
     /// A global accessable EventQueue. IEventListener types can subscribe and unsubscribe to this event queue.
     /// Subscribed listener will automatically receive events for which they implemented a handler method for.
     /// </summary>
-    [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
+    [UpdateInGroup(typeof(LateSimulationSystemGroup), OrderFirst = true)]
     public partial class EventQueue : SystemBase
     {
         private static EventQueue                                   Instance        = null;
@@ -67,7 +67,7 @@ namespace tg.events
                 EventType EventT = e.type;
 
                 // simple log of the fired event
-                Debug.Log($"Fire event '{e.Name}': {JsonUtility.ToJson(e)}");
+                Debug.Log($"[Frame: {UnityEngine.Time.frameCount}]: Fire event '{e.Name}': {JsonUtility.ToJson(e)}");
 
                 if(this.eventHandler.TryGetValue(EventT, out List<EventHandler> Handlers))
                 {
