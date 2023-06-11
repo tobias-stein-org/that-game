@@ -196,41 +196,40 @@ namespace tg.level
                 public void Execute()
                 {
                     for(var chunkAId = 0; chunkAId < this.chunks.Length; chunkAId++)
+                    for(var chunkBId = chunkAId + 1; chunkBId < this.chunks.Length; chunkBId++)
                     {
-                        for(int chunkBId = chunkAId; chunkBId < this.chunks.Length; chunkBId++)
+                        var chunkA = this.chunks[chunkAId];
+                        var chunkB = this.chunks[chunkBId];
+
+                        // two different chunks overlap
+                        if(chunkA.bounds.position == chunkB.bounds.position)
                         {
-                            if(chunkAId == chunkBId) { continue; }
-
-                            var chunkA = this.chunks[chunkAId];
-                            var chunkB = this.chunks[chunkBId];
-
-                            // two different chunks overlap
-                            if(chunkA.bounds.position == chunkB.bounds.position)
+                            // merge all walkable tiles from chunkB with chunkA
+                            for(int y = 0; y < chunkA.bounds.height; y++)
+                            for(int x = 0; x < chunkA.bounds.width; x++)
                             {
+                                var tileId = (y * chunkA.bounds.width) + x;
+                                var tile = chunkA[tileId];
 
-                                // merge all walkable tiles from chunkB with chunkA
-                                for(int y = 0; y < chunkA.bounds.height; y++)
-                                for(int x = 0; x < chunkA.bounds.height; x++)
+                                if(chunkB[tileId].constructionType == LevelData.Tile.ConstructionType.Walkable)
                                 {
-                                    var tileId = (y * chunkA.bounds.width) + x;
-                                    var tile = chunkA.data[tileId];
-
-                                    if(chunkB.data[tileId].constructionType == LevelData.Tile.ConstructionType.Walkable)
-                                    {
-                                        tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                                    }
-
-                                    if(chunkB.data[tileId].constructionType == LevelData.Tile.ConstructionType.Undefined && chunkA.data[tileId].constructionType == LevelData.Tile.ConstructionType.Obstructed)
-                                    {
-                                        tile.constructionType = LevelData.Tile.ConstructionType.Undefined;
-                                    }
-
-                                    chunkA.data[tileId] = tile;
+                                    tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
                                 }
 
-                                // replice merge result to chunkB
-                                chunkB.data.CopyFrom(chunkA.data);
+                                if(chunkB[tileId].constructionType == LevelData.Tile.ConstructionType.Undefined && chunkA[tileId].constructionType == LevelData.Tile.ConstructionType.Obstructed)
+                                {
+                                    tile.constructionType = LevelData.Tile.ConstructionType.Undefined;
+                                }
+
+                                chunkA[tileId] = tile;
                             }
+
+                            // replice merge result to chunkB
+                            chunkB.data.CopyFrom(chunkA.data);
+
+                            // sync neighbours
+                            chunkA.neighbours = Unity.Mathematics.math.max(chunkA.neighbours, chunkB.neighbours);
+                            chunkB.neighbours = chunkA.neighbours;
                         }
                     }
                 }
