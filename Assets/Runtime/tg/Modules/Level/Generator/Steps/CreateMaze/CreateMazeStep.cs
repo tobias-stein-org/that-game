@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 using PathStep          = UnityEngine.Vector2Int;
 using Path              = Unity.Collections.NativeList<UnityEngine.Vector2Int>;
@@ -63,10 +64,7 @@ namespace tg.level
                 public NativeList<PathStepChoice>   steps;
 
                 public bool                         pathIntersection;
-
-                public float                        pathStraightness;
                 public float                        pathCurvature;
-                public float                        pathDensity;
 
                 public void Execute()
                 {
@@ -89,22 +87,23 @@ namespace tg.level
 
                     // sort by score, highest first
                     steps.Sort();
-                    for(int i = 0; i < steps.Length; i++) { steps.ElementAt(i).score -= steps[steps.Length - 1].score; }
+
+                    for(int i = 0; i < steps.Length; i++)
+                    {
+                        var step    = steps[i];
+                       
+                        step.score -= steps[steps.Length - 1].score;
+                        steps[i]    = step;
+                    }
                 }
 
         
                 private float computeNextStepScore([ReadOnly] ref PathStep nextStep)
                 {
-                    float distance      = this.euclideanDistance(this.path[0], ref nextStep);
                     float curvature     = this.manhattenCurvature(ref this.path, ref nextStep);
-                    float area          = this.area(ref this.path, ref nextStep);
-
-                    // values between 0.0 and 1.0
-                    float density       = (float)(this.path.Length + 1) / area;
-                    float straightness  = distance / (float)(this.path.Length);
                     float curvature01   = this.path.Length < 2 ? 0.0f : (curvature / (float)(this.path.Length - 1));
 
-                    return (straightness - this.pathStraightness) * (curvature01 - this.pathCurvature) * (density - this.pathDensity);
+                    return ((1.0f - this.pathCurvature) - (1.0f - curvature01)) * ((this.pathCurvature - curvature01));
                 }
 
                 private float euclideanDistance([ReadOnly] PathStep start, [ReadOnly] ref PathStep end)
@@ -143,7 +142,7 @@ namespace tg.level
                     return curvature;
                 }
 
-                private float area([ReadOnly] ref Path path, [ReadOnly] ref PathStep next)
+                private Vector2Int area([ReadOnly] ref Path path, [ReadOnly] ref PathStep next)
                 {
                     int xMin = next.x, xMax = next.x;
                     int yMin = next.y, yMax = next.y;
@@ -161,7 +160,7 @@ namespace tg.level
                     var width  = xMax - xMin + 1;
                     var height = yMax - yMin + 1;
 
-                    return width * height;
+                    return new Vector2Int(width, height);
                 }
             }
 
@@ -186,9 +185,7 @@ namespace tg.level
                             steps = steps,
 
                             pathIntersection = this.settings.pathIntersection,
-                            pathStraightness = this.settings.pathStraightness,
                             pathCurvature = this.settings.pathCurvature,
-                            pathDensity = this.settings.pathDensity
 
                         };
 
