@@ -25,7 +25,6 @@ namespace tg.level
         {
             public  const float                     EPSILONE = 1e-6f;
 
-
             /// <summary>
             /// Utitliy struct that stores the current state of the WFC algorithm. This state
             /// will be shared among jobs.
@@ -1319,8 +1318,6 @@ namespace tg.level
                 }
             }
 
-
-
             private ModuleConstraints                       constraints;
             private ModuleConstraints                       passTwoConstraints;
 
@@ -1353,17 +1350,32 @@ namespace tg.level
 
                 var dependsOn = context.schedule(constraintsJob, this.modules.Length, this.modules.Length);
 
-                for(int chunkId = 0; chunkId < context.level.numChunks; chunkId++)
+
+                // delete potentially overlapping chunks
+                using(var duplicates = new NativeHashSet<int>(context.level.numChunks, Allocator.Temp))
                 {
-                    var chunkInfo = context.level.getChunk(chunkId);
-                    if(this.processedMapChunks.Contains(chunkInfo.bounds.position)) { continue; }
-                    this.processedMapChunks.Add(chunkInfo.bounds.position);
+                    for(var chunkAId = 0;            chunkAId < context.level.numChunks; chunkAId++)
+                    for(var chunkBId = chunkAId + 1; chunkBId < context.level.numChunks; chunkBId++)
+                    {
+                        var chunkA = context.level.chunks[chunkAId];
+                        var chunkB = context.level.chunks[chunkBId];
 
+                        // two different chunks overlap
+                        if(chunkA.bounds.position == chunkB.bounds.position) { duplicates.Add(chunkB.id); }
+                    }
 
+                    foreach(var duplicate in duplicates) { context.level.deleteChunkById(duplicate); }
+                }
+
+                for(int chunkIndex = 0; chunkIndex < context.level.numChunks; chunkIndex++)
+                {
+                    var chunk = context.level.getChunk(chunkIndex);
+                    if(this.processedMapChunks.Contains(chunk.bounds.position)) { continue; }
+                    this.processedMapChunks.Add(chunk.bounds.position);
 
                     this.state.Value.reset();
 
-                    var initGrid = this.initializeGrid(chunkId, context);
+                    var initGrid = this.initializeGrid(chunk, context);
                     while(initGrid.MoveNext()) { yield return initGrid.Current; }
 
                     this.weightsBuffer                      = new GridCellModuleWeightsUndoBuffer(this.grid, this.modules, this.settings.numBacktrackingSteps);
@@ -1378,9 +1390,9 @@ namespace tg.level
                     while(passTwo.MoveNext()) { yield return passTwo.Current; }
 
                     if(this.state.Value.hasSolution())
-                        Debug.Log($"Map chunk {chunkId} generation successfull. [Attepts: {this.state.Value.numFails() + 1}]");
+                        Debug.Log($"Map chunk {chunkIndex} generation successfull. [Attepts: {this.state.Value.numFails() + 1}]");
                     else
-                        Debug.LogWarning($"Map chunk {chunkId} generation failed.");
+                        Debug.LogWarning($"Map chunk {chunkIndex} generation failed.");
 
                     this.weightsBuffer.Dispose();
                     this.grid.Dispose();
@@ -1388,10 +1400,8 @@ namespace tg.level
                 }
             }
 
-            private IEnumerator<State> initializeGrid(int chunkId, Generator.Context context)
+            private IEnumerator<State> initializeGrid(LevelData.Chunk chunk, Generator.Context context)
             {
-                var chunk                               = context.level.getChunk(chunkId);
-        
                 var chunkLeft                           = context.level.getChunk(chunk.bounds.position + new Vector2Int(-chunk.bounds.width, 0));
                 var chunkRight                          = context.level.getChunk(chunk.bounds.position + new Vector2Int(chunk.bounds.width, 0));
                 var chunkTop                            = context.level.getChunk(chunk.bounds.position + new Vector2Int(0, -chunk.bounds.height));
