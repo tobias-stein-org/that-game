@@ -139,11 +139,6 @@ namespace tg.level
             {
                 if(this.data.IsCreated)
                 {
-                    foreach(var tile in this.data)
-                    {
-                        if(tile.IsCreated) { tile.Dispose(); }
-                    }
-
                     this.data.Dispose();
                 }
             }
@@ -178,7 +173,7 @@ namespace tg.level
         /// A tile is a single piece of the entire level. Many tiles make up the entire level.
         /// Each tile stores data like what module to render, if it is walkable etc.
         /// </summary>
-        public struct Tile : IDisposable 
+        public struct Tile
         {
             /// <summary>
             /// Defines the architectural intent of a tile.
@@ -211,7 +206,7 @@ namespace tg.level
 
             public ConstructionType                 constructionType;
 
-            private UnsafeHashMap<Layer, Module>    layers;
+            private int4                            layers;
 
             #endregion
 
@@ -224,7 +219,7 @@ namespace tg.level
                     return new Tile
                     {
                         constructionType    = ConstructionType.Undefined,
-                        layers              = new UnsafeHashMap<Layer, Module>(4, Allocator.Persistent)
+                        layers              = Module.INVALID.id
                     };
                 }
             }
@@ -236,19 +231,9 @@ namespace tg.level
                     return new Tile
                     {
                         constructionType    = ConstructionType.Empty,
-                        layers              = default
+                        layers              = Module.INVALID.id
                     };
                 }
-            }
-
-            #endregion
-
-            #region Clean-up
-
-            public bool IsCreated { get { return this.layers.IsCreated; } }
-            public void Dispose()
-            {
-                if(this.layers.IsCreated) { this.layers.Dispose(); }
             }
 
             #endregion
@@ -260,9 +245,17 @@ namespace tg.level
             /// <returns></returns>
             public Module this[Layer layer]
             {
-                get { return this.layers.ContainsKey(layer) ? this.layers[layer] : Module.INVALID; }
+                get
+                {
+                    Unity.Assertions.Assert.IsTrue(layer >= 0 && layer < 4, "Layer must be in range between 0 and 3.");
+                    return this.layers[layer];
+                }
 
-                set { this.layers[layer] = value; }
+                set
+                {
+                    Unity.Assertions.Assert.IsTrue(layer >= 0 && layer < 4, "Layer must be in range between 0 and 3.");
+                    this.layers[layer] = value;
+                }
             }
         }
 
