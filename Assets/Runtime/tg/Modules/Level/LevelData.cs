@@ -279,6 +279,22 @@ namespace tg.level
             return ref this.chunks.ElementAt(this.chunks.Length - 1);
         }
 
+        public void deleteChunk(in Chunk chunk) { this.deleteChunkById(chunk.id); }
+
+        public void deleteChunkById(int chunkId)
+        {
+            for(int index = 0; index < this.chunks.Length; index++)
+            {
+                ref var chunk = ref this.chunks.ElementAt(index);
+                if(chunk.id == chunkId)
+                {
+                    chunk.Dispose();
+                    this.chunks.RemoveAt(index);
+                    break;
+                }
+            }
+        }
+
         public void Dispose()
         {
             // dispose of all chunk data
