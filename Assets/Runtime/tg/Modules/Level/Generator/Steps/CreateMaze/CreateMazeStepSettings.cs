@@ -18,23 +18,10 @@ namespace tg.level.generator.step
         public int          pathLength              = 7;
 
         /// <summary>
-        /// Influences how straight a path will be.
-        /// </summary>
-        [Range(0, 1)]
-        public float        pathStraightness        = 0.2f;
-
-        /// <summary>
         /// Influences the overall curvature of the generated path.
         /// </summary>
         [Range(0, 1)]       
         public float        pathCurvature           = 0.7f;
-
-        /// <summary>
-        /// A measure of paht density. Given the bounding box of a path this measure describes the ratio between the path and bounding box area.
-        /// More dense path have less gaps/space between path sections.
-        /// </summary>
-        [Range(0, 1)]       
-        public float        pathDensity             = 0.1f;
 
         /// <summary>
         /// Influence of randomness when choosing the next path element.
@@ -58,14 +45,5 @@ namespace tg.level.generator.step
         /// Maximum number of allowed backtracks before retrying from scratch.
         /// </summary>
         public int          maxBacktracks           = 30;
-
-        public void OnEnable()
-        {
-            // ensure weights are normalized
-            float sum = this.pathStraightness + this.pathCurvature + this.pathDensity;
-            this.pathStraightness    /= sum;
-            this.pathCurvature       /= sum;
-            this.pathDensity         /= sum;
-        }
     }
 }
