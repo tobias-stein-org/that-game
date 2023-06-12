@@ -127,6 +127,7 @@ namespace tg.player
 
                 ECB.AddComponent(playerEntity, this.transform);
                 ECB.AddComponent(playerEntity, this.GetComponent<Rigidbody2D>());
+                ECB.AddComponent(playerEntity, this.GetComponentInChildren<Animator>());
                 ECB.AddComponent(playerEntity, this.GetComponentInChildren<CinemachineVirtualCamera>());
             }
         }

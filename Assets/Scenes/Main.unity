@@ -166,7 +166,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1476050175
 GameObject:
@@ -338,10 +338,10 @@ MonoBehaviour:
   AutoLoadScene: 1
   _SceneGUID:
     Value:
-      x: 1764912240
-      y: 524451094
-      z: 958550408
-      w: 1452450650
+      x: 0
+      y: 0
+      z: 0
+      w: 0
 --- !u!4 &1613005128
 Transform:
   m_ObjectHideFlags: 0
