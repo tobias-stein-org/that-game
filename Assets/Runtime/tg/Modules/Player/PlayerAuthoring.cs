@@ -23,7 +23,7 @@ namespace tg.player
             EventQueue.subscribe(this);
 
             CinemachineVirtualCamera vcam               = null;
-            var cameraGO                                = new GameObject("Player-Camera");
+            var cameraGO                                = new GameObject("Camera");
             {
                 cameraGO.transform.SetParent(this.transform);
 
@@ -31,6 +31,10 @@ namespace tg.player
                 var camera                              = GameObject.FindFirstObjectByType<UnityEngine.Camera>() ?? new GameObject("Camera").AddComponent<UnityEngine.Camera>();
                 {
                     var ccBrain                         = camera.gameObject.GetComponent<CinemachineBrain>() ?? camera.gameObject.AddComponent<CinemachineBrain>();
+                    {
+                        ccBrain.m_UpdateMethod          = CinemachineBrain.UpdateMethod.FixedUpdate;
+                    }
+
                     var ppCamera                        = camera.gameObject.GetComponent<PixelPerfectCamera>() ?? camera.gameObject.AddComponent<PixelPerfectCamera>();
                     {
                         ppCamera.refResolutionX         = 1920;
@@ -65,8 +69,6 @@ namespace tg.player
                     vcam.Follow                         = this.transform;
                 }
             }
-
-            this.GetComponent<SpriteRenderer>().sortingOrder = tg.level.LevelData.Layer.Player;
 
             this.createPlayerEntity();
         }
