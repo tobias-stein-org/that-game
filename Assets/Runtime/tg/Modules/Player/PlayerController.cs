@@ -6,7 +6,7 @@ namespace tg.player
 {
     using tg.application;
 
-    [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct PlayerController : ISystem
     {
