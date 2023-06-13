@@ -13,19 +13,20 @@ using PathStepStack     = Unity.Collections.NativeList<Unity.Collections.NativeL
 
 namespace tg.level
 {
-    public partial struct LevelData
-    {
-        /// <summary>
-        /// A list of ordered steps (directions) that form a path.
-        /// </summary>
-        public NativeArray<Vector2Int>  pathSteps;
-    }
-
     namespace generator.step
     {
-        public class CreateMazeStep : LevelGeneratorStep<CreateMazeStepSettings>
         public class CreateMazeStep : LevelGeneratorStep<CreateMazeStepSettings, LevelGeneratorStep.StateBase, CreateMazeStep.State>
         {
+            public class State : StateBase
+            {
+                /// <summary>
+                /// A list of ordered steps (directions) that form a path.
+                /// </summary>
+                public List<Vector2Int>  pathSteps;
+
+                internal static new State Default => new State { };
+            }
+
             private static readonly Vector2Int[] DIRECTION = new Vector2Int[]
             {
                 Vector2Int.up,    
@@ -47,13 +48,12 @@ namespace tg.level
                 public int CompareTo(PathStepChoice other) { return other.score.CompareTo(this.score); }
             }
 
-            private Path            path;
+            private Path                    path;
 
-            private PathStepStack   stack;
-            private int             backtracks;    
+            private PathStepStack           stack;
+            private int                     backtracks;    
 
-
-            private int             currentStep         { get { return this.path.Length; } }
+            private int                     currentStep         { get { return this.path.Length; } }
 
             #region Jobs
 
@@ -167,9 +167,6 @@ namespace tg.level
 
             #endregion
 
-
-
-            public override IEnumerator<State> execute(Generator.Context context)
             public override IEnumerator<State> execute(Generator.Context context, StateBase lastStepState)
             {
                 this.reset();
@@ -229,22 +226,24 @@ namespace tg.level
                         // add next path step
                         this.path.Add(nextStep);
                     }
-
-                    for(int i = 0; i < this.path.Length - 1; i++) { context.level.pathSteps[i] = this.path[i + 1] - this.path[i]; }
                 }
-                for(int i = 0; i < this.path.Length - 1; i++) { context.level.pathSteps[i] = this.path[i + 1] - this.path[i]; }
+
+                var pathSteps = new List<Vector2Int>(this.settings.pathLength);
+                for(int i = 0; i < this.path.Length - 1; i++) { pathSteps.Add(this.path[i + 1] - this.path[i]); }
+
+                yield return new State
+                {
+                    pathSteps = pathSteps
+                };
             }
 
             public override void initialize(Generator.Context context)
             {
-                context.level.pathSteps = new NativeArray<PathStep>(this.settings.pathLength - 1, Allocator.Persistent);
             }
 
             public override void release(Generator.Context context)
             {
                 this.cleanup();
-
-                if(context.level.pathSteps.IsCreated) { context.level.pathSteps.Dispose(); }
             }
 
 

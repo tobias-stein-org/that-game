@@ -9,14 +9,8 @@ using UnityEngine;
 
 namespace tg.level
 {
-    public partial struct LevelData
-    {
-        
-    }
-
     namespace generator.step
     {
-        public class CreateMazeWallsStep : LevelGeneratorStep<CreateMazeWallsStepSettings>
         public class CreateMazeWallsStep : LevelGeneratorStep<CreateMazeWallsStepSettings, CreateMazeStep.State>
         {
             /// <summary>
@@ -29,20 +23,20 @@ namespace tg.level
                 public int                                  mapPathThickness;
 
                 [ReadOnly]
-                public NativeArray<Vector2Int>              pathSteps;
-
-                [ReadOnly]
                 public NativeArray<float>                   pathDisplacements;
 
                 [NativeDisableParallelForRestriction] 
                 public UnsafeList<LevelData.Chunk>          chunks;
 
-                public void Execute(int chunkId)
+                public void Execute(int chunkIndex)
                 {
-                    var from        = chunkId > 0                       ? -this.pathSteps[chunkId - 1]  : Vector2Int.zero;
-                    var to          = chunkId < this.pathSteps.Length   ?  this.pathSteps[chunkId]      : Vector2Int.zero;
+                    var from        = chunkIndex > 0                        ? this.chunks[chunkIndex - 1].bounds.position - this.chunks[chunkIndex].bounds.position : Vector2Int.zero;
+                    var to          = chunkIndex < this.chunks.Length - 1   ? this.chunks[chunkIndex + 1].bounds.position - this.chunks[chunkIndex].bounds.position : Vector2Int.zero;
 
-                    ref var chunk   = ref this.chunks.ElementAt(chunkId);
+                    from            = new Vector2Int(Mathf.FloorToInt(from.x    / from.magnitude), Mathf.FloorToInt(from.y  / from.magnitude));
+                    to              = new Vector2Int(Mathf.FloorToInt(to.x      / to.magnitude),   Mathf.FloorToInt(to.y    / to.magnitude));
+
+                    ref var chunk   = ref this.chunks.ElementAt(chunkIndex);
 
                     // draw walls
                     chunk.wallSize = this.mapChunkWallSize;
@@ -101,7 +95,7 @@ namespace tg.level
 
                     // draw path
                     chunk.pathExit = chunk.bounds.size / 2;
-                    var displacement = this.pathDisplacements[chunkId];
+                    var displacement = this.pathDisplacements[chunkIndex];
                     if(to == Vector2Int.left)
                     {
                         var pathStart = Mathf.RoundToInt((float)(chunk.bounds.height - (2 * (this.mapChunkWallSize + 1)) - this.mapPathThickness) * displacement) + this.mapChunkWallSize + 1;
@@ -162,9 +156,9 @@ namespace tg.level
                     // set chunk neighbours
                     {
                         // previous chunk
-                        if(chunkId > 0)
+                        if(chunkIndex > 0)
                         {
-                            ref var prevChunk = ref this.chunks.ElementAt(chunkId - 1);
+                            ref var prevChunk = ref this.chunks.ElementAt(chunkIndex - 1);
 
                                  if(from == Vector2Int.up)      { chunk.topNeighbour    = prevChunk.id; }
                             else if(from == Vector2Int.down)    { chunk.bottomNeighbour = prevChunk.id; }
@@ -173,9 +167,9 @@ namespace tg.level
                         }
 
                         // next chunk
-                        if(chunkId < this.chunks.Length - 2)
+                        if(chunkIndex < this.chunks.Length - 2)
                         {
-                            ref var nextChunk = ref this.chunks.ElementAt(chunkId + 1);
+                            ref var nextChunk = ref this.chunks.ElementAt(chunkIndex + 1);
 
                                  if(to == Vector2Int.up)        { chunk.topNeighbour    = nextChunk.id; }
                             else if(to == Vector2Int.down)      { chunk.bottomNeighbour = nextChunk.id; }
@@ -236,10 +230,9 @@ namespace tg.level
                 }
             }
 
-            public override IEnumerator<State> execute(Generator.Context context)
             public override IEnumerator<StateBase> execute(Generator.Context context, CreateMazeStep.State lastStepState)
             {
-                var numChunks               = context.level.numChunks;
+                var numChunks               = this.createLevelChunks(context, lastStepState);
         
                 // pre-compute random values, since we cannot pass mamanged Random instance to job
                 var pathDisplacements       = new NativeArray<float>(Enumerable.Range(0, numChunks).Select(i => (((float)context.random.NextDouble() - 0.5f) * this.settings.walkablePathDisplacement) + 0.5f).ToArray(), Allocator.Persistent);
@@ -249,7 +242,6 @@ namespace tg.level
                     mapChunkWallSize        = this.settings.mapChunkWallSize,
                     mapPathThickness        = this.settings.walkablePathThickness,
                     pathDisplacements       = pathDisplacements,
-                    pathSteps               = context.level.pathSteps,
                     chunks                  = context.level.chunks
 
                 };
@@ -261,14 +253,14 @@ namespace tg.level
                 };
                 context.schedule(mergeJob, dependsOn);
 
-                yield return State.Default;
+                yield return StateBase.Default;
 
                 pathDisplacements.Dispose();
             }
 
-            public override void initialize(Generator.Context context)
+            private int createLevelChunks(Generator.Context context, CreateMazeStep.State input)
             {
-                int numChunks               = context.level.pathSteps.Length + 1;
+                int numChunks               = input.pathSteps.Count + 1;
                 // create level chunks from previously generated path and pre-compute chunk bounds and data index.
                 {
                     for(int chunkId = 0; chunkId < numChunks; chunkId++)
@@ -280,7 +272,7 @@ namespace tg.level
                         if(chunkId > 0)
                         {
                             var last            = context.level.getChunk(chunkId - 1);
-                            var from            = -context.level.pathSteps[chunkId - 1];
+                            var from            = -input.pathSteps[chunkId - 1];
 
                             chunk.bounds    = new RectInt
                             {
@@ -311,6 +303,12 @@ namespace tg.level
                         //Debug.Log($"Chunk[{chunkId}]: {chunkInfo.bounds} (Index0: {chunkInfo.dataIndex0}, size: {chunkInfo.dataSize})");
                     }
                 }
+
+                return numChunks;
+            }
+
+            public override void initialize(Generator.Context context)
+            {
             }
 
             public override void release(Generator.Context context)

@@ -11,10 +11,9 @@ using static tg.level.LevelData;
 namespace tg.level
 {
     /// <summary>
-    /// A commonly shared data object between level generation steps. Each step may add its own
-    /// relevant level data to the partial struct and can access data declared by other steps. 
+    /// A commonly shared data object between level generation steps. 
     /// </summary>
-    public partial struct LevelData : IComponentData, IDisposable
+    public struct LevelData : IComponentData, IDisposable
     {
         /// <summary>
         /// Level tiles can be build of multiple layers. Each layer has a certains index which determines, if a layer
