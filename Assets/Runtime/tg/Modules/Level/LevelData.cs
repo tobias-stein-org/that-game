@@ -81,18 +81,6 @@ namespace tg.level
             public int4                             neighbours;
 
             /// <summary>
-            /// Wall size in for a certain chunk
-            /// </summary>
-            public int                              wallSize;
-
-            /// <summary>
-            /// Since chunks are created in an order they are connected
-            /// to their neighbour with an exit. This vector states on which
-            /// side of the chunk bounds the exit is.
-            /// </summary>
-            public Vector2Int                       pathExit;
-
-            /// <summary>
             /// Reference to the chunk owned tile data.
             /// </summary>
             public NativeArray<Tile>                data;
@@ -113,16 +101,13 @@ namespace tg.level
             /// Creates a new chunk info element.
             /// </summary>
             /// <param name="chunkId"></param>
-            internal Chunk(int chunkId, int width, int height)
+            internal Chunk(int chunkId, in RectInt bounds)
             {
                 this.id             = chunkId;
                 this.neighbours     = -1;
+                this.bounds         = bounds;
 
-                this.bounds         = default;
-                this.wallSize       = 0;
-                this.pathExit       = default;
-
-                this.data           = new NativeArray<Tile>(Enumerable.Range(0, width * height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
+                this.data           = new NativeArray<Tile>(Enumerable.Range(0, bounds.width * bounds.height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
             }
 
             public static readonly Chunk INVALID = new Chunk
@@ -265,14 +250,15 @@ namespace tg.level
 
         private int                     nextChunkId;
 
-        public ref Chunk createNewChunk(int width, int height)
+        public ref Chunk createNewChunk(int x, int y, int width, int height)
         {
             if(!this.chunks.IsCreated)
             {
                 this.chunks = new UnsafeList<Chunk>(8, Allocator.Persistent);
             }
 
-            var newChunk = new LevelData.Chunk(this.nextChunkId++, width, height);
+            
+            var newChunk = new LevelData.Chunk(this.nextChunkId++, new RectInt { x = x, y = y, width = width, height = height });
 
             this.chunks.Add(newChunk);
             return ref this.chunks.ElementAt(this.chunks.Length - 1);

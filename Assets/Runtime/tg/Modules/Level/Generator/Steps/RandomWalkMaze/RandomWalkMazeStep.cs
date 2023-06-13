@@ -10,71 +10,71 @@ namespace tg.level
         /// This generator step performs a random walk in each chunk. It starts walking at the chunk entry until
         /// it reaches the chunk exit.
         /// </summary>
-        public class RandomWalkMazeStep : LevelGeneratorStep<RandomWalkMazeStepSettings>
+        public class RandomWalkMazeStep : LevelGeneratorStep<RandomWalkMazeStepSettings, CreateMazeWallsStep.State>
         {
-            public override IEnumerator<StateBase> execute(Generator.Context context, StateBase lastStepState)
+            public override IEnumerator<StateBase> execute(Generator.Context context, CreateMazeWallsStep.State lastStepState)
             {
                 for(int i = 0; i < context.level.numChunks; i++)
                 {
-                    var chunk = context.level.getChunk(i);
-                    var start = context.level.getChunk(0).bounds.size / 2;
+                    var chunk                   = context.level.getChunk(i);
+                    var start                   = context.level.getChunk(0).bounds.size / 2;
 
                     if(i > 0)
                     {
-                        var lastChunkInfo = context.level.getChunk(i - 1);
-                        var offset = lastChunkInfo.bounds.position - chunk.bounds.position;
-                        offset += new Vector2Int(offset.x != 0 ? -(int)Mathf.Sign(offset.x) : 0, offset.y != 0 ? -(int)Mathf.Sign(offset.y) : 0);
+                        var lastChunkInfo       = context.level.getChunk(i - 1);
+                        var offset              = lastChunkInfo.bounds.position - chunk.bounds.position;
+                        offset                  += new Vector2Int(offset.x != 0 ? -(int)Mathf.Sign(offset.x) : 0, offset.y != 0 ? -(int)Mathf.Sign(offset.y) : 0);
 
-                        start = lastChunkInfo.pathExit + offset;
+                        start                   = lastStepState.chunkExits[i - 1] + offset;
                     }
 
-                    var tileId = (start.y * chunk.bounds.width) + start.x;
-                    var tileData = chunk.data[tileId];
+                    var tileId                  = (start.y * chunk.bounds.width) + start.x;
+                    var tileData                = chunk.data[tileId];
 
-                    tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                    chunk.data[tileId] = tileData;
+                    tileData.constructionType   = LevelData.Tile.ConstructionType.Walkable;
+                    chunk.data[tileId]          = tileData;
 
-                    var exit = chunk.pathExit;
+                    var exit                    = lastStepState.chunkExits[i];
 
-                    var from        = i > 0                                 ? context.level.chunks[i - 1].bounds.position - context.level.chunks[i].bounds.position : Vector2Int.zero;
-                    var to          = i < context.level.chunks.Length - 1   ? context.level.chunks[i + 1].bounds.position - context.level.chunks[i].bounds.position : Vector2Int.zero;
+                    var from                    = i > 0                                 ? context.level.chunks[i - 1].bounds.position - context.level.chunks[i].bounds.position : Vector2Int.zero;
+                    var to                      = i < context.level.chunks.Length - 1   ? context.level.chunks[i + 1].bounds.position - context.level.chunks[i].bounds.position : Vector2Int.zero;
 
-                    from            = new Vector2Int(Mathf.FloorToInt(from.x    / from.magnitude), Mathf.FloorToInt(from.y  / from.magnitude));
-                    to              = new Vector2Int(Mathf.FloorToInt(to.x      / to.magnitude),   Mathf.FloorToInt(to.y    / to.magnitude));
+                    from                        = new Vector2Int(Mathf.FloorToInt(from.x    / from.magnitude), Mathf.FloorToInt(from.y  / from.magnitude));
+                    to                          = new Vector2Int(Mathf.FloorToInt(to.x      / to.magnitude),   Mathf.FloorToInt(to.y    / to.magnitude));
 
 
                     // extends the entry from the wall intp the chunk (room)
-                    for(int s = 0; s < chunk.wallSize + 1; s++)
+                    for(int s = 0; s < lastStepState.chunkWallSize + 1; s++)
                     {
-                        tileId = (start.y * chunk.bounds.width) + start.x;
-                        tileData = chunk.data[tileId];
+                        tileId                  = (start.y * chunk.bounds.width) + start.x;
+                        tileData                = chunk.data[tileId];
 
                         tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                        chunk.data[tileId] = tileData;
+                        chunk.data[tileId]      = tileData;
 
-                        start -= from;
+                        start                   -= from;
                     }
 
                     // extends the exit path from the wall into the chunk (room)
-                    for(int s = 0; s < chunk.wallSize + 1; s++)
+                    for(int s = 0; s < lastStepState.chunkWallSize + 1; s++)
                     {
-                        tileId = (exit.y * chunk.bounds.width) + exit.x;
-                        tileData = chunk.data[tileId];
+                        tileId                  = (exit.y * chunk.bounds.width) + exit.x;
+                        tileData                = chunk.data[tileId];
 
                         tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                        chunk.data[tileId] = tileData;
+                        chunk.data[tileId]      = tileData;
 
-                        exit -= to;
+                        exit                    -= to;
                     }
 
                     // do random walk inside the map chunk with a 1 tile margin to the borders
                     {
                         RectInt area = new RectInt
                         {
-                            x = chunk.wallSize + 1,
-                            y = chunk.wallSize + 1,
-                            width = chunk.bounds.width - chunk.wallSize - 1,
-                            height = chunk.bounds.height - chunk.wallSize - 1
+                            x = lastStepState.chunkWallSize + 1,
+                            y = lastStepState.chunkWallSize + 1,
+                            width = chunk.bounds.width - lastStepState.chunkWallSize - 1,
+                            height = chunk.bounds.height - lastStepState.chunkWallSize - 1
                         };
                         NativeList<Vector2Int> options = new NativeList<Vector2Int>(4, Allocator.Persistent);
 
