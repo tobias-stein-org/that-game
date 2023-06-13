@@ -29,7 +29,6 @@ namespace tg.player
             foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
                 playerInput.ValueRW.moveXY  = playerActions.FindAction("move").ReadValue<Vector2>();
-
                 playerInput.ValueRW.melee   = playerActions.FindAction("melee").ReadValue<float>();
                 playerInput.ValueRW.cast    = playerActions.FindAction("cast").ReadValue<float>();
             }
