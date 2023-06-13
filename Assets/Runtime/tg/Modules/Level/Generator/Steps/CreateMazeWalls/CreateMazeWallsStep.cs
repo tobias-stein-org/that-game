@@ -100,7 +100,7 @@ namespace tg.level
                             tile.constructionType = LevelData.Tile.ConstructionType.Obstructed;
                         }
 
-                        chunk.data[tileId] = tile;
+                        chunk[tileId] = tile;
                     }
 
                     // draw path
@@ -112,10 +112,10 @@ namespace tg.level
                         for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                         {
                             var tileId = y * chunk.bounds.width;
-                            var tile = chunk.data[tileId];
+                            var tile = chunk[tileId];
 
                             tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                            chunk.data[tileId] = tile;
+                            chunk[tileId] = tile;
                         }
 
                         this.chunkExits[chunkIndex]              = new Vector2Int(0, pathStart + this.mapPathThickness / 2);
@@ -126,10 +126,10 @@ namespace tg.level
                         for(int y = pathStart; y < pathStart + this.mapPathThickness; y++)
                         {
                             var tileId = (y * chunk.bounds.width) + (chunk.bounds.width - 1);
-                            var tile = chunk.data[tileId];
+                            var tile = chunk[tileId];
 
                             tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                            chunk.data[tileId] = tile;
+                            chunk[tileId] = tile;
                         }
 
                         this.chunkExits[chunkIndex] = new Vector2Int(chunk.bounds.width - 1, pathStart + this.mapPathThickness / 2);
@@ -140,10 +140,10 @@ namespace tg.level
                         for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                         {
                             var tileId = ((chunk.bounds.height - 1) * chunk.bounds.width) + x;
-                            var tile = chunk.data[tileId];
+                            var tile = chunk[tileId];
 
                             tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                            chunk.data[tileId] = tile;
+                            chunk[tileId] = tile;
                         }
 
                         this.chunkExits[chunkIndex] = new Vector2Int(pathStart + this.mapPathThickness / 2, chunk.bounds.height - 1);
@@ -154,10 +154,10 @@ namespace tg.level
                         for(int x = pathStart; x < pathStart + this.mapPathThickness; x++)
                         {
                             var tileId = x;
-                            var tile = chunk.data[tileId];
+                            var tile = chunk[tileId];
 
                             tile.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                            chunk.data[tileId] = tile;
+                            chunk[tileId] = tile;
                         }
 
                         this.chunkExits[chunkIndex] = new Vector2Int(pathStart + this.mapPathThickness / 2, 0);

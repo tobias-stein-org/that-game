@@ -67,12 +67,12 @@ namespace tg.level
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
             /// </summary>
-            public int                              id { get; private set; }
+            public readonly int                     id;
 
             /// <summary>
             /// Logical boundaries of a chunk in the virtual world.
             /// </summary>
-            public RectInt                          bounds;
+            public readonly RectInt                 bounds;
 
             /// <summary>
             /// Holds the ids of accessable neighbouring chunks. If neighbour doesn't exist of is not accessable since its blocked
@@ -83,7 +83,7 @@ namespace tg.level
             /// <summary>
             /// Reference to the chunk owned tile data.
             /// </summary>
-            public NativeArray<Tile>                data;
+            internal NativeArray<Tile>              data;
 
             public Tile                             this[int tileId]
             {
@@ -110,12 +110,7 @@ namespace tg.level
                 this.data           = new NativeArray<Tile>(Enumerable.Range(0, bounds.width * bounds.height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
             }
 
-            public static readonly Chunk INVALID = new Chunk
-            {
-                id          = -1,
-                neighbours  = -1,
-                bounds      = default
-            };
+            public static readonly Chunk INVALID = new Chunk(-1, default);
 
             public bool valid { get { return this.id != -1; } }
 

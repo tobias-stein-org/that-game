@@ -29,10 +29,10 @@ namespace tg.level
                     }
 
                     var tileId                  = (start.y * chunk.bounds.width) + start.x;
-                    var tileData                = chunk.data[tileId];
+                    var tileData                = chunk[tileId];
 
                     tileData.constructionType   = LevelData.Tile.ConstructionType.Walkable;
-                    chunk.data[tileId]          = tileData;
+                    chunk[tileId]               = tileData;
 
                     var exit                    = lastStepState.chunkExits[i];
 
@@ -47,10 +47,10 @@ namespace tg.level
                     for(int s = 0; s < lastStepState.chunkWallSize + 1; s++)
                     {
                         tileId                  = (start.y * chunk.bounds.width) + start.x;
-                        tileData                = chunk.data[tileId];
+                        tileData                = chunk[tileId];
 
                         tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                        chunk.data[tileId]      = tileData;
+                        chunk[tileId]           = tileData;
 
                         start                   -= from;
                     }
@@ -59,10 +59,10 @@ namespace tg.level
                     for(int s = 0; s < lastStepState.chunkWallSize + 1; s++)
                     {
                         tileId                  = (exit.y * chunk.bounds.width) + exit.x;
-                        tileData                = chunk.data[tileId];
+                        tileData                = chunk[tileId];
 
                         tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                        chunk.data[tileId]      = tileData;
+                        chunk[tileId]           = tileData;
 
                         exit                    -= to;
                     }
@@ -80,10 +80,10 @@ namespace tg.level
 
                         var currentPos = start;
                         tileId = (currentPos.y * chunk.bounds.width) + currentPos.x;
-                        tileData = chunk.data[tileId];
+                        tileData = chunk[tileId];
 
                         tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                        chunk.data[tileId] = tileData;
+                        chunk[tileId]           = tileData;
 
                         while(currentPos != exit)
                         {
@@ -92,10 +92,10 @@ namespace tg.level
                             currentPos = options[context.random.Next(0, options.Length)];
 
                             tileId = (currentPos.y * chunk.bounds.width) + currentPos.x;
-                            tileData = chunk.data[tileId];
+                            tileData = chunk[tileId];
 
                             tileData.constructionType = LevelData.Tile.ConstructionType.Walkable;
-                            chunk.data[tileId] = tileData;
+                            chunk[tileId]       = tileData;
                         }
 
                         options.Dispose();
