@@ -24,6 +24,7 @@ namespace tg.level
     namespace generator.step
     {
         public class CreateMazeStep : LevelGeneratorStep<CreateMazeStepSettings>
+        public class CreateMazeStep : LevelGeneratorStep<CreateMazeStepSettings, LevelGeneratorStep.StateBase, CreateMazeStep.State>
         {
             private static readonly Vector2Int[] DIRECTION = new Vector2Int[]
             {
@@ -169,6 +170,7 @@ namespace tg.level
 
 
             public override IEnumerator<State> execute(Generator.Context context)
+            public override IEnumerator<State> execute(Generator.Context context, StateBase lastStepState)
             {
                 this.reset();
 

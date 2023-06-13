@@ -13,6 +13,7 @@ namespace tg.level
         public class RandomWalkMazeStep : LevelGeneratorStep<RandomWalkMazeStepSettings>
         {
             public override IEnumerator<State> execute(Generator.Context context)
+            public override IEnumerator<StateBase> execute(Generator.Context context, StateBase lastStepState)
             {
                 for(int i = 0; i < context.level.numChunks; i++)
                 {

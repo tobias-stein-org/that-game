@@ -39,21 +39,25 @@ namespace tg.level.generator
 
         #region Step enumerator
 
-        public IEnumerator<LevelGeneratorStep.State> execute(Generator.Context context)
+        public IEnumerator<LevelGeneratorStep.StateBase> execute(Generator.Context context)
         {
-            var steps = this.steps.GetEnumerator();
+            var lastStepState       = LevelGeneratorStep.StateBase.Default;
+            var steps               = this.steps.GetEnumerator();
+
             while(steps.MoveNext())
             {
-                var step        = steps.Current;
-                var stepStarted = DateTime.Now;
+                var step            = steps.Current;
+                var stepStarted     = DateTime.Now;
 
                 step.initialize(context);
                 this.onStepStarted?.Invoke(step, context.level);
 
-                var stepExecutor = step.execute(context);
+                var stepExecutor    = step.executeInternal(context, lastStepState);
                 while(stepExecutor.MoveNext())
                 {
-                    yield return stepExecutor.Current;
+                    lastStepState   = stepExecutor.Current;
+                    yield return lastStepState;
+
                     this.onStepUpdated?.Invoke(step, context.level);
                 }
 
@@ -96,11 +100,14 @@ namespace tg.level.generator
                 where TStep         : LevelGeneratorStep<TStepSettings>, new()
                 where TStepSettings : LevelGeneratorStepSettings
             {
+
+                var lastStepOutput = this.steps.Count > 0 ? this.steps.Last().OutputType : typeof(LevelGeneratorStep.StateBase);
+                Unity.Assertions.Assert.IsTrue(lastStepOutput == step.InputType, $"Step required input missmatch! '{step.GetType().Name}' requires '{step.InputType.Name}', but got '{lastStepOutput.Name}'");
+
                 if(settings)
                 {
                     step.configure(settings);
                 }
-
                 this.steps.Add(step);
 
                 return this;
@@ -116,6 +123,11 @@ namespace tg.level.generator
                 where TStepSettings : LevelGeneratorStepSettings
             {
                 var step = (LevelGeneratorStep)Activator.CreateInstance(settings.StepType);
+
+
+                var lastStepOutput = this.steps.Count > 0 ? this.steps.Last().OutputType : typeof(LevelGeneratorStep.StateBase);
+                Unity.Assertions.Assert.IsTrue(lastStepOutput == step.InputType, $"Step required input missmatch! '{step.GetType().Name}' requires '{step.InputType.FullName}', but got '{lastStepOutput.FullName}'");
+
                 step.configure(settings);
                 this.steps.Add(step);
 

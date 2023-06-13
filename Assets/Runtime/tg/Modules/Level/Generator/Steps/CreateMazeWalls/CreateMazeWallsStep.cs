@@ -17,6 +17,7 @@ namespace tg.level
     namespace generator.step
     {
         public class CreateMazeWallsStep : LevelGeneratorStep<CreateMazeWallsStepSettings>
+        public class CreateMazeWallsStep : LevelGeneratorStep<CreateMazeWallsStepSettings, CreateMazeStep.State>
         {
             /// <summary>
             /// Each parallel job will create walls surrounding the currently processed level chunk.
@@ -236,6 +237,7 @@ namespace tg.level
             }
 
             public override IEnumerator<State> execute(Generator.Context context)
+            public override IEnumerator<StateBase> execute(Generator.Context context, CreateMazeStep.State lastStepState)
             {
                 var numChunks               = context.level.numChunks;
         

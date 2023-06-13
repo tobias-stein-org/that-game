@@ -135,7 +135,7 @@ namespace tg.level.generator
             this.context.initialize();
         }
 
-        public  IEnumerator<LevelGeneratorStep.State> execute()
+        public  IEnumerator<LevelGeneratorStep.StateBase> execute()
         {
             var pipelineExecutor = this.pipeline.execute(this.context);
             var generatorStarted = DateTime.Now;
