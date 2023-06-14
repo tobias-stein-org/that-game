@@ -13,6 +13,13 @@ namespace tg.spawn
 	using tg.application;
     using tg.spawn.events;
 
+
+	/// <summary>
+	/// Signature for the post action callback performed on spawned GameObject instances.
+	/// </summary>
+	/// <param name="instance"></param>
+	public delegate void PostSpawnAction(GameObject instance);
+
     /// <summary>
     /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
     /// </summary>
@@ -26,7 +33,7 @@ namespace tg.spawn
 		/// </summary>
 		private struct SpawnRequest : IComponentData, System.IEquatable<SpawnRequest>
 		{
-			public int					id;
+			public Entity				id;
 
 			/// <summary>
 			/// When.
@@ -51,12 +58,19 @@ namespace tg.spawn
             public bool Equals(SpawnRequest other) { return this.id.Equals(other.id); }
         }
 
+		/// <summary>
+		/// Optional managed component that can be attached to a SpawnRequest entity.
+		/// This component is only available for GameObject spawns, since for Entity spawns we can use the EntityCommandBuffer for post modifications.
+		/// </summary>
+		private class PostSpawnActionData : IComponentData
+		{
+			public PostSpawnAction		postSpawnAction;
+		}
+
 		private struct SpawnRequestComplete : IComponentData {}
 
 
 		private UnsafeHashMap<SpawnRequest, EntityCommandBuffer>	pending;
-
-		private int													nextRequestId;
 
 		protected override void OnCreate()
 		{
@@ -64,7 +78,6 @@ namespace tg.spawn
 			this.RequireForUpdate<SpawnRequest>();
 
 			this.pending		= new UnsafeHashMap<SpawnRequest, EntityCommandBuffer>(1, Allocator.Persistent);
-			this.nextRequestId	= 0;
 		}
 
         protected override void OnDestroy()
@@ -75,8 +88,6 @@ namespace tg.spawn
 				{
 					KVP.Key.prefabGO.Free();
 				}
-
-				//if(KVP.Value.IsCreated) { KVP.Value.Dispose(); }
 			}
 
 			this.pending.Dispose();
@@ -142,6 +153,12 @@ namespace tg.spawn
 
                         spawnRequest.prefabGO.Free();
 
+						// execute post spawn action, if present.
+						if(this.EntityManager.HasComponent<PostSpawnActionData>(spawnRequest.id))
+						{
+							this.EntityManager.GetComponentObject<PostSpawnActionData>(spawnRequest.id)?.postSpawnAction(instanceGO);
+						}
+
 						tg.events.EventQueue.publish(new GameObjectSpawnedEvent { gameObject = instanceGO });
                     }
 
@@ -179,7 +196,7 @@ namespace tg.spawn
 
 			var spawnRequest			= new SpawnRequest
 			{
-				id						= this.nextRequestId++,
+				id						= spawnRequestEntity,
 				entity					= entity,
 				prefabGO				= default,
 				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
@@ -219,7 +236,7 @@ namespace tg.spawn
 
 			var spawnRequest			= new SpawnRequest
 			{
-				id						= this.nextRequestId++,
+				id						= spawnRequestEntity,
 				entity					= entity,
 				prefabGO				= default,
 				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
@@ -249,7 +266,7 @@ namespace tg.spawn
 		/// <param name="ECB"></param>
 		/// <param name="delay"></param>
 		/// <returns></returns>
-		internal void create(GameObject prefab, in float3 location, double delay = 0)
+		internal void create(GameObject prefab, in float3 location, double delay = 0, PostSpawnAction postSpawnAction = null)
 		{
 			var ECB						= new EntityCommandBuffer(Allocator.Persistent, PlaybackPolicy.SinglePlayback);
 
@@ -257,7 +274,7 @@ namespace tg.spawn
 
 			var spawnRequest			= new SpawnRequest
 			{
-				id						= this.nextRequestId++,
+				id						= spawnRequestEntity,
 				entity					= Entity.Null,
 				prefabGO				= GCHandle.Alloc(prefab),
 				spawnTime				= this.EntityManager.World.Time.ElapsedTime + delay,
@@ -265,6 +282,10 @@ namespace tg.spawn
 			};
 
 			this.EntityManager.SetComponentData(spawnRequestEntity, spawnRequest);
+			if(postSpawnAction != null)
+			{
+				this.EntityManager.AddComponentObject(spawnRequestEntity, new PostSpawnActionData { postSpawnAction = postSpawnAction });
+			}
 
 			// once the request is processed ...
 			{
@@ -315,6 +336,6 @@ namespace tg.spawn
 		/// <param name="prefab"></param>
 		/// <param name="location"></param>
 		/// <param name="delay"></param>
-		public static void create(GameObject prefab, in float3 location, double delay = 0) { spawner.create(prefab, in location, delay); }
+		public static void create(GameObject prefab, in float3 location, double delay = 0, PostSpawnAction postSpawnAction = null) { spawner.create(prefab, in location, delay, postSpawnAction); }
 	}
 }
