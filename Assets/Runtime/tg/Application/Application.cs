@@ -42,6 +42,7 @@ namespace tg.application
             reqeust.load(new UntypedWeakReferenceId[]
             {
                 appData.playerPrefab,
+                appData.enemyPrefab,
                 appData.inputActions
             },
             (hadErrors) =>
@@ -91,6 +92,8 @@ namespace tg.application
         /// </summary>
         public GameObject           playerPrefab;
 
+        public GameObject           enemyPrefab;
+
         public InputActionAsset     inputActions;
 
 #if UNITY_EDITOR
@@ -108,6 +111,7 @@ namespace tg.application
                 AddComponent<ApplicationData>(appData, new ApplicationData
                 {
                     playerPrefab    = new WeakAssetReference<GameObject>(authoring.playerPrefab),
+                    enemyPrefab     = new WeakAssetReference<GameObject>(authoring.enemyPrefab),
                     inputActions    = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
                 });
             }
@@ -118,6 +122,7 @@ namespace tg.application
     public struct ApplicationData : IComponentData
     {
         public WeakAssetReference<GameObject>          playerPrefab;
+        public WeakAssetReference<GameObject>          enemyPrefab;
 
         public WeakAssetReference<InputActionAsset>    inputActions;
     }
