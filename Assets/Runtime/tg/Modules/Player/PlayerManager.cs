@@ -28,16 +28,16 @@ namespace tg.player
     /// Simple player spawn system. 
     /// </summary>
     [CreateAfter(typeof(EventQueue))]
-    [ApplicationStateFilter]
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>, ISystemStartStop
     {
-        void OnCreate (ref SystemState state)
+        void OnCreate(ref SystemState state)
 		{
             state.RequireForUpdate(StateManager.state(this));
             state.RequireForUpdate<LevelData>();
 		}
 
-		void OnDestroy (ref SystemState state)
+		void OnDestroy(ref SystemState state)
 		{
             state.EntityManager.DestroyEntity(state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Player) } }));
 		}
