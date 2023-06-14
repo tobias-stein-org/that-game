@@ -13,11 +13,6 @@ namespace tg.player
 
     public class PlayerAuthoring : MonoBehaviour, IEventListener<PlayerAuthoring>
     {
-        /// <summary>
-        /// Reference to this players entity.
-        /// </summary>
-        private Player      player;
-
         private void Awake()
         {
             EventQueue.subscribe(this);
@@ -69,79 +64,12 @@ namespace tg.player
                     vcam.Follow                         = this.transform;
                 }
             }
-
-            this.createPlayerEntity();
         }
 
         private void OnDestroy()
         {
             EventQueue.unsubscribe(this);
-            World.DefaultGameObjectInjectionWorld.EntityManager.DestroyEntity(this.player.entity);
         }
-
-        /// <summary>
-        /// Listen to spawn events, to fetch the player reference once the earlier spawn request for this player is done.
-        /// </summary>
-        /// <param name="e"></param>
-        void onPlayerSpawnedEvent(PlayerSpawnedEvent e)
-        {
-            var playerTransform = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.player.entity);
-            if(this.transform == playerTransform)
-            {
-                this.player = e.player;
-            }
-        }
-
-        void onKillPlayerEvent(KillPlayerEvent e)
-        {
-            // kill this player if entity matches
-            if(this.player.entity == e.player.entity)
-            {
-                EventQueue.publish(new PlayerDiedEvent { player = this.player });
-                GameObject.Destroy(this.gameObject);
-            }
-        }
-
-        /// <summary>
-        /// Create a new player entity with its components
-        /// </summary>
-        private void createPlayerEntity()
-        {
-            var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
-            {
-                ECB.AddComponent(playerEntity, new ComponentTypeSet(
-                   typeof(Player),
-                   typeof(PlayerInputData)
-                ));
-
-                ECB.SetComponent<Player>(playerEntity, new Player
-                {
-                    entity      = playerEntity
-                });
-
-                ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
-                {
-                    moveSpeed   = 10.0f,
-                    moveXY      = UnityEngine.Vector2.zero
-                });
-
-                ECB.AddComponent(playerEntity, this.transform);
-                ECB.AddComponent(playerEntity, this.GetComponent<Rigidbody2D>());
-                ECB.AddComponent(playerEntity, this.GetComponentInChildren<Animator>());
-                ECB.AddComponent(playerEntity, this.GetComponentInChildren<CinemachineVirtualCamera>());
-            }
-        }
-    }
-
-     /// <summary>
-    /// Added to spawned player entities.
-    /// </summary>
-    public struct Player : IComponentData
-    {
-        /// <summary>
-        /// Reference to actual player entity.
-        /// </summary>
-        public Entity                   entity;
     }
 }
 

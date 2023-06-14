@@ -10,6 +10,19 @@ namespace tg.player
     using tg.level;
     using tg.player.events;
     using tg.spawn.events;
+    using Cinemachine;
+    using UnityEngine;
+
+    /// <summary>
+    /// Added to spawned player entities.
+    /// </summary>
+    public struct Player : IComponentData
+    {
+        /// <summary>
+        /// Reference to actual player entity.
+        /// </summary>
+        public Entity                   entity;
+    }
 
     /// <summary>
     /// Simple player spawn system. 
@@ -32,7 +45,7 @@ namespace tg.player
         void onSpawnPlayerRequestEvent(SpawnPlayerRequestEvent e)
         {
             var appData = SystemAPI.GetSingleton<ApplicationData>();
-            tg.spawn.request.create(appData.playerPrefab, in e.location);
+            tg.spawn.request.create(appData.playerPrefab, in e.location, 0, this.createPlayerEntity);
         }
 
         void onEntitySpawnedEvent(EntitySpawnedEvent e)
@@ -44,6 +57,17 @@ namespace tg.player
             }
         }
 
+        void onKillPlayerEvent(KillPlayerEvent e)
+        {
+            var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var playerGO        = entityManager.GetComponentObject<Transform>(e.player.entity).gameObject;
+
+            GameObject.Destroy(playerGO);
+            entityManager.DestroyEntity(e.player.entity);
+
+            EventQueue.publish(new PlayerDiedEvent { player = e.player });
+        }
+
         public void OnStartRunning(ref SystemState state)
         {
             EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
@@ -52,6 +76,33 @@ namespace tg.player
         public void OnStopRunning(ref SystemState state)
         {
             EventQueue.unsubscribe(state.WorldUnmanaged.GetUnsafeSystemRef<PlayerManager>(state.SystemHandle));
+        }
+
+        private void createPlayerEntity(GameObject instance)
+        {
+            var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
+            {
+                ECB.AddComponent(playerEntity, new ComponentTypeSet(
+                   typeof(Player),
+                   typeof(PlayerInputData)
+                ));
+
+                ECB.SetComponent<Player>(playerEntity, new Player
+                {
+                    entity      = playerEntity
+                });
+
+                ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
+                {
+                    moveSpeed   = 10.0f,
+                    moveXY      = UnityEngine.Vector2.zero
+                });
+
+                ECB.AddComponent(playerEntity, instance.transform);
+                ECB.AddComponent(playerEntity, instance.GetComponent<Rigidbody2D>());
+                ECB.AddComponent(playerEntity, instance.GetComponentInChildren<Animator>());
+                ECB.AddComponent(playerEntity, instance.GetComponentInChildren<CinemachineVirtualCamera>());
+            }
         }
     }
 }
