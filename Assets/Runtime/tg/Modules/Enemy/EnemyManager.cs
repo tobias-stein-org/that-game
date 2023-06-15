@@ -8,8 +8,9 @@ namespace tg.enemy {
     using tg.enemy.events;
     using tg.spawn.events;
     using tg.player.events;
-    using Cinemachine;
     using tg.player;
+    using tg.ai;
+    using tg.ai.behaviour;
 
     /// <summary>
     /// Added to spawned enemy entities.
@@ -85,7 +86,8 @@ namespace tg.enemy {
             var enemyEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
             {
                 ECB.AddComponent(enemyEntity, new ComponentTypeSet(
-                   typeof(Enemy)
+                   typeof(Enemy),
+                   typeof(BehaviourContext)
                 ));
 
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
@@ -93,6 +95,13 @@ namespace tg.enemy {
                     entity      = enemyEntity
                 });
 
+                var buffer      = ECB.SetBuffer<BehaviourContext>(enemyEntity);
+                buffer.Length   = BehaviourContextInternal.MAX_BEHAVIOURS;
+
+                ECB.AddComponent<Avoid>(enemyEntity);
+                ECB.AddComponent<Wander>(enemyEntity);
+                //ECB.SetComponentEnabled<Wander>(enemyEntity, false);
+                
                 ECB.AddComponent(enemyEntity, instance.transform);
                 ECB.AddComponent(enemyEntity, instance.GetComponent<Rigidbody2D>());
                 ECB.AddComponent(enemyEntity, instance.GetComponentInChildren<Animator>());
