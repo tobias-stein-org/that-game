@@ -13,13 +13,29 @@ namespace tg.ai
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct BehaviourSolver : IBehaviour<Solved>
     {
+        public struct BehaviourContextDataInternal
+        {
+            /// <summary>
+            /// Behaviour context values.
+            /// </summary>
+            public BehaviourContext         context;
+
+            /// <summary>
+            /// Last frames behaviours context.
+            /// </summary>
+            public BehaviourContext         context1;
+
+            public float                    weight;
+            public float                    blend;
+        }
+
         private EntityQuery                     aiEntitiesQuery;
 
         public void OnCreate(ref SystemState state)
         {
             StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<BehaviourSolver>(state.SystemHandle));
 
-            this.aiEntitiesQuery        = state.GetEntityQuery(typeof(BehaviourContext));
+            this.aiEntitiesQuery        = state.GetEntityQuery(typeof(BehaviourContextData));
 
             state.RequireForUpdate(this.aiEntitiesQuery);
         }
@@ -30,9 +46,9 @@ namespace tg.ai
             {
                 foreach(var entity in entities)
                 {
-                    var buffer = state.EntityManager.GetBuffer<BehaviourContext>(entity, false);
+                    var buffer = state.EntityManager.GetBuffer<BehaviourContextData>(entity, false).Reinterpret<BehaviourContextDataInternal>();
 
-                    var result                  = BehaviourContext.Empty;
+                    var result                  = BehaviourContext.zero;
                     var sumWeights              = 0.0f;
                     var activeBehaviour         = 0;
 
@@ -42,53 +58,30 @@ namespace tg.ai
 
                         ref var ctx             = ref buffer.ElementAt(i);
 
-                        if(!ctx.context.isValid())
-                        {
-                            ctx.context         = BehaviourContext.Invalid;
-                            ctx.context1        = BehaviourContext.Invalid;
-                            continue;
-                        }
-
+                        if(!ctx.context.isValid) { continue; }
 
                         float behaviourWeight   = math.max(0.0f, ctx.weight);
                         float behaviourBlend    = math.clamp(ctx.blend, 0.0f, 1.0f);
 
-                        if(!ctx.context1.isValid())
-                        {
-                            ctx.context1        = BehaviourContext.Empty;
-                        }
-
-                        for(int j = 0; j < result.Length; j++)
-                        {
-                            ctx.context1[j]     = math.lerp(ctx.context[j], ctx.context1[j], behaviourBlend);
-                            result[j]           = result[j] + (ctx.context1[j] * behaviourWeight);
-                        }
+                        ctx.context1            = BehaviourContext.lerp(ctx.context, ctx.context1, behaviourBlend);
+                        result                  = result + (ctx.context1 * behaviourWeight);
 
                         sumWeights              += behaviourWeight;
                         activeBehaviour++;
 
                         // invalidate this frames context
-                        ctx.context             = BehaviourContext.Invalid;
+                        ctx.context             = BehaviourContext.zero;
                     }
-                        UnityEngine.Debug.Log($"{result[0]}, {result[1]}");
 
                     ref var solved              = ref buffer.ElementAt(IBehaviourContext<Solved>.ID);
                     {
                         float solveBlend        = math.clamp(solved.blend, 0.0f, 1.0f);
 
                         // weighted avg.
-                        //if(sumWeights > 1e-5f)  { result.mul(1.0f / sumWeights); }
+                        if(sumWeights > 1e-5f)  { result = result / sumWeights; }
 
-                        // store last solved context
-                        solved.context1         = solved.context.isValid() ? solved.context : BehaviourContext.Empty;
-
-                        for(int i = 0; i < result.Length; i++)
-                        {
-                            result[i]           = math.lerp(solved.context1[i], result[i], solveBlend);
-                        }
-
-
-                        solved.context          = result;
+                        solved.context          = BehaviourContext.lerp(result, solved.context1, solveBlend);
+                        solved.context1         = solved.context;
                     }
                 }
             }

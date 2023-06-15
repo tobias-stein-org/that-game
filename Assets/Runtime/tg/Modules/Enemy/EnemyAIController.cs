@@ -11,11 +11,11 @@ namespace tg.enemy
     {
         public readonly Entity                      entity;
 
-        readonly DynamicBuffer<BehaviourContext>    behaviourContext;
+        readonly DynamicBuffer<BehaviourContextData>    behaviourContext;
 
         readonly RefRO<Enemy>                       enemy;
 
-        public FixedList128Bytes<float> solvedContext
+        public BehaviourContext                     solvedContext
         {
             get { return this.behaviourContext[IBehaviourContext<Solved>.ID].context; }
         }
@@ -35,7 +35,7 @@ namespace tg.enemy
         {
             foreach(var (aiEnemy, rb) in SystemAPI.Query<AIEnemy, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>())
             {
-                //Debug.Log($"{aiEnemy.solvedContext[0]}, {aiEnemy.solvedContext[1]}");
+                Debug.Log(aiEnemy.solvedContext.normalize());
             }
         }
     }

@@ -5,9 +5,9 @@ namespace tg.ai
 
     internal static class BehaviourInternal
     {
-        internal static ref BehaviourContext getBehaviourContext<T>(this IBehaviour<T> value, in Entity entity) where T : IBehaviourContext<T>
+        internal static ref BehaviourContextData getBehaviourContext<T>(this IBehaviour<T> value, in Entity entity) where T : IBehaviourContext<T>
         {
-            return ref World.DefaultGameObjectInjectionWorld.EntityManager.GetBuffer<BehaviourContext>(entity).ElementAt(IBehaviourContext<T>.ID);
+            return ref World.DefaultGameObjectInjectionWorld.EntityManager.GetBuffer<BehaviourContextData>(entity).ElementAt(IBehaviourContext<T>.ID);
         }
     }
 

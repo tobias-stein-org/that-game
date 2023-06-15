@@ -25,8 +25,8 @@ namespace tg.ai.behaviour
             {
                 ref var ctx = ref this.getBehaviourContext(entity);
 
-                var newCtx = BehaviourContext.Empty;
-
+                var newCtx = BehaviourContext.zero;
+                
                 newCtx[0] = 1.23f;
 
                 ctx.weight = 1.0f;

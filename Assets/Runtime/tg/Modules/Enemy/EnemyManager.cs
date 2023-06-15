@@ -87,7 +87,7 @@ namespace tg.enemy {
             {
                 ECB.AddComponent(enemyEntity, new ComponentTypeSet(
                    typeof(Enemy),
-                   typeof(BehaviourContext)
+                   typeof(BehaviourContextData)
                 ));
 
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
@@ -95,8 +95,12 @@ namespace tg.enemy {
                     entity      = enemyEntity
                 });
 
-                var buffer      = ECB.SetBuffer<BehaviourContext>(enemyEntity);
-                buffer.Length   = BehaviourContextInternal.MAX_BEHAVIOURS;
+                var buffer      = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
+                buffer.Length = BehaviourContextInternal.MAX_BEHAVIOURS;
+                for(int i = 0; i < buffer.Length; i++)
+                {
+                    buffer[i] = BehaviourContextData.Default;
+                }
 
                 ECB.AddComponent<Avoid>(enemyEntity);
                 ECB.AddComponent<Wander>(enemyEntity);
