@@ -4,6 +4,7 @@ using Unity.Entities;
 namespace tg.enemy {
 
     using tg.application;
+    using tg.debug;
     using tg.events;
     using tg.enemy.events;
     using tg.spawn.events;
@@ -96,13 +97,16 @@ namespace tg.enemy {
             {
                 ECB.AddComponent(enemyEntity, new ComponentTypeSet(
                    typeof(Enemy),
-                   typeof(BehaviourContextData)
+                   typeof(BehaviourContextData),
+                   typeof(Sensor)
                 ));
 
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
                 {
                     entity      = enemyEntity
                 });
+
+                ECB.SetComponent<Sensor>(enemyEntity, Sensor.Default);
 
                 var buffer      = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
                 buffer.Length = BehaviourContextInternal.MAX_BEHAVIOURS;
