@@ -73,7 +73,6 @@ namespace tg.enemy {
                 {
                     enemyDebugging.self = enemy;
                 }
-                
 #endif
 
                 EventQueue.publish(new EnemySpawnedEvent { enemy = enemy });

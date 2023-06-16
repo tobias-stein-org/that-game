@@ -61,6 +61,8 @@ namespace tg.level
             var gridGO  = new GameObject("Level.Grid");
             {
                 gridGO.layer    = LayerMask.NameToLayer("Level");
+                gridGO.tag      = "Level";
+
                 var grid        = gridGO.AddComponent<Grid>();
 
                 foreach(var layer in new[] { LevelData.Layer.Floor, LevelData.Layer.Obstructable })
@@ -68,6 +70,7 @@ namespace tg.level
                     var layerGO = new GameObject($"Layer.{(int)layer}");
                     {
                         layerGO.layer    = LayerMask.NameToLayer("Level");
+                        layerGO.tag      = "Level";
                         layerGO.transform.SetParent(gridGO.transform);
 
                         if(layer.collision)
