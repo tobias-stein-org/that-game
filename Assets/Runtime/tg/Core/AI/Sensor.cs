@@ -10,6 +10,8 @@ using SensorOutputBuffer = Unity.Collections.FixedList512Bytes<tg.ai.Sensor.Outp
 
 namespace tg.ai
 {
+    using tg.application;
+
     public struct Sensor : IComponentData, IEnableableComponent
     {
         /// <summary>
@@ -75,7 +77,7 @@ namespace tg.ai
             /// <summary>
             /// Hash value of the tag attached to the object.
             /// </summary>
-            public readonly int         tagHash;
+            public readonly TagHash     tag;
 
             /// <summary>
             /// The segment index of the sensor where this output has been perceived.
@@ -93,7 +95,7 @@ namespace tg.ai
                 this.point              = new float2(hit2D.point.x, hit2D.point.y);
                 this.normal             = hit2D.normal;
                 this.distance           = hit2D.distance;
-                this.tagHash            = hit2D.collider.gameObject.tag.GetHashCode();
+                this.tag                = hit2D.rigidbody != null ? hit2D.rigidbody.tag : hit2D.collider.tag;
             }
         }
 
