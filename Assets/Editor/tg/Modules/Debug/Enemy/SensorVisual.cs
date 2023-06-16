@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace tg.editor.debug
 {
+    using tg.ai;
     using tg.debug;
 
     [CustomEditor(typeof(EnemyDebugging))]
@@ -25,9 +26,7 @@ namespace tg.editor.debug
             for(int i = 0; i < sensor.outputs.Length; i++)
             {
                 var output      = sensor.outputs[i];
-
-                var target      = new Vector3(output.position.x, output.position.y, output.position.z);
-                var contact     = new Vector3(output.contact.x, output.contact.y, output.contact.z);
+                var target      = new Vector3(output.point.x, output.point.y, 0);
 
                 Handles.color   = Color.magenta;
                 Handles.DrawSolidDisc(target, Vector3.forward, 0.1f);
