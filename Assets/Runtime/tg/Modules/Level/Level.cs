@@ -29,9 +29,9 @@ namespace tg.level
 
         void Awake()
         {
+            this.entityManager      = World.DefaultGameObjectInjectionWorld.EntityManager;
             this.setupTilemap();
 
-            this.entityManager  = World.DefaultGameObjectInjectionWorld.EntityManager;
         }
 
         void Start()
@@ -60,12 +60,14 @@ namespace tg.level
 
             var gridGO  = new GameObject("Level.Grid");
             {
-                var grid = gridGO.AddComponent<Grid>();
+                gridGO.layer    = LayerMask.NameToLayer("Level");
+                var grid        = gridGO.AddComponent<Grid>();
 
                 foreach(var layer in new[] { LevelData.Layer.Floor, LevelData.Layer.Obstructable })
                 {
                     var layerGO = new GameObject($"Layer.{(int)layer}");
                     {
+                        layerGO.layer    = LayerMask.NameToLayer("Level");
                         layerGO.transform.SetParent(gridGO.transform);
 
                         if(layer.collision)
