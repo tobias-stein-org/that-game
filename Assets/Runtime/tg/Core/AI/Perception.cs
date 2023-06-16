@@ -19,7 +19,21 @@ namespace tg.ai
             state.RequireForUpdate<Sensor>();
         }
 
-        private static RaycastHit2D[] hit2DBuffer = new RaycastHit2D[1];
+        private static RaycastHit2D[]   hit2DBuffer         = new RaycastHit2D[1];
+        private static Collider2D[]     rbAttachedCollider  = new Collider2D[1];
+        private static Collider2D[]     collisionBuffer     = new Collider2D[Sensor.Description.MAX_SENSOR_OUTPUTS];
+        private static int              levelLayerIndex     = LayerMask.NameToLayer("Level");
+        private static int              levelLayerOnlyMask  = 1 << LayerMask.NameToLayer("Level");
+
+        private static int              levelRaysResolution = 6;
+        private static Vector3[]        levelRays           = new Vector3[Perception.levelRaysResolution];
+
+        static Perception()
+        {
+            var offset = Quaternion.AngleAxis(360.0f / Perception.levelRaysResolution, Vector3.forward);
+            Perception.levelRays[0] = Vector3.right;
+            for(int i = 1; i < Perception.levelRaysResolution; i++) { Perception.levelRays[i] = offset * Perception.levelRays[i - 1]; }
+        }
 
         public void OnUpdate(ref SystemState state)
         {
@@ -28,30 +42,56 @@ namespace tg.ai
                 // clear old sensor outputs from last frame
                 sensor.ValueRW.outputs.Clear();
 
-                var collisionBuffer     = new Collider2D[Sensor.Description.MAX_SENSOR_OUTPUTS];
-                var numCollisions       = Physics2D.OverlapCircleNonAlloc(rb.Value.position, sensor.ValueRO.desc.senorPerceptionRange, collisionBuffer, sensor.ValueRO.desc.sensorMask);
+                var numCollisions       = Physics2D.OverlapCircleNonAlloc(rb.Value.position, sensor.ValueRO.desc.senorPerceptionRange, Perception.collisionBuffer, sensor.ValueRO.desc.sensorMask);
 
-                var rbAttachedCollider  = new Collider2D[1];
-                rb.Value.GetAttachedColliders(rbAttachedCollider);
+                rb.Value.GetAttachedColliders(Perception.rbAttachedCollider);
 
                 for(int i               = 0; i < numCollisions; i++)
                 {
-                    var collider        = collisionBuffer[i];
+                    // stop, if sensor output buffer is full
+                    if(sensor.ValueRO.outputs.Length == sensor.ValueRO.outputs.Capacity) { break; }
+
+                    var collider        = Perception.collisionBuffer[i];
 
                     // we ignore ourself
                     if(collider.attachedRigidbody == rb.Value) { continue; }
 
-                    var hasHit          = rbAttachedCollider[0] != null
-                        ? rbAttachedCollider[0].Raycast(((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask)
-                        : Physics2D.RaycastNonAlloc(rb.Value.position, ((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask);
-
-                    if(hasHit > 0)
+                    // We will treat a collision with the level collider differently then others.
+                    // Since the level collider is a huge mesh collider simply using the collider information and a single raycast is to less information
+                    // and also will yield wrong sensor output.
+                    if(collider.gameObject.layer == Perception.levelLayerIndex)
                     {
-                        // Ignore this result, if the collider in our sensor range is obstructed by another object and the sensor is not allowed to see these objects
-                        if(!sensor.ValueRO.desc.allowSeeHidden && (collider != Perception.hit2DBuffer[0].collider)) { continue; }
+                        // in order to get a better perception, we will cast a rays in all directions and see where they hit the level
+                        foreach(var dir in Perception.levelRays)
+                        {
+                            var hasHit          = rbAttachedCollider[0] != null
+                                ? rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask)
+                                : Physics2D.RaycastNonAlloc(rb.Value.position, dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask);
 
-                        // record this result
-                        sensor.ValueRW.outputs.Add(Perception.hit2DBuffer[0]);
+                            if(hasHit > 0)
+                            {
+                                // record this result
+                                sensor.ValueRW.outputs.Add(Perception.hit2DBuffer[0]);
+
+                                // we stop, if sensor buffer is full
+                                if(sensor.ValueRO.outputs.Length == sensor.ValueRO.outputs.Capacity) { break; }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var hasHit          = rbAttachedCollider[0] != null
+                            ? rbAttachedCollider[0].Raycast(((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask)
+                            : Physics2D.RaycastNonAlloc(rb.Value.position, ((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask);
+
+                        if(hasHit > 0)
+                        {
+                            // Ignore this result, if the collider in our sensor range is obstructed by another object and the sensor is not allowed to see these objects
+                            if(!sensor.ValueRO.desc.allowSeeHidden && (collider != Perception.hit2DBuffer[0].collider)) { continue; }
+
+                            // record this result
+                            sensor.ValueRW.outputs.Add(Perception.hit2DBuffer[0]);
+                        }
                     }
                 }
             }
