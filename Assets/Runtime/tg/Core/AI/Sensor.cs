@@ -53,19 +53,14 @@ namespace tg.ai
         public struct Output
         {
             /// <summary>
-            /// Closest contact point to the object.
+            /// Point of collision.
             /// </summary>
-            public readonly float3      contact;
+            public readonly float2      point;
 
             /// <summary>
             /// Normal of the contact point.
             /// </summary>
-            public readonly float3      normal;
-
-            /// <summary>
-            /// Actual world position of the object.
-            /// </summary>
-            public readonly float3      position;
+            public readonly float2      normal;
 
             /// <summary>
             /// Distance to the contact point.
@@ -83,10 +78,9 @@ namespace tg.ai
             /// <param name="hit2D"></param>
             public Output(in RaycastHit2D hit2D)
             {
-                this.contact            = new float3(hit2D.point.x, hit2D.point.y, 0f);
-                this.normal             = new float3(hit2D.normal.x, hit2D.normal.y, 0.0f);
+                this.point              = new float2(hit2D.point.x, hit2D.point.y);
+                this.normal             = hit2D.normal;
                 this.distance           = hit2D.distance;
-                this.position           = hit2D.transform.position;
                 this.tagHash            = hit2D.collider.gameObject.tag.GetHashCode();
             }
 
