@@ -1,9 +1,13 @@
+using System;
+using System.Runtime.CompilerServices;
+
+using UnityEngine;
+
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Collections;
-using System;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using Unity.Entities.UniversalDelegates;
+using UnityEngine.UIElements;
 
 namespace tg.ai
 {
@@ -87,10 +91,39 @@ namespace tg.ai
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
 	    public override string ToString () { return this.isValid ? $"BehaviourContext({v00}, {v01}, {v02}, {v03}, {v04}, {v05}, {v06}, {v07}, {v08}, {v09}, {v10}, {v11}, {v12}, {v13}, {v14}, {v15})" : "BehaviourContext(Invalid)"; }
 
-        public static readonly BehaviourContext zero    = new BehaviourContext(0);
-        public static readonly BehaviourContext one     = new BehaviourContext(1);
+        public static readonly BehaviourContext zero        = new BehaviourContext(0);
+        public static readonly BehaviourContext one         = new BehaviourContext(1);
+
+        public static readonly Vector2[]        segmentDir  = new Vector2[16];
+
+        private const float                     TWO_PI      = 2.0f * math.PI;
+        private const float                     TWO_PI_16   = TWO_PI / 16.0f;
+
+        /// <summary>
+        /// Returns a value in range [0,15] depending where the given direction would land in a unit circle equaly devided in 16 segments.
+        /// </summary>
+        /// <param name="dir"></param>
+        /// <returns></returns>
+        public static byte                      dir2seg(in Vector2 dir)
+        {
+            var angle = math.acos(dir.x);
+            if(dir.y < 0.0f) { angle = BehaviourContext.TWO_PI - angle; }
+
+            return (byte)(math.floor(angle / BehaviourContext.TWO_PI_16));
+        }
 
         #region Constructor
+
+        static BehaviourContext()
+        {
+            var sectorOffset                    = Quaternion.AngleAxis(360.0f / 16.0f, Vector3.forward);
+
+            BehaviourContext.segmentDir[0]       = Vector3.right;
+            for(int i = 1; i < BehaviourContext.segmentDir.Length; i++)
+            {
+                BehaviourContext.segmentDir[i]   = sectorOffset * BehaviourContext.segmentDir[i - 1];
+            }
+        }
 
         public BehaviourContext(
             float v00, float v01, float v02, float v03, float v04, float v05, float v06, float v07,

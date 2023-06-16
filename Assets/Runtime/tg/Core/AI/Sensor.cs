@@ -1,3 +1,6 @@
+using System;
+using System.Runtime.InteropServices;
+
 using UnityEngine;
 using Unity.Entities;
 using Unity.Collections;
@@ -17,7 +20,7 @@ namespace tg.ai
             /// <summary>
             /// Maximum number of generated sensor outputs per frame;
             /// </summary>
-            internal static readonly int        MAX_SENSOR_OUTPUTS = new SensorOutputBuffer().Capacity;
+            public static readonly int          MAX_SENSOR_OUTPUTS = new SensorOutputBuffer().Capacity;
 
             /// <summary>
             /// How far the sensor can see.
@@ -50,6 +53,8 @@ namespace tg.ai
         /// <summary>
         /// The output of a sensor
         /// </summary>
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential, Pack=1)]
         public struct Output
         {
             /// <summary>
@@ -73,18 +78,23 @@ namespace tg.ai
             public readonly int         tagHash;
 
             /// <summary>
+            /// The segment index of the sensor where this output has been perceived.
+            /// </summary>
+            public readonly byte        segment;
+
+            /// <summary>
             /// Convert a raycast hit 2D into sensor output.
             /// </summary>
             /// <param name="hit2D"></param>
-            public Output(in RaycastHit2D hit2D)
+            public Output(in RaycastHit2D hit2D, byte segment)
             {
+                this.segment            = segment;
+
                 this.point              = new float2(hit2D.point.x, hit2D.point.y);
                 this.normal             = hit2D.normal;
                 this.distance           = hit2D.distance;
                 this.tagHash            = hit2D.collider.gameObject.tag.GetHashCode();
             }
-
-            public static implicit operator Output(in RaycastHit2D hit2D) { return new Output(hit2D); }
         }
 
         /// <summary>

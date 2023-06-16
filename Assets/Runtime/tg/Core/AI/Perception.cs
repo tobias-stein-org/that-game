@@ -26,7 +26,7 @@ namespace tg.ai
         private static int              levelLayerOnlyMask  = 1 << LayerMask.NameToLayer("Level");
 
         private static int              levelRaysResolution = 6;
-        private static Vector3[]        levelRays           = new Vector3[Perception.levelRaysResolution];
+        private static Vector2[]        levelRays           = new Vector2[Perception.levelRaysResolution];
 
         static Perception()
         {
@@ -64,14 +64,12 @@ namespace tg.ai
                         // in order to get a better perception, we will cast a rays in all directions and see where they hit the level
                         foreach(var dir in Perception.levelRays)
                         {
-                            var hasHit          = rbAttachedCollider[0] != null
-                                ? rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask)
-                                : Physics2D.RaycastNonAlloc(rb.Value.position, dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask);
+                            var hasHit          = rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask);
 
                             if(hasHit > 0)
                             {
                                 // record this result
-                                sensor.ValueRW.outputs.Add(Perception.hit2DBuffer[0]);
+                                sensor.ValueRW.outputs.Add(new Sensor.Output(Perception.hit2DBuffer[0], BehaviourContext.dir2seg(in dir)));
 
                                 // we stop, if sensor buffer is full
                                 if(sensor.ValueRO.outputs.Length == sensor.ValueRO.outputs.Capacity) { break; }
@@ -80,9 +78,8 @@ namespace tg.ai
                     }
                     else
                     {
-                        var hasHit          = rbAttachedCollider[0] != null
-                            ? rbAttachedCollider[0].Raycast(((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask)
-                            : Physics2D.RaycastNonAlloc(rb.Value.position, ((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask);
+                        var dir             = ((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized;
+                        var hasHit          = rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask);
 
                         if(hasHit > 0)
                         {
@@ -90,7 +87,7 @@ namespace tg.ai
                             if(!sensor.ValueRO.desc.allowSeeHidden && (collider != Perception.hit2DBuffer[0].collider)) { continue; }
 
                             // record this result
-                            sensor.ValueRW.outputs.Add(Perception.hit2DBuffer[0]);
+                            sensor.ValueRW.outputs.Add(new Sensor.Output(Perception.hit2DBuffer[0], BehaviourContext.dir2seg(in dir)));
                         }
                     }
                 }
