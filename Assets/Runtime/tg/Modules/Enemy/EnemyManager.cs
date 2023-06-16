@@ -66,11 +66,20 @@ namespace tg.enemy {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             if(entityManager.HasComponent<Enemy>(e.entity))
             {
-                EventQueue.publish(new EnemySpawnedEvent { enemy = entityManager.GetComponentData<Enemy>(e.entity) });
+                var enemy               = entityManager.GetComponentData<Enemy>(e.entity);
+#if UNITY_EDITOR
+                var enemyDebugging      = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.entity).gameObject.AddComponent<EnemyDebugging>();
+                {
+                    enemyDebugging.self = enemy;
+                }
+                
+#endif
+
+                EventQueue.publish(new EnemySpawnedEvent { enemy = enemy });
             }
         }
 
-        void onKillPlayerEvent(KillEnemyEvent e)
+        void onKillEnemyEvent(KillEnemyEvent e)
         {
             var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
             var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy.entity).gameObject;
