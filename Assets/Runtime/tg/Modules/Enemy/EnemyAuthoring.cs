@@ -6,7 +6,6 @@ namespace tg.enemy
     {
         void Awake()
         {
-        
         }
     }
 }

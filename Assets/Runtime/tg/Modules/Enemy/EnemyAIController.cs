@@ -9,13 +9,10 @@ namespace tg.enemy
 
     readonly partial struct AIEnemy : IAspect
     {
-        public readonly Entity                      entity;
-
         readonly DynamicBuffer<BehaviourContextData>    behaviourContext;
+        readonly RefRO<Enemy>                           enemy;
 
-        readonly RefRO<Enemy>                       enemy;
-
-        public BehaviourContext                     solvedContext
+        public BehaviourContext                         solvedContext
         {
             get { return this.behaviourContext[IBehaviourContext<Solved>.ID].context; }
         }
@@ -35,7 +32,6 @@ namespace tg.enemy
         {
             foreach(var (aiEnemy, rb) in SystemAPI.Query<AIEnemy, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>())
             {
-                Debug.Log(aiEnemy.solvedContext.normalize());
             }
         }
     }
