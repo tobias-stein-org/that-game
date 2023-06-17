@@ -1,3 +1,5 @@
+using System.Linq;
+
 using UnityEditor;
 using UnityEngine;
 
@@ -6,8 +8,6 @@ namespace tg.editor.debug
     using tg.ai;
     using tg.debug;
     using tg.application;
-    using static UnityEditor.FilePathAttribute;
-    using UnityEngine.UIElements;
 
     [CustomEditor(typeof(EnemyDebugging))]
     public class SensorVisual : Editor
@@ -60,6 +60,9 @@ namespace tg.editor.debug
         {
             if((this.target.sensorDetails & EnemyDebugging.SensorDetails.Hide) == 0) { this.drawSensor(); }
             if(this.target.contextBehaviourDetails != EnemyDebugging.ContextBehaviourDetails.Hide) { this.drawBehaviourContext(); }
+
+            var sceneView   = SceneView.lastActiveSceneView;
+            if(this.target.followEntity && sceneView) { sceneView.LookAt(this.target.transform.position); }
         }
 
         private void drawBehaviourContext()
@@ -81,7 +84,13 @@ namespace tg.editor.debug
             var points      = new Vector3[BehaviourContext.segmentDir.Length + 1];
             var points1     = new Vector3[BehaviourContext.segmentDir.Length + 1];
 
-            int i = 0;
+            var i           = 0;
+
+            var min         = context.context[0];
+            var max         = context.context[0];
+            var imin        = 0;
+            var imax        = 0;
+
             for(i = 0; i < BehaviourContext.segmentDir.Length; i++)
             {
                 var offset  = (Vector3)BehaviourContext.segmentDir[i] * scale;
@@ -91,12 +100,15 @@ namespace tg.editor.debug
 
                 // values are expected to be in the range of [-1; +1]
                 var value   = context.context[i];
-
+                
                 points[i]   = position + (offset * Mathf.Abs(value));
                 points1[i]  = position + (offset * Mathf.Abs(context.context1[i]));
-
                 colors[i]   = this.behaviourValueColor.Evaluate((value + 1.0f) * 0.5f);
+
+                if(value > max) { max = value; imax = i; }
+                if(value < min) { min = value; imin = i; }
             }
+
             points[i]       = points[0];
             points1[i]      = points1[0];
             colors[i]       = colors[0];
@@ -104,6 +116,12 @@ namespace tg.editor.debug
             Handles.color = Color.white * 0.33f;
             Handles.DrawAAPolyLine(4.0f, points1);
             Handles.DrawAAPolyLine(6.0f, colors, points);
+
+            Handles.color   = Color.cyan;
+            Handles.DrawLine(position, position + (Vector3)BehaviourContext.segmentDir[imax], 1.0f);
+
+            Handles.color   = Color.magenta;
+            Handles.DrawLine(position, position + (Vector3)BehaviourContext.segmentDir[imin], 1.0f);
 
             Handles.Label(position, $"W: {context.weight}, B: {context.blend}", this.behaviourWeightLabel);
         }
@@ -135,7 +153,6 @@ namespace tg.editor.debug
                     if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowDistance) != 0) { Handles.Label(position + (dir * output.distance * 0.5f), $"{output.distance:.02}", distanceLabel); }
                     if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetTag) != 0) { Handles.Label(target, tg.application.tags.hash2Name(output.tag), this.targetLabel); }
                     if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetSegment) != 0) { Handles.Label(target + Vector3.up * 0.25f, $"{output.segment}"); }
-
                 }
             }
         }
