@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.ai.behaviour
 {
@@ -19,13 +20,25 @@ namespace tg.ai.behaviour
             StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AvoidBehaviour>(state.SystemHandle));
         }
 
+
         void OnUpdate (ref SystemState state)
 	    {
-            foreach(var (pursue, sensor, entity) in SystemAPI.Query<Avoid, RefRO<Sensor>>().WithEntityAccess())
+            foreach(var (avoid, sensor, entity) in SystemAPI.Query<Avoid, RefRO<Sensor>>().WithEntityAccess())
             {
-                ref var behaviour = ref this.getBehaviourContext(entity);
+                var avoidRange      = 3.0f;
+                ref var behaviour   = ref this.getBehaviourContext(entity);
 
-                var context = BehaviourContext.zero;
+                // initialize context to prefer any direction
+                var context = BehaviourContext.one;
+
+                // check for level collision
+                foreach(var perception in sensor.ValueRO.query().withTag(tags.Level))
+                {
+                    // if avoidRange > distance to level => [-1;  0]
+                    // if avoidRange < distance to level => [ 0; +1]
+                    // if avoidRange = distance to level => 0
+                    context[perception.segment] = math.clamp(-1.0f + (perception.distance / avoidRange), -1.0f, 1.0f);
+                }
 
                 behaviour.context = context;
             }
