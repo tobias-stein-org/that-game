@@ -43,14 +43,14 @@ namespace tg.editor.debug
             this.behaviourValueColor = new Gradient();
         
             GradientColorKey[] colorKeys = new GradientColorKey[3];
-            colorKeys[0] = new GradientColorKey(Color.green,    0.0f);
-            colorKeys[1] = new GradientColorKey(Color.white,    0.5f);
-            colorKeys[2] = new GradientColorKey(Color.red,      1.0f);
+            colorKeys[0] = new GradientColorKey(Color.red,   0.0f);
+            colorKeys[1] = new GradientColorKey(Color.white, 0.5f);
+            colorKeys[2] = new GradientColorKey(Color.green, 1.0f);
         
             GradientAlphaKey[] alphaKeys = new GradientAlphaKey[3];
-            alphaKeys[0] = new GradientAlphaKey(1.0f, 0.0f);
-            alphaKeys[1] = new GradientAlphaKey(1.0f, 0.5f);
-            alphaKeys[2] = new GradientAlphaKey(1.0f, 1.0f);
+            alphaKeys[0] = new GradientAlphaKey(1.0f,        0.0f);
+            alphaKeys[1] = new GradientAlphaKey(1.0f,        0.5f);
+            alphaKeys[2] = new GradientAlphaKey(1.0f,        1.0f);
         
             this.behaviourValueColor.SetKeys(colorKeys, alphaKeys);
             this.behaviourValueColor.mode = GradientMode.PerceptualBlend;
@@ -87,6 +87,7 @@ namespace tg.editor.debug
                 var offset  = (Vector3)BehaviourContext.segmentDir[i] * scale;
 
                 Handles.DrawLine(position, position + offset, 1.0f);
+                if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetSegment) != 0) { Handles.Label(position + offset, $"{i}"); }
 
                 // values are expected to be in the range of [-1; +1]
                 var value   = context.context[i];
@@ -101,7 +102,7 @@ namespace tg.editor.debug
             colors[i]       = colors[0];
 
             Handles.color = Color.white * 0.33f;
-            Handles.DrawAAConvexPolygon(points1);
+            Handles.DrawAAPolyLine(4.0f, points1);
             Handles.DrawAAPolyLine(6.0f, colors, points);
 
             Handles.Label(position, $"W: {context.weight}, B: {context.blend}", this.behaviourWeightLabel);
@@ -133,6 +134,8 @@ namespace tg.editor.debug
 
                     if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowDistance) != 0) { Handles.Label(position + (dir * output.distance * 0.5f), $"{output.distance:.02}", distanceLabel); }
                     if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetTag) != 0) { Handles.Label(target, tg.application.tags.hash2Name(output.tag), this.targetLabel); }
+                    if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetSegment) != 0) { Handles.Label(target + Vector3.up * 0.25f, $"{output.segment}"); }
+
                 }
             }
         }
