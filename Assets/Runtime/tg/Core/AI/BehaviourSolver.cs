@@ -11,7 +11,7 @@ namespace tg.ai
     using tg.enemy;
 
     /// <summary>
-    /// This system will ensure all AI behaviour context are reset to zero before any update.
+    /// This system will ensure all AI behaviour context are invalidated before next update.
     /// </summary>
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     [UpdateInGroup(typeof(BehaviourSystemGroup), OrderFirst = true)]
@@ -45,7 +45,7 @@ namespace tg.ai
                     {
                         var contextData = buffer[k];
                         {
-                            contextData.context  = BehaviourContext.zero;
+                            contextData.context  = default;
                         }
                         buffer[k] = contextData;
                     }
