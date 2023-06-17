@@ -432,6 +432,39 @@ namespace tg.ai
 
             return this / _max;
         }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public BehaviourContext blur(int size = 4, float strength = 1.0f) 
+        {
+            var blurStrength    = 2f * strength * strength;
+            var blurred         = BehaviourContext.zero;
+
+            for(int x = 0; x < 16; x++)
+            {
+                var accumulated = 0.0f;
+                var totalWeight = 0.0f;
+
+                for(int i = -size; i <= size; i++)
+                {
+                    int xi      = x + i;
+                    int offset  = xi < 0
+                        ? 15 + xi
+                        : xi > 15
+                            ? xi - 15
+                            : xi;
+
+                    var value   = this[offset];
+
+                    var weight = math.exp(-i * i / blurStrength);
+                    accumulated += value * weight;
+                    totalWeight += weight;
+                }
+
+                blurred[x] = accumulated / totalWeight;
+            }
+
+            return blurred;
+        }
     }
 
     /// <summary>
