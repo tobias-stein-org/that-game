@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Level
   - Enemy
+  - Camera
+  - Player
   layers:
   - Default
   - TransparentFX
