@@ -21,7 +21,7 @@ namespace tg.ai.behaviour
 
         void OnUpdate (ref SystemState state)
 	    {
-            foreach(var (pursue, entity) in SystemAPI.Query<Flee>().WithEntityAccess())
+            foreach(var (flee, entity) in SystemAPI.Query<Flee>().WithEntityAccess())
             {
                 ref var ctx = ref this.getBehaviourContext(entity);
             }
