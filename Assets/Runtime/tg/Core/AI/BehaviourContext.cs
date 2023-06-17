@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using UnityEngine;
@@ -8,6 +9,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Entities.UniversalDelegates;
 using UnityEngine.UIElements;
+using System.Collections;
 
 namespace tg.ai
 {
@@ -58,7 +60,7 @@ namespace tg.ai
 
 
     [Serializable]
-    public struct BehaviourContext
+    public struct BehaviourContext : IEnumerable<float>
     {
         public bool isValid { get; private set; }
 
@@ -365,6 +367,8 @@ namespace tg.ai
             );
 	    }
 
+        #endregion
+
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
 	    public static BehaviourContext lerp(BehaviourContext lhs, BehaviourContext rhs, float t)
 	    {
@@ -388,8 +392,6 @@ namespace tg.ai
                 math.lerp(lhs.v15, rhs.v15, t)
             );
 	    }
-
-        #endregion
 
         /// <summary>
         /// Returns the cumulative sum of all values.
@@ -465,6 +467,25 @@ namespace tg.ai
 
             return blurred;
         }
+
+        #region IEnumerable
+
+        public IEnumerator<float> GetEnumerator()
+        {
+            int index = 0;
+            while(index < 16)
+            {
+                yield return this[index];
+                index++;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
+        #endregion
     }
 
     /// <summary>
