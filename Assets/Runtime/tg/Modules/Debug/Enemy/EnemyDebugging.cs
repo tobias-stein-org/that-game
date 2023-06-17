@@ -18,6 +18,8 @@ namespace tg.debug
 
         public Sensor                   sensor { get; private set; } = Sensor.Default;
 
+        public bool                     followEntity = true;
+
         private BehaviourContextData[]  behaviourContextDataArray = new BehaviourContextData[BehaviourContextInternal.MAX_BEHAVIOURS];
 
         public unsafe BehaviourSolver.BehaviourContextDataInternal     behaviourContextData
