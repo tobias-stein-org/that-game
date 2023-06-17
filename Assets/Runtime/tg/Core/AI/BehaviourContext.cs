@@ -430,7 +430,7 @@ namespace tg.ai
             float _max = math.abs(this[0]);
             for(int i = 1; i < 16; i++) { _max = math.max(math.abs(this[i]), _max); }
 
-            return this / _max;
+            return _max > 0.0f ? this / _max : this;
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
