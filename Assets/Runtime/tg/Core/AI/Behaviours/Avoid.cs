@@ -25,21 +25,19 @@ namespace tg.ai.behaviour
 	    {
             foreach(var (avoid, sensor, entity) in SystemAPI.Query<Avoid, RefRO<Sensor>>().WithEntityAccess())
             {
-                var avoidRange      = 5.0f;
-                ref var behaviour   = ref this.getBehaviourContext(entity);
+                var avoidRange                  = 5.0f;
+                ref var behaviour               = ref this.getBehaviourContext(entity);
 
                 // initialize context to prefer any direction
-                var context = BehaviourContext.zero;
+                var context                     = BehaviourContext.zero;
 
                 // check for level collision
                 foreach(var perception in sensor.ValueRO.query().withTag(tags.Level).withInRange(avoidRange))
                 {
-                    var avoidance                               = -1.0f + (perception.distance / avoidRange);
-                    context[perception.segment]                 = avoidance;
-                    context[(perception.segment + 8) % 16]      = -avoidance;
+                    context[perception.segment] = -1.0f + (perception.distance / avoidRange); // [-1.0; 0.0]
                 }
 
-                behaviour.context = context.blur();
+                behaviour.context               = context;
             }
         }
     }
