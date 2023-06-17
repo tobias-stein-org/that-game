@@ -16,9 +16,15 @@ namespace tg.application
     {
         private int value;
 
+        public override int GetHashCode() { return this.value; }
+        public override bool Equals(object obj) { return obj is TagHash tag && this.value == tag.value; }
+
         public static implicit operator TagHash(int value) { return new TagHash { value = value }; }
         public static implicit operator TagHash(string value) { return value.GetHashCode(); }
         public static implicit operator int(TagHash value) { return value.value; }
+
+        public static bool operator ==(TagHash hash, in Tag tag) { return tag.hash  == hash; }
+        public static bool operator !=(TagHash hash, in Tag tag) { return tag.hash  != hash; }
 
     }
 
