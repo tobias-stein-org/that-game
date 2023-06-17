@@ -1,4 +1,6 @@
+using UnityEngine;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.ai.behaviour
 {
@@ -21,16 +23,33 @@ namespace tg.ai.behaviour
 
         void OnUpdate(ref SystemState state)
 	    {
-            foreach(var (wander, entity) in SystemAPI.Query<Wander>().WithEntityAccess())
+            foreach(var (wander, rb, entity) in SystemAPI.Query<Wander, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>().WithEntityAccess())
             {
-                ref var ctx = ref this.getBehaviourContext(entity);
+                var position            = rb.Value.position;
+                var velocity            = rb.Value.velocity;
+                var forward             = velocity.sqrMagnitude > 1e-5f ? velocity.normalized : Vector2.right;
 
-                var newCtx = BehaviourContext.zero;
+                var wanderShapeOffset   = 1.0f;
+                var wanderShapeRadius   = 1.0f;
+                ref var behaviour       = ref this.getBehaviourContext(entity);
+
+                var theta               = noise.snoise(position); // [-1.0; +1.0]
+                var wanderShapeHeading  = new Vector2(math.cos(theta), math.sin(theta));
+
+                /*
+                                                wanderShapeHeading
+                                                         ^
+                  p <-- wanderShapeOffset --> w          |
+                                | <--           wanderShapeRadius            --> |
+                 [E]-> forward
+                 
+                 */
+                var wanderForce         = (position + (forward * wanderShapeOffset) + (wanderShapeHeading * wanderShapeRadius)).normalized;
                 
-                newCtx[0] = 1.23f;
-
-                ctx.weight = 1.0f;
-                ctx.context = newCtx;
+                var context             = BehaviourContext.zero;
+                var segment             = BehaviourContext.dir2seg(wanderForce);
+                context[segment]        = 1.0f - math.abs(Vector2.Dot(wanderForce, forward));
+                behaviour.context       = context;
             }
         }
     }
