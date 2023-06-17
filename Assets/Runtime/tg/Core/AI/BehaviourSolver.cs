@@ -38,9 +38,9 @@ namespace tg.ai
                 var bufferTypeHandle    = state.GetBufferTypeHandle<BehaviourContextData>();
                 var buffers             = chunk.GetBufferAccessor(ref bufferTypeHandle);
 
-                for(int j = 0, chunkEntityCount = chunk.Count; i < chunkEntityCount; i++)
+                for(int j = 0, chunkEntityCount = chunk.Count; j < chunkEntityCount; j++)
                 {
-                    var buffer = buffers[i];
+                    var buffer = buffers[j];
                     for (int k = 0; k < buffer.Length; k++)
                     {
                         var contextData = buffer[k];
