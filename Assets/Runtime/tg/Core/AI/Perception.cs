@@ -25,7 +25,7 @@ namespace tg.ai
         private static int              levelLayerIndex     = LayerMask.NameToLayer("Level");
         private static int              levelLayerOnlyMask  = 1 << LayerMask.NameToLayer("Level");
 
-        private static int              levelRaysResolution = 6;
+        private static int              levelRaysResolution = 8;
         private static Vector2[]        levelRays           = new Vector2[Perception.levelRaysResolution];
 
         static Perception()
