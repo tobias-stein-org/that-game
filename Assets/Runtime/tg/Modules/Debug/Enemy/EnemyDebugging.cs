@@ -41,11 +41,12 @@ namespace tg.debug
         [System.Flags]
         public enum SensorDetails
         {
-            Hide            = 0,
-            ShowRange       = 1,
-            ShowOutput      = 2,
-            ShowDistance    = 4,
-            ShowTargetTag   = 8,
+            Hide                = 0,
+            ShowRange           = 1,
+            ShowOutput          = 2,
+            ShowDistance        = 4,
+            ShowTargetTag       = 8,
+            ShowTargetSegment   = 16
         }
 
         public enum ContextBehaviourDetails
