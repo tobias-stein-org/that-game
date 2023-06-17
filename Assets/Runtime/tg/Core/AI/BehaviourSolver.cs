@@ -83,7 +83,7 @@ namespace tg.ai
             public float                    blend;
         }
 
-        private EntityQuery                     aiEntitiesQuery;
+        private EntityQuery                 aiEntitiesQuery;
 
         public void OnCreate(ref SystemState state)
         {
@@ -131,6 +131,8 @@ namespace tg.ai
 
                         // weighted avg.
                         if(sumWeights > 1e-5f)  { result = result / sumWeights; }
+
+                        result                  = result.blur().normalize();
 
                         solved.context          = BehaviourContext.lerp(result, solved.context1, solveBlend);
                         solved.context1         = solved.context;
