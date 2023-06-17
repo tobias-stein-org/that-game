@@ -10,7 +10,7 @@ namespace tg.ai.behaviour
     {
     }
 
-    [UpdateBefore(typeof(BehaviourSolver))]
+    [UpdateInGroup(typeof(BehaviourSystemGroup))]
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct AvoidBehaviour : IBehaviour<Avoid>
     {
@@ -21,16 +21,13 @@ namespace tg.ai.behaviour
 
         void OnUpdate (ref SystemState state)
 	    {
-            foreach(var (pursue, entity) in SystemAPI.Query<Avoid>().WithEntityAccess())
+            foreach(var (pursue, sensor, entity) in SystemAPI.Query<Avoid, RefRO<Sensor>>().WithEntityAccess())
             {
-                ref var ctx = ref this.getBehaviourContext(entity);
+                ref var behaviour = ref this.getBehaviourContext(entity);
 
-                var newCtx = BehaviourContext.zero;
+                var context = BehaviourContext.zero;
 
-                newCtx[0] = 1.23f;
-                newCtx[1] = -1.23f;
-
-                ctx.context = newCtx;
+                behaviour.context = context;
             }
         }
     }

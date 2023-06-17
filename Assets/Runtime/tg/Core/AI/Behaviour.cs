@@ -16,4 +16,9 @@ namespace tg.ai
     {
 
     }
+
+    /// <summary>
+    /// Defines a common system groud where all AI context behaviour systems should be placed into.
+    /// </summary>
+    public partial class BehaviourSystemGroup : ComponentSystemGroup {}
 }

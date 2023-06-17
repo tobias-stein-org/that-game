@@ -10,7 +10,7 @@ namespace tg.ai.behaviour
     {
     }
 
-    [UpdateBefore(typeof(BehaviourSolver))]
+    [UpdateInGroup(typeof(BehaviourSystemGroup))]
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial struct PursueBehaviour : IBehaviour<Pursue>
     {
