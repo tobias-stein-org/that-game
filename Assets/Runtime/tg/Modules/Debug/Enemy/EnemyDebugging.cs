@@ -20,9 +20,31 @@ namespace tg.debug
 
         public bool                     followEntity = true;
 
-        private BehaviourContextData[]  behaviourContextDataArray = new BehaviourContextData[BehaviourContextInternal.MAX_BEHAVIOURS];
+        public bool                     fetchData
+        {
+            get
+            {
+                return this.fetch != null;
+            }
 
-        public unsafe BehaviourSolver.BehaviourContextDataInternal     behaviourContextData
+            set
+            {
+                if(value == false && this.fetch != null)
+                {
+                    this.StopCoroutine(this.fetch);
+                    this.fetch = null;
+                }
+                else if(value == true && this.fetch == null)
+                {
+                    this.fetch = this.StartCoroutine(this.fetchSensorData(World.DefaultGameObjectInjectionWorld.EntityManager, this.self));
+                }
+            }
+        }
+
+        private BehaviourContextData[]  behaviourContextDataArray   = new BehaviourContextData[BehaviourContextInternal.MAX_BEHAVIOURS];
+        private IComponentData[]        behaviourDataArray          = new IComponentData[BehaviourContextInternal.MAX_BEHAVIOURS];
+
+        public unsafe BehaviourSolver.BehaviourContextDataInternal behaviourContextData
         {
             get
             {
@@ -37,6 +59,23 @@ namespace tg.debug
                 }
 
                 return *(BehaviourSolver.BehaviourContextDataInternal*)&context;
+            }
+        }
+
+        public IComponentData behaviourData
+        {
+            get
+            {
+                switch(this.contextBehaviourDetails)
+                {
+                    case ContextBehaviourDetails.Wander:    { return this.behaviourDataArray[IBehaviourContext<Wander>.ID]; }
+                    case ContextBehaviourDetails.Flee:      { return this.behaviourDataArray[IBehaviourContext<Flee>.ID]; }
+                    case ContextBehaviourDetails.Avoid:     { return this.behaviourDataArray[IBehaviourContext<Avoid>.ID]; }
+                    case ContextBehaviourDetails.Pursue:    { return this.behaviourDataArray[IBehaviourContext<Pursue>.ID]; }
+                    case ContextBehaviourDetails.Solved:    { return this.behaviourDataArray[IBehaviourContext<Solved>.ID]; }
+                }
+
+                return default;
             }
         }
 
@@ -63,10 +102,7 @@ namespace tg.debug
         }
 
         public SensorDetails            sensorDetails           = SensorDetails.ShowRange | SensorDetails.ShowOutput | SensorDetails.ShowDistance | SensorDetails.ShowTargetTag;
-        public ContextBehaviourDetails  contextBehaviourDetails = ContextBehaviourDetails.Hide;
-
-        public void Start()     { this.fetch = this.StartCoroutine(this.fetchSensorData(World.DefaultGameObjectInjectionWorld.EntityManager, this.self)); }
-        public void OnDestroy() { this.StopCoroutine(this.fetch); }
+        public ContextBehaviourDetails  contextBehaviourDetails = ContextBehaviourDetails.Solved;
 
         private IEnumerator fetchSensorData(EntityManager entityManager, Enemy self)
         {
@@ -84,8 +120,21 @@ namespace tg.debug
                 {
                     var buffer = entityManager.GetBuffer<BehaviourContextData>(self.entity, true);
                     for(int i = 0; i < buffer.Length; i++) { this.behaviourContextDataArray[i] = buffer[i]; }
+
+                    this.behaviourDataArray[IBehaviourContext<Wander>.ID] = this.getComponentSafely<Wander>(entityManager, self.entity);
+                    this.behaviourDataArray[IBehaviourContext<Flee>.ID] = this.getComponentSafely<Flee>(entityManager, self.entity);
+                    this.behaviourDataArray[IBehaviourContext<Avoid>.ID] = this.getComponentSafely<Avoid>(entityManager, self.entity);
+                    this.behaviourDataArray[IBehaviourContext<Pursue>.ID] = this.getComponentSafely<Pursue>(entityManager, self.entity);
                 }
             }
+        }
+
+        private T getComponentSafely<T>(EntityManager entityManager, Entity entity)
+            where T : unmanaged, IComponentData
+        {
+            return entityManager.HasComponent<T>(entity)
+                ? entityManager.GetComponentData<T>(entity)
+                : default;
         }
     }
 }

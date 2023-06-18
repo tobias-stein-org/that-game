@@ -2,10 +2,13 @@ using System.Linq;
 
 using UnityEditor;
 using UnityEngine;
+using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.editor.debug
 {
     using tg.ai;
+    using tg.ai.behaviour;
     using tg.debug;
     using tg.application;
 
@@ -56,6 +59,16 @@ namespace tg.editor.debug
             this.behaviourValueColor.mode = GradientMode.PerceptualBlend;
         }
 
+        private void OnEnable()
+        {
+            this.target.fetchData = true;
+        }
+
+        private void OnDisable()
+        {
+            this.target.fetchData = false;
+        }
+
         void OnSceneGUI()
         {
             if((this.target.sensorDetails & EnemyDebugging.SensorDetails.Hide) == 0) { this.drawSensor(); }
@@ -70,7 +83,9 @@ namespace tg.editor.debug
             var context     = this.target.behaviourContextData;
             var position    = this.target.transform.position;
             var scale       = 2.0f;
-            
+
+            this.drawBehaviour();
+
             if(!context.context.isValid)
             {
                 Handles.Label(position, $"Behaviour Context not available!", this.behaviourWeightLabel);
@@ -124,6 +139,61 @@ namespace tg.editor.debug
             Handles.DrawLine(position, position + (Vector3)BehaviourContext.segmentDir[imin], 1.0f);
 
             Handles.Label(position, $"W: {context.weight}, B: {context.blend}", this.behaviourWeightLabel);
+        }
+
+        private void drawBehaviour()
+        {
+            var behaviour     = this.target.behaviourData;
+            var position      = this.target.transform.position;
+
+            if(behaviour == default)
+            {
+                Handles.Label(position + Vector3.up * 0.25f, $"No behaviour data available!", this.behaviourWeightLabel);
+                return;
+            }
+
+            Handles.color = Color.yellow;
+
+            switch(this.target.contextBehaviourDetails)
+            {
+                case EnemyDebugging.ContextBehaviourDetails.Wander:    { this.drawBehaviour((Wander)behaviour); break; }
+                case EnemyDebugging.ContextBehaviourDetails.Flee:      { this.drawBehaviour((Flee)behaviour); break; }
+                case EnemyDebugging.ContextBehaviourDetails.Avoid:     { this.drawBehaviour((Avoid)behaviour); break; }
+                case EnemyDebugging.ContextBehaviourDetails.Pursue:    { this.drawBehaviour((Pursue)behaviour); break; }
+            }
+        }
+
+        private void drawBehaviour(Wander data)
+        {
+            var position                    = this.target.transform.position;
+            var velocity                    = this.target.GetComponent<Rigidbody2D>().velocity;
+            var forward                     = velocity.normalized;
+
+
+            // draw forward vector (heading)
+            Handles.DrawLine(position, position + (Vector3)forward, 3.0f);
+
+            // draw wander steering shape
+            var steeringOffset              = (Vector3)forward * data.steeringOffset;
+            Handles.DrawDottedLine(position, position + steeringOffset, 4.0f);
+            Handles.DrawWireDisc(position + steeringOffset, Vector3.forward, data.steeringRadius);
+
+            // draw steering force
+            var steeringForce               = position + new Vector3(data.steeringForce.x, data.steeringForce.y, 0.0f);
+            Handles.DrawDottedLine(position, steeringForce, 4.0f);
+            Handles.DrawSolidDisc(steeringForce, Vector3.forward, 0.1f);
+        }
+
+        private void drawBehaviour(Avoid data)
+        {
+        }
+
+        private void drawBehaviour(Flee data)
+        {
+        }
+
+        private void drawBehaviour(Pursue data)
+        {
         }
 
         private void drawSensor()
