@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22aa3e05cf80e4d92bdc326cc39dab92, type: 3}
+  m_Name: test
+  m_EditorClassIdentifier: 
+  activeBehaviour: 3
+  wander:
+    steeringOffset: 2.5
+    steeringRadius: 1.5
+  wanderWeight: 0.5
+  wanderBlend: 0.95
+  avoid:
+    range: 2
+  avoidWeight: 1
+  avoidBlend: 0
+  fleeWeight: 1
+  fleeBlend: 0
+  pursueWeight: 1
+  pursueBlend: 0
+  frameBlending: 0
+  contextBlurring: 1

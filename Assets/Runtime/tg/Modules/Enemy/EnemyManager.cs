@@ -108,29 +108,43 @@ namespace tg.enemy {
                 ECB.SetComponent<Sensor>(enemyEntity, Sensor.Default);
 
                 var buffer      = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
-                buffer.Length = BehaviourContextInternal.MAX_BEHAVIOURS;
-                for(int i = 0; i < buffer.Length; i++)
+                buffer.Length   = BehaviourContextInternal.MAX_BEHAVIOURS;
+                for(int i       = 0; i < buffer.Length; i++)
                 {
-                    if(IBehaviourContext<Solved>.ID == i)
-                    {
-                        buffer[i] = new BehaviourContextData
-                        {
-                            context = default,
-                            weight  = 0.55f,
-                            blend   = 0.99f
-                        };
-
-                        continue;
-                    }
-
-                    buffer[i] = BehaviourContextData.Default;
+                    buffer[i]   = BehaviourContextData.Default;
                 }
 
-                ECB.AddComponent<Avoid>(enemyEntity);
-                ECB.SetComponent<Avoid>(enemyEntity, Avoid.Default);
-                ECB.AddComponent<Wander>(enemyEntity);
-                ECB.SetComponent<Wander>(enemyEntity, Wander.Default);
-                //ECB.SetComponentEnabled<Wander>(enemyEntity, false);
+                // set enemy behaviour
+                if(description.behaviour != null)
+                {
+                    var behaviour   = description.behaviour;
+
+                    buffer[IBehaviourContext<Solved>.ID]        = new BehaviourContextData(behaviour.contextBlurring, behaviour.frameBlending);
+
+                    if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Wander) != 0)
+                    {
+                        buffer[IBehaviourContext<Wander>.ID]    = new BehaviourContextData(behaviour.wanderWeight, behaviour.wanderBlend);
+                        ECB.AddComponent<Wander>(enemyEntity, behaviour.wander);
+                    }
+
+                    if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Avoid) != 0)
+                    {
+                        buffer[IBehaviourContext<Avoid>.ID]     = new BehaviourContextData(behaviour.avoidWeight, behaviour.avoidBlend);
+                        ECB.AddComponent<Avoid>(enemyEntity, behaviour.avoid);
+                    }
+
+                    if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Flee) != 0)
+                    {
+                        buffer[IBehaviourContext<Flee>.ID]      = new BehaviourContextData(behaviour.fleeWeight, behaviour.fleeBlend);
+                        ECB.AddComponent<Flee>(enemyEntity, behaviour.flee);
+                    }
+
+                    if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Wander) != 0)
+                    {
+                        buffer[IBehaviourContext<Pursue>.ID]    = new BehaviourContextData(behaviour.pursueWeight, behaviour.pursueBlend);
+                        ECB.AddComponent<Pursue>(enemyEntity, behaviour.pursue);
+                    }
+                }
                 
                 ECB.AddComponent(enemyEntity, instance.transform);
                 ECB.AddComponent(enemyEntity, instance.GetComponent<Rigidbody2D>());

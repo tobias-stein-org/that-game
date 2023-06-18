@@ -11,6 +11,7 @@ namespace tg.application
     using tg.events;
     using tg.assets;
     using tg.application.events;
+    using tg.enemy;
 
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [CreateAfter(typeof(EventQueue))]
@@ -43,6 +44,7 @@ namespace tg.application
             {
                 appData.playerPrefab,
                 appData.enemyPrefab,
+                appData.defaultEnemyBehaviour,
                 appData.inputActions
             },
             (hadErrors) =>
@@ -94,6 +96,8 @@ namespace tg.application
 
         public GameObject           enemyPrefab;
 
+        public EnemyBehaviour       defaultEnemyBehaviour;
+
         public InputActionAsset     inputActions;
 
 #if UNITY_EDITOR
@@ -106,13 +110,16 @@ namespace tg.application
 
                 if(authoring.playerPrefab == null) { return; }
                 if(authoring.inputActions == null) { return; }
+                if(authoring.defaultEnemyBehaviour == null) { return; }
+                if(authoring.inputActions == null) { return; }
 
                 var appData = GetEntity(TransformUsageFlags.None);
                 AddComponent<ApplicationData>(appData, new ApplicationData
                 {
-                    playerPrefab    = new WeakAssetReference<GameObject>(authoring.playerPrefab),
-                    enemyPrefab     = new WeakAssetReference<GameObject>(authoring.enemyPrefab),
-                    inputActions    = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
+                    playerPrefab            = new WeakAssetReference<GameObject>(authoring.playerPrefab),
+                    enemyPrefab             = new WeakAssetReference<GameObject>(authoring.enemyPrefab),
+                    defaultEnemyBehaviour   = new WeakAssetReference<EnemyBehaviour>(authoring.defaultEnemyBehaviour),
+                    inputActions            = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
                 });
             }
         }
@@ -123,6 +130,7 @@ namespace tg.application
     {
         public WeakAssetReference<GameObject>          playerPrefab;
         public WeakAssetReference<GameObject>          enemyPrefab;
+        public WeakAssetReference<EnemyBehaviour>      defaultEnemyBehaviour;
 
         public WeakAssetReference<InputActionAsset>    inputActions;
     }

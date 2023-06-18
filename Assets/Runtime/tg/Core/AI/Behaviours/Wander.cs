@@ -1,3 +1,5 @@
+using System;
+
 using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -7,12 +9,13 @@ namespace tg.ai.behaviour
     using tg.application;
     using tg.ai;
 
-
+    [Serializable]
     public struct Wander : IBehaviourContext<Wander>
     {
         public float            steeringOffset;
         public float            steeringRadius;
 
+        [NonSerialized]
         public float2           steeringForce;
 
         public static Wander    Default
@@ -48,8 +51,8 @@ namespace tg.ai.behaviour
 
                 var theta                       = math.PI *
                     // [-1.0; +1.0]
-                    //UnityEngine.Random.Range(-1.0f, 1.0f);
-                    noise.snoise(position);
+                    UnityEngine.Random.Range(-1.0f, 1.0f);
+                    //noise.snoise(position);
                     //noise.snoise(velocity);
                     //noise.snoise(forward);
 

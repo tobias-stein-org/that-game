@@ -11,13 +11,14 @@ namespace tg.game
 	using tg.player.events;
 	using tg.enemy.events;
 	using tg.game.events;
+    using static tg.level.LevelData;
 
-	/// <summary>
-	/// Start new Game does the following things:
-	/// 1. Requests a new level
-	/// 2. Spawns enemies
-	/// 3. Spawns the player
-	/// </summary>
+    /// <summary>
+    /// Start new Game does the following things:
+    /// 1. Requests a new level
+    /// 2. Spawns enemies
+    /// 3. Spawns the player
+    /// </summary>
 	[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenGameOver, false)]
 	[CreateAfter(typeof(EventQueue))]
     public partial struct StartNew : ISystem, ISystemStartStop, IEventListener<StartNew>
@@ -44,40 +45,50 @@ namespace tg.game
 		void onNewLevelGeneratedEvent(NewLevelGeneratedEvent e)
 		{
 			EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
-
 			StartNew.spawnEnemies(in e.levelData);
 		}
 
 		private static void spawnEnemies(in LevelData levelData)
 		{
-			for(int i = 1; i < levelData.numChunks; i++)
+			var defaultBehaviour = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(ApplicationData)).GetSingleton<ApplicationData>().defaultEnemyBehaviour;
+			//for(int i = 1; i < levelData.numChunks; i++)
+			//{
+			//	var rng = Random.CreateFromIndex((uint)i);
+
+			//	ref var chunk = ref levelData.getChunkById(i);
+
+			//	int requested = 0;
+			//	while(requested < 3)
+			//	{
+			//		var tileId = rng.NextInt(chunk.data.Length);
+			//		var tile = chunk[tileId];
+			//		if(tile.constructionType != LevelData.Tile.ConstructionType.Walkable) { continue; }
+
+			//		var tilePosX = tileId % chunk.bounds.width;
+			//		var tilePoxY = tileId / chunk.bounds.width;
+
+			//		EventQueue.publish(new SpawnEnemyRequestEvent
+			//		{
+			//			amount = 1,
+			//			desc = new SpawnRequestDescription { location = new float3(chunk.bounds.position.x + tilePosX, chunk.bounds.position.y + tilePoxY, 0.0f) }
+			//		});
+
+			//		requested++;
+			//	}
+			//}
+
+			EventQueue.publish(new SpawnEnemyRequestEvent
 			{
-				var rng = Random.CreateFromIndex((uint)i);
-
-				ref var chunk = ref levelData.getChunkById(i);
-
-				int requested = 0;
-				while(requested < 3)
+				amount = 1,
+				desc = new SpawnRequestDescription
 				{
-					var tileId	= rng.NextInt(chunk.data.Length);
-					var tile	= chunk[tileId];
-					if(tile.constructionType != LevelData.Tile.ConstructionType.Walkable) { continue; }
-
-					var tilePosX = tileId % chunk.bounds.width;
-					var tilePoxY = tileId / chunk.bounds.width;
-
-					EventQueue.publish(new SpawnEnemyRequestEvent
-					{
-						amount = 1,
-						desc = new SpawnRequestDescription { location = new float3(chunk.bounds.position.x + tilePosX, chunk.bounds.position.y + tilePoxY, 0.0f) }
-					});
-
-					requested++;
+					location	= new float3(10, 10, 0.0f),
+					behaviour	= defaultBehaviour
 				}
-			}
+            });
 
-			StartNew.spawnPlayer(in levelData);
-		}
+            StartNew.spawnPlayer(in levelData);
+        }
 
 		private static void spawnPlayer(in LevelData levelData)
 		{

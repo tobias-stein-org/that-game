@@ -1,3 +1,4 @@
+using System;
 using Unity.Entities;
 
 namespace tg.ai.behaviour
@@ -5,10 +6,21 @@ namespace tg.ai.behaviour
     using tg.application;
     using tg.ai;
 
-
+    [Serializable]
     public struct Flee : IBehaviourContext<Flee>
     {
+        [NonSerialized]
         public int dummy;
+
+        public static Flee Default
+        {
+            get
+            {
+                return new Flee
+                {
+                };
+            }
+        }
     }
 
     [UpdateInGroup(typeof(BehaviourSystemGroup))]

@@ -1,3 +1,4 @@
+using System;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -6,10 +7,21 @@ namespace tg.ai.behaviour
     using tg.application;
     using tg.ai;
 
-
+    [Serializable]
     public struct Pursue : IBehaviourContext<Pursue>
     {
+        [NonSerialized]
         public float2   target;
+
+        public static Pursue Default
+        {
+            get
+            {
+                return new Pursue
+                {
+                };
+            }
+        }
     }
 
     [UpdateInGroup(typeof(BehaviourSystemGroup))]

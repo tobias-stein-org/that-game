@@ -41,11 +41,14 @@ namespace tg.ai
         internal static int ID<T>(this IBehaviourContext<T> value) where T : IBehaviourContext<T> { return IBehaviourContext<T>.ID; }
     }
 
+    public interface IBehaviourContext : IComponentData, IEnableableComponent
+    {}
+
     /// <summary>
     /// Each context aware ai behaviour has to derive from this interface.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IBehaviourContext<T> : IComponentData, IEnableableComponent
+    public interface IBehaviourContext<T> : IBehaviourContext
     {
         /// <summary>
         /// This will provide a unique sequence index (starting from 0) to each concrete (derived) ai context behaviour.
@@ -518,10 +521,10 @@ namespace tg.ai
         /// </summary>
         public float                    blend;
 
-        public BehaviourContextData(float weight, float blend)
+        public BehaviourContextData(float weight = 1.0f, float blend = 0.0f)
         {
-            this.weight     = 1.0f;
-            this.blend      = 0.0f;
+            this.weight     = weight;
+            this.blend      = blend;
             this.context    = default;
             this.context1   = default;
         }

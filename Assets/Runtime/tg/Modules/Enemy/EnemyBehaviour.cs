@@ -10,6 +10,8 @@ namespace tg.enemy
     [CreateAssetMenu(menuName="tg/AI/Create Behaviour")]
     public class EnemyBehaviour : ScriptableObject
     {
+        #region Behaviours
+
         [Flags]
         public enum BehaviourMask
         {
@@ -21,21 +23,29 @@ namespace tg.enemy
             Pursue  = 1 << 3,
         }
 
-        public BehaviourMask    activeBehaviour;
+        public BehaviourMask    activeBehaviour = BehaviourMask.None;
 
-        public Wander           wander;
-        public Avoid            avoid;
-        public Flee             flee;
-        public Pursue           pursue;
+        public Wander           wander          = Wander.Default;
+        public float            wanderWeight    = 1.0f;
+        public float            wanderBlend     = 0.0f;
 
-        public static EnemyBehaviour Default
-        {
-            get
-            {
-                var behaviour = ScriptableObject.CreateInstance<EnemyBehaviour>();
+        public Avoid            avoid           = Avoid.Default;
+        public float            avoidWeight     = 1.0f;
+        public float            avoidBlend      = 0.0f;
 
-                return behaviour;
-            }
-        }
+        public Flee             flee            = Flee.Default;
+        public float            fleeWeight      = 1.0f;
+        public float            fleeBlend       = 0.0f;
+
+        public Pursue           pursue          = Pursue.Default;
+        public float            pursueWeight    = 1.0f;
+        public float            pursueBlend     = 0.0f;
+
+        public float            frameBlending   = 0.0f;
+        public float            contextBlurring = 1.0f;
+
+        #endregion
+
+        public static EnemyBehaviour Default { get { return ScriptableObject.CreateInstance<EnemyBehaviour>(); } }
     }
 }

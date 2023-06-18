@@ -1,3 +1,5 @@
+using System;
+
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -6,7 +8,7 @@ namespace tg.ai.behaviour
     using tg.application;
     using tg.ai;
 
-
+    [Serializable]
     public struct Avoid : IBehaviourContext<Avoid>
     {
         public float        range;
