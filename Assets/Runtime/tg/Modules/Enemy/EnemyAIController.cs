@@ -9,12 +9,12 @@ namespace tg.enemy
 
     readonly partial struct AIEnemy : IAspect
     {
-        readonly DynamicBuffer<BehaviourContextData>    behaviourContext;
-        readonly RefRO<Enemy>                           enemy;
+        readonly DynamicBuffer<BehaviourContextData>        behaviourContext;
+        readonly RefRO<Enemy>                               enemy;
 
-        public BehaviourContext                         solvedContext
+        public BehaviourSolver.BehaviourContextDataInternal solvedContext
         {
-            get { return this.behaviourContext[IBehaviourContext<Solved>.ID].context; }
+            get { return this.behaviourContext.Reinterpret<BehaviourSolver.BehaviourContextDataInternal>()[IBehaviourContext<Solved>.ID]; }
         }
     }
 
@@ -33,21 +33,27 @@ namespace tg.enemy
         {
             foreach(var (aiEnemy, rb) in SystemAPI.Query<AIEnemy, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>())
             {
-                var context     = aiEnemy.solvedContext;
-                var min         = context[0];
-                var max         = context[0];
-                var imin        = 0;
-                var imax        = 0;
+                var contextData = aiEnemy.solvedContext;
+                var context0    = contextData.context;
+                var context1    = contextData.context1;
+                var max0        = context0[0];
+                var max1        = context1[0];
+                var imax0       = 0;
+                var imax1       = 0;
 
                 for(int i = 0; i < BehaviourContext.segmentDir.Length; i++)
                 {
-                    var value   = context[i];
+                    var value0   = context0[i];
+                    var value1   = context1[i];
 
-                    if(value > max) { max = value; imax = i; }
-                    if(value < min) { min = value; imin = i; }
+                    if(value0 > max0) { max0 = value0; imax0 = i; }
+                    if(value1 > max1) { max1 = value0; imax1 = i; }
                 }
 
-                rb.Value.velocity = BehaviourContext.segmentDir[imax];
+                var dir0 = BehaviourContext.segmentDir[imax0];
+                var dir1 = BehaviourContext.segmentDir[imax1];
+
+                rb.Value.velocity = Vector2.Lerp(dir0, dir1, contextData.blend);
             }
         }
     }
