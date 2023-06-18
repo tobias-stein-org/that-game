@@ -169,7 +169,6 @@ namespace tg.editor.debug
             var velocity                    = this.target.GetComponent<Rigidbody2D>().velocity;
             var forward                     = velocity.normalized;
 
-
             // draw forward vector (heading)
             Handles.DrawLine(position, position + (Vector3)forward, 3.0f);
 
@@ -186,6 +185,8 @@ namespace tg.editor.debug
 
         private void drawBehaviour(Avoid data)
         {
+            var position                    = this.target.transform.position;
+            Handles.DrawWireDisc(position, Vector3.forward, data.range);
         }
 
         private void drawBehaviour(Flee data)
