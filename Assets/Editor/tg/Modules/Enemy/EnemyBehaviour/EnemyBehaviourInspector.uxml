@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+        <uie:EnumFlagsField label="Behaviour" type="tg.enemy.EnemyBehaviour+BehaviourMask, tg.runtime" name="activeBehaviour" />
+        <ui:Foldout text="Behaviours" name="behaviours">
+            <uie:PropertyField name="wander" />
+            <uie:PropertyField name="avoid" />
+            <uie:PropertyField name="flee" />
+            <uie:PropertyField name="pursue" />
+        </ui:Foldout>
+    </ui:VisualElement>
+</ui:UXML>
