@@ -111,11 +111,25 @@ namespace tg.enemy {
                 buffer.Length = BehaviourContextInternal.MAX_BEHAVIOURS;
                 for(int i = 0; i < buffer.Length; i++)
                 {
+                    if(IBehaviourContext<Solved>.ID == i)
+                    {
+                        buffer[i] = new BehaviourContextData
+                        {
+                            context = default,
+                            weight  = 0.55f,
+                            blend   = 0.99f
+                        };
+
+                        continue;
+                    }
+
                     buffer[i] = BehaviourContextData.Default;
                 }
 
                 ECB.AddComponent<Avoid>(enemyEntity);
+                ECB.SetComponent<Avoid>(enemyEntity, Avoid.Default);
                 ECB.AddComponent<Wander>(enemyEntity);
+                ECB.SetComponent<Wander>(enemyEntity, Wander.Default);
                 //ECB.SetComponentEnabled<Wander>(enemyEntity, false);
                 
                 ECB.AddComponent(enemyEntity, instance.transform);
