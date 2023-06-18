@@ -127,12 +127,13 @@ namespace tg.ai
 
                     ref var solved              = ref buffer.ElementAt(IBehaviourContext<Solved>.ID);
                     {
+                        float solveWeight       = math.max(0.0f, solved.weight);
                         float solveBlend        = math.clamp(solved.blend, 0.0f, 1.0f);
 
                         // weighted avg.
                         if(sumWeights > 1e-5f)  { result = result / sumWeights; }
 
-                        result                  = result.blur().normalize();
+                        result                  = result.blur(size: 4, strength: solveWeight).normalize();
 
                         solved.context          = BehaviourContext.lerp(result, solved.context1, solveBlend);
                         solved.context1         = solved.context;
