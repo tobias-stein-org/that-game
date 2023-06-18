@@ -56,7 +56,10 @@ namespace tg.ai
     /// <summary>
     /// Purely internal used "dummy" context to store the final solved context.
     /// </summary>
-    internal struct Solved : IBehaviourContext<Solved> { }
+    internal struct Solved : IBehaviourContext<Solved>
+    {
+
+    }
 
 
     [Serializable]
@@ -111,7 +114,7 @@ namespace tg.ai
             var angle = math.acos(dir.x);
             if(dir.y < 0.0f) { angle = BehaviourContext.TWO_PI - angle; }
 
-            return (byte)(math.floor(angle / BehaviourContext.TWO_PI_16));
+            return (byte)(math.floor(angle / BehaviourContext.TWO_PI_16) % 16);
         }
 
         #region Constructor
@@ -436,7 +439,7 @@ namespace tg.ai
         }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public BehaviourContext blur(int size = 4, float strength = 1.0f) 
+        public BehaviourContext blur(int size = 3, float strength = 1.0f) 
         {
             var blurStrength    = 2f * strength * strength;
             var blurred         = BehaviourContext.zero;
