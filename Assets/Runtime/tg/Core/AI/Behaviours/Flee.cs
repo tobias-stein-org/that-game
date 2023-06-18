@@ -8,6 +8,7 @@ namespace tg.ai.behaviour
 
     public struct Flee : IBehaviourContext<Flee>
     {
+        public int dummy;
     }
 
     [UpdateInGroup(typeof(BehaviourSystemGroup))]

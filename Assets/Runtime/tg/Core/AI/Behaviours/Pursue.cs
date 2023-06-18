@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.ai.behaviour
 {
@@ -8,6 +9,7 @@ namespace tg.ai.behaviour
 
     public struct Pursue : IBehaviourContext<Pursue>
     {
+        public float2   target;
     }
 
     [UpdateInGroup(typeof(BehaviourSystemGroup))]
