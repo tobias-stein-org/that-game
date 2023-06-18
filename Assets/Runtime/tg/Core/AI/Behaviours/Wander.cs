@@ -10,6 +10,23 @@ namespace tg.ai.behaviour
 
     public struct Wander : IBehaviourContext<Wander>
     {
+        public float            steeringOffset;
+        public float            steeringRadius;
+
+        public float2           steeringForce;
+
+        public static Wander    Default
+        {
+            get
+            {
+                return new Wander
+                {
+                    steeringOffset  = 2.5f,
+                    steeringRadius  = 1.5f,
+                    steeringForce   = float2.zero
+                };
+            }
+        }
     }
 
     [UpdateInGroup(typeof(BehaviourSystemGroup))]
@@ -23,18 +40,20 @@ namespace tg.ai.behaviour
 
         void OnUpdate(ref SystemState state)
 	    {
-            foreach(var (wander, rb, entity) in SystemAPI.Query<Wander, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>().WithEntityAccess())
+            foreach(var (wander, rb, entity) in SystemAPI.Query<RefRW<Wander>, SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>>().WithEntityAccess())
             {
-                var position            = rb.Value.position;
-                var velocity            = rb.Value.velocity;
-                var forward             = velocity.sqrMagnitude > 1e-5f ? velocity.normalized : Vector2.right;
+                var position                    = rb.Value.position;
+                var velocity                    = rb.Value.velocity;
+                var forward                     = velocity.normalized;
 
-                var wanderShapeOffset   = 1.0f;
-                var wanderShapeRadius   = 1.0f;
-                ref var behaviour       = ref this.getBehaviourContext(entity);
+                var theta                       = math.PI *
+                    // [-1.0; +1.0]
+                    //UnityEngine.Random.Range(-1.0f, 1.0f);
+                    noise.snoise(position);
+                    //noise.snoise(velocity);
+                    //noise.snoise(forward);
 
-                var theta               = noise.snoise(position); // [-1.0; +1.0]
-                var wanderShapeHeading  = new Vector2(math.cos(theta), math.sin(theta));
+                var wanderShapeHeading          = new Vector2(math.cos(theta), math.sin(theta));
 
                 /*
                                                 wanderShapeHeading
@@ -44,12 +63,16 @@ namespace tg.ai.behaviour
                  [E]-> forward
                  
                  */
-                var wanderForce         = (position + (forward * wanderShapeOffset) + (wanderShapeHeading * wanderShapeRadius)).normalized;
-                
-                var context             = BehaviourContext.zero;
-                var segment             = BehaviourContext.dir2seg(wanderForce);
-                context[segment]        = 1.0f - math.abs(Vector2.Dot(wanderForce, forward));
-                behaviour.context       = context;
+                wander.ValueRW.steeringForce    = (forward * wander.ValueRO.steeringOffset) + (wanderShapeHeading * wander.ValueRO.steeringRadius);
+                var wanderForceN                = math.normalize(wander.ValueRO.steeringForce);
+
+                ref var behaviour               = ref this.getBehaviourContext(entity);
+                {
+                    var context                 = BehaviourContext.zero;
+                    var segment                 = BehaviourContext.dir2seg(wanderForceN);
+                    context[segment]            = 1.0f - math.abs(Vector2.Dot(wanderForceN, forward));
+                    behaviour.context           = context;
+                }
             }
         }
     }
