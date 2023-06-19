@@ -51,8 +51,8 @@ namespace tg.ai.behaviour
 
                 var theta                       = math.PI *
                     // [-1.0; +1.0]
-                    UnityEngine.Random.Range(-1.0f, 1.0f);
-                    //noise.snoise(position);
+                    //UnityEngine.Random.Range(-1.0f, 1.0f);
+                    noise.snoise(position);
                     //noise.snoise(velocity);
                     //noise.snoise(forward);
 
