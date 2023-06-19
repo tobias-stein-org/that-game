@@ -200,6 +200,7 @@ namespace tg.editor.debug
 
             Handles.DrawDottedLine(position, target, 4.0f);
             Handles.DrawSolidDisc(target, Vector3.forward, 0.1f);
+            Handles.DrawWireDisc(target, Vector3.forward, data.minDistance);
         }
 
         private void drawSensor()
@@ -211,7 +212,7 @@ namespace tg.editor.debug
             if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowRange) != 0)
             {
                 Handles.color   = Color.white;
-                Handles.DrawWireDisc(position, Vector3.forward, sensor.desc.senorPerceptionRange, 2.0f);
+                Handles.DrawWireDisc(position, Vector3.forward, sensor.desc.range, 2.0f);
             }
 
             if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowOutput) != 0)
