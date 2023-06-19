@@ -137,6 +137,22 @@ namespace tg.ai
                         if(sumWeights > 1e-5f)  { result = result / sumWeights; }
 
                         result                  = result.blur(size: 4, strength: solveWeight).normalize();
+                        for(int i = 0; i < result.length; i++)
+                        {
+                            if(result[i] < 0.0f)
+                            {
+                                var a           = i - 1 < 0  ? 15 : i - 1;
+                                var b           = i + 1 > 15 ? 0  : i + 1;
+
+                                var distribute  = math.abs(result[i]) * 0.5f;
+
+                                result[a]       = result[a] > 0.0f ? math.max(0.0f, result[a] - distribute) : result[a];
+                                result[b]       = result[b] > 0.0f ? math.max(0.0f, result[b] - distribute) : result[b];
+                                result[i]       = 0.0f;
+                            }
+                        }
+                        result                  = result.blur(size: 2, strength: solveWeight * 0.5f);//.normalize();
+
 
                         solved.context          = BehaviourContext.lerp(result, solved.context1, solveBlend);
                         solved.context1         = solved.context;
