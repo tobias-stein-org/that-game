@@ -15,12 +15,18 @@ namespace tg.ai.behaviour
         [NonSerialized]
         public float2   target;
 
+        /// <summary>
+        /// Min. distance to target before pursue stops.
+        /// </summary>
+        public float    minDistance;
+
         public static Pursue Default
         {
             get
             {
                 return new Pursue
                 {
+                    minDistance = 0.8f
                 };
             }
         }
@@ -43,7 +49,7 @@ namespace tg.ai.behaviour
                 var diff                = (new Vector2(pursue.target.x, pursue.target.y) - (Vector2)position);
                 var dist                = diff.magnitude;
 
-                if(dist > 1e-3f)
+                if(dist > pursue.minDistance)
                 {
                     ref var behaviour   = ref this.getBehaviourContext(entity);
                     var context         = BehaviourContext.zero;
