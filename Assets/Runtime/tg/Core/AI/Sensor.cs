@@ -191,27 +191,34 @@ namespace tg.ai
             /// <summary>
             /// Point of collision.
             /// </summary>
-            public readonly float2      point;
+            public readonly half2       point;
 
             /// <summary>
             /// Normal of the contact point.
             /// </summary>
-            public readonly float2      normal;
+            public readonly half2       normal;
 
             /// <summary>
             /// Distance to the contact point.
             /// </summary>
-            public readonly float       distance;
+            public readonly half        distance;
 
             /// <summary>
             /// Hash value of the tag attached to the object.
             /// </summary>
             public readonly TagHash     tag;
 
+            private readonly byte       segmentValid;
+
             /// <summary>
             /// The segment index of the sensor where this output has been perceived.
             /// </summary>
-            public readonly byte        segment;
+            public byte                 segment { get { return (byte)((this.segmentValid >> 4) & 0x0F); } }
+
+            /// <summary>
+            /// True if this sensor ouput value is valid this frame.
+            /// </summary>
+            public bool                 isValid { get { return (byte)(this.segmentValid & 0x0F) != 0; } }
 
             /// <summary>
             /// Convert a raycast hit 2D into sensor output.
@@ -219,11 +226,13 @@ namespace tg.ai
             /// <param name="hit2D"></param>
             public Output(in RaycastHit2D hit2D, byte segment)
             {
-                this.segment            = segment;
+                this.segmentValid       = 0;
+                this.segmentValid       |= (byte)(segment   << 0x04); // store segment index in the first part
+                this.segmentValid       |= (byte)(1         &  0x0F); // store a valid index in the second part
 
-                this.point              = new float2(hit2D.point.x, hit2D.point.y);
-                this.normal             = hit2D.normal;
-                this.distance           = hit2D.distance;
+                this.point              = new half2((half)hit2D.point.x, (half)hit2D.point.y);
+                this.normal             = new half2(hit2D.normal);
+                this.distance           = (half)hit2D.distance;
                 this.tag                = hit2D.rigidbody != null ? hit2D.rigidbody.tag : hit2D.collider.tag;
             }
         }
