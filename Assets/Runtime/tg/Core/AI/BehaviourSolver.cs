@@ -17,7 +17,8 @@ namespace tg.ai
     [UpdateInGroup(typeof(BehaviourSystemGroup), OrderFirst = true)]
     public partial struct BehaviourReset : ISystem
     {
-        private EntityQuery                     aiEntitiesQuery;
+        private EntityQuery                             aiEntitiesQuery;
+        private BufferTypeHandle<BehaviourContextData>  bufferTypeHandle;
 
         public void OnCreate(ref SystemState state)
         {
@@ -26,17 +27,19 @@ namespace tg.ai
             this.aiEntitiesQuery        = state.GetEntityQuery(typeof(BehaviourContextData));
 
             state.RequireForUpdate(this.aiEntitiesQuery);
+            this.bufferTypeHandle       = state.GetBufferTypeHandle<BehaviourContextData>();
         }
 
         public void OnUpdate(ref SystemState state)
         {
+            this.bufferTypeHandle.Update(ref state);
+
             var query                   = new EntityQueryBuilder(Allocator.Temp).WithAllRW<BehaviourContextData>().Build(state.EntityManager);
             var chunks                  = query.ToArchetypeChunkArray(Allocator.Temp);
             for (int i = 0; i < chunks.Length; i++)
             {
                 var chunk               = chunks[i];
-                var bufferTypeHandle    = state.GetBufferTypeHandle<BehaviourContextData>();
-                var buffers             = chunk.GetBufferAccessor(ref bufferTypeHandle);
+                var buffers             = chunk.GetBufferAccessor(ref this.bufferTypeHandle);
 
                 for(int j = 0, chunkEntityCount = chunk.Count; j < chunkEntityCount; j++)
                 {
