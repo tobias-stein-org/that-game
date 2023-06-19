@@ -498,7 +498,7 @@ namespace tg.ai
     /// Dynamic buffer component to store AI behaviour contexts.
     /// </summary>
     [InternalBufferCapacity(BehaviourContextInternal.MAX_BEHAVIOURS)]
-    public struct BehaviourContextData : IBufferElementData
+    public struct BehaviourContextData : IBufferElementData, IEnableableComponent
     {
         /// <summary>
         /// Behaviour context values.
