@@ -23,26 +23,35 @@ namespace tg.enemy
             Pursue  = 1 << 3,
         }
 
-        public BehaviourMask    activeBehaviour = BehaviourMask.None;
+        public BehaviourMask    activeBehaviour     = BehaviourMask.None;
 
-        public Wander           wander          = Wander.Default;
-        public float            wanderWeight    = 1.0f;
-        public float            wanderBlend     = 0.0f;
+        public Wander           wander              = Wander.Default;
+        public float            wanderWeight        = 1.0f;
+        public float            wanderBlend         = 0.0f;
 
-        public Avoid            avoid           = Avoid.Default;
-        public float            avoidWeight     = 1.0f;
-        public float            avoidBlend      = 0.0f;
+        public Avoid            avoid               = Avoid.Default;
+        public float            avoidWeight         = 1.0f;
+        public float            avoidBlend          = 0.0f;
 
-        public Flee             flee            = Flee.Default;
-        public float            fleeWeight      = 1.0f;
-        public float            fleeBlend       = 0.0f;
+        public Flee             flee                = Flee.Default;
+        public float            fleeWeight          = 1.0f;
+        public float            fleeBlend           = 0.0f;
 
-        public Pursue           pursue          = Pursue.Default;
-        public float            pursueWeight    = 1.0f;
-        public float            pursueBlend     = 0.0f;
+        public Pursue           pursue              = Pursue.Default;
+        public float            pursueWeight        = 1.0f;
+        public float            pursueBlend         = 0.0f;
 
-        public float            frameBlending   = 0.0f;
-        public float            contextBlurring = 1.0f;
+        public float            frameBlending       = 0.0f;
+        public float            contextBlurring     = 1.0f;
+
+        #endregion
+
+        #region Perception
+
+        public float            perceptionRange     = 5.0f;
+        public int              maxPerceptions      = Sensor.Description.MAX_SENSOR_OUTPUTS;
+        public bool             allowSeeHidden      = false;
+        public LayerMask        filter              = Physics2D.AllLayers;
 
         #endregion
 

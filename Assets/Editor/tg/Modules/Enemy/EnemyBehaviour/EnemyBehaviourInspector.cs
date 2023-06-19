@@ -24,6 +24,15 @@ namespace tg.editor.enemy
             var target  = this.target as EnemyBehaviour;
             this.root   = this.visualTreeAsset.Instantiate();
 
+            #region perception
+
+            var perception = this.root.Q<Foldout>("perception");
+
+            perception.Q<SliderInt>("maxPerceptions").highValue = Sensor.Description.MAX_SENSOR_OUTPUTS;
+
+            #endregion
+
+            #region behaviours
 
             var behaviours = this.root.Q<Foldout>("behaviours");
             behaviours.Q<Slider>("frameBlending").bindingPath = "frameBlending";
@@ -57,6 +66,8 @@ namespace tg.editor.enemy
             behaviours.Q<Foldout>("avoid").SetEnabled(hasFlag(target.activeBehaviour, EnemyBehaviour.BehaviourMask.Avoid));
             behaviours.Q<Foldout>("flee").SetEnabled(hasFlag(target.activeBehaviour, EnemyBehaviour.BehaviourMask.Flee));
             behaviours.Q<Foldout>("pursue").SetEnabled(hasFlag(target.activeBehaviour, EnemyBehaviour.BehaviourMask.Pursue));
+
+            #endregion
 
             return this.root;
         }

@@ -102,16 +102,22 @@ namespace tg.enemy {
 
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
                 {
-                    entity      = enemyEntity
+                    entity          = enemyEntity
                 });
 
-                ECB.SetComponent<Sensor>(enemyEntity, Sensor.Default);
-
-                var buffer      = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
-                buffer.Length   = BehaviourContextInternal.MAX_BEHAVIOURS;
-                for(int i       = 0; i < buffer.Length; i++)
+                ECB.SetComponent<Sensor>(enemyEntity, new Sensor(new Sensor.Description
                 {
-                    buffer[i]   = BehaviourContextData.Default;
+                    range           = description.behaviour.perceptionRange,
+                    maxOutouts      = description.behaviour.maxPerceptions,
+                    allowSeeHidden  = description.behaviour.allowSeeHidden,
+                    sensorMask      = description.behaviour.filter
+                }));
+
+                var buffer          = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
+                buffer.Length       = BehaviourContextInternal.MAX_BEHAVIOURS;
+                for(int i           = 0; i < buffer.Length; i++)
+                {
+                    buffer[i]       = BehaviourContextData.Default;
                 }
 
                 // set enemy behaviour

@@ -1,5 +1,11 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+        <ui:Foldout text="Perception" name="perception">
+            <ui:Slider picking-mode="Ignore" label="Range" value="5" high-value="100" name="perceptionRange" show-input-field="true" />
+            <ui:SliderInt picking-mode="Ignore" label="Max. Perceptions" value="0" high-value="100" name="maxPerceptions" show-input-field="true" binding-path="maxPerceptions" />
+            <ui:Toggle label="Allow see hidden" name="allowSeeHidden" binding-path="allowSeeHidden" />
+            <uie:LayerMaskField label="Filter" name="filter" value="-1" binding-path="filter" />
+        </ui:Foldout>
         <ui:Foldout text="Behaviours" name="behaviours">
             <uie:EnumFlagsField label="Behaviour" type="tg.enemy.EnemyBehaviour+BehaviourMask, tg.runtime" name="activeBehaviour" />
             <ui:Slider picking-mode="Ignore" label="Frame Blending" value="0" high-value="1" name="frameBlending" show-input-field="true" />
