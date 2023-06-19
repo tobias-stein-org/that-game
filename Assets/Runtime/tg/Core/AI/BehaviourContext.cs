@@ -70,9 +70,11 @@ namespace tg.ai
     {
         public bool isValid { get; private set; }
 
-        public float
+        public half
             v00, v01, v02, v03, v04, v05, v06, v07,
             v08, v09, v10, v11, v12, v13, v14, v15;
+
+        public int length { get { return 16; } }
 
         public unsafe float this[int index]
         {
@@ -80,18 +82,18 @@ namespace tg.ai
             {
 			    Unity.Assertions.Assert.IsTrue(this.isValid, "BehaviourContext in invalid!");
 			    Unity.Assertions.Assert.IsFalse((uint)index > 15u, $"index ({index}) must be between[0...16]");
-			    fixed (float* ptr = &v00)
+			    fixed (half* ptr = &v00)
                 {
-				    return *(float*)((byte*)ptr + (nint)index * (nint)4);
+				    return *(half*)((byte*)ptr + (nint)index * (nint)2);
 			    }
 		    }
 		    set
             {
 			    Unity.Assertions.Assert.IsTrue(this.isValid, "BehaviourContext in invalid!");
                 Unity.Assertions.Assert.IsFalse((uint)index > 15u, $"index ({index}) must be between[0...16]");
-			    fixed (float* ptr = &v00)
+			    fixed (half* ptr = &v00)
                 {
-                    ptr[index] = value;
+                    ptr[index] = (half)value;
                 }
 		    }
 	    }
@@ -99,8 +101,8 @@ namespace tg.ai
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
 	    public override string ToString () { return this.isValid ? $"BehaviourContext({v00}, {v01}, {v02}, {v03}, {v04}, {v05}, {v06}, {v07}, {v08}, {v09}, {v10}, {v11}, {v12}, {v13}, {v14}, {v15})" : "BehaviourContext(Invalid)"; }
 
-        public static readonly BehaviourContext zero        = new BehaviourContext(0);
-        public static readonly BehaviourContext one         = new BehaviourContext(1);
+        public static readonly BehaviourContext zero        = new BehaviourContext((half)0);
+        public static readonly BehaviourContext one         = new BehaviourContext((half)1);
 
         public static readonly Vector2[]        segmentDir  = new Vector2[16];
 
@@ -134,8 +136,8 @@ namespace tg.ai
         }
 
         public BehaviourContext(
-            float v00, float v01, float v02, float v03, float v04, float v05, float v06, float v07,
-            float v08, float v09, float v10, float v11, float v12, float v13, float v14, float v15)
+            half v00, half v01, half v02, half v03, half v04, half v05, half v06, half v07,
+            half v08, half v09, half v10, half v11, half v12, half v13, half v14, half v15)
         {
             this.isValid    = true;
             this.v00        = v00;
@@ -156,7 +158,7 @@ namespace tg.ai
             this.v15        = v15;
         }
 
-        public BehaviourContext(float value)
+        public BehaviourContext(half value)
         {
             this.isValid    = true;
             this.v00        = value;
@@ -186,22 +188,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 + rhs.v00,
-                lhs.v01 + rhs.v01,
-                lhs.v02 + rhs.v02,
-                lhs.v03 + rhs.v03,
-                lhs.v04 + rhs.v04,
-                lhs.v05 + rhs.v05,
-                lhs.v06 + rhs.v06,
-                lhs.v07 + rhs.v07,
-                lhs.v08 + rhs.v08,
-                lhs.v09 + rhs.v09,
-                lhs.v10 + rhs.v10,
-                lhs.v11 + rhs.v11,
-                lhs.v12 + rhs.v12,
-                lhs.v13 + rhs.v13,
-                lhs.v14 + rhs.v14,
-                lhs.v15 + rhs.v15
+                (half)(lhs.v00 + rhs.v00),
+                (half)(lhs.v01 + rhs.v01),
+                (half)(lhs.v02 + rhs.v02),
+                (half)(lhs.v03 + rhs.v03),
+                (half)(lhs.v04 + rhs.v04),
+                (half)(lhs.v05 + rhs.v05),
+                (half)(lhs.v06 + rhs.v06),
+                (half)(lhs.v07 + rhs.v07),
+                (half)(lhs.v08 + rhs.v08),
+                (half)(lhs.v09 + rhs.v09),
+                (half)(lhs.v10 + rhs.v10),
+                (half)(lhs.v11 + rhs.v11),
+                (half)(lhs.v12 + rhs.v12),
+                (half)(lhs.v13 + rhs.v13),
+                (half)(lhs.v14 + rhs.v14),
+                (half)(lhs.v15 + rhs.v15)
            );
 	    }
 
@@ -210,46 +212,46 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 + rhs,
-                lhs.v01 + rhs,
-                lhs.v02 + rhs,
-                lhs.v03 + rhs,
-                lhs.v04 + rhs,
-                lhs.v05 + rhs,
-                lhs.v06 + rhs,
-                lhs.v07 + rhs,
-                lhs.v08 + rhs,
-                lhs.v09 + rhs,
-                lhs.v10 + rhs,
-                lhs.v11 + rhs,
-                lhs.v12 + rhs,
-                lhs.v13 + rhs,
-                lhs.v14 + rhs,
-                lhs.v15 + rhs
+                (half)(lhs.v00 + rhs),
+                (half)(lhs.v01 + rhs),
+                (half)(lhs.v02 + rhs),
+                (half)(lhs.v03 + rhs),
+                (half)(lhs.v04 + rhs),
+                (half)(lhs.v05 + rhs),
+                (half)(lhs.v06 + rhs),
+                (half)(lhs.v07 + rhs),
+                (half)(lhs.v08 + rhs),
+                (half)(lhs.v09 + rhs),
+                (half)(lhs.v10 + rhs),
+                (half)(lhs.v11 + rhs),
+                (half)(lhs.v12 + rhs),
+                (half)(lhs.v13 + rhs),
+                (half)(lhs.v14 + rhs),
+                (half)(lhs.v15 + rhs)
             );
-	    }
+        }
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
 	    public static BehaviourContext operator - (BehaviourContext lhs, BehaviourContext rhs)
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 - rhs.v00,
-                lhs.v01 - rhs.v01,
-                lhs.v02 - rhs.v02,
-                lhs.v03 - rhs.v03,
-                lhs.v04 - rhs.v04,
-                lhs.v05 - rhs.v05,
-                lhs.v06 - rhs.v06,
-                lhs.v07 - rhs.v07,
-                lhs.v08 - rhs.v08,
-                lhs.v09 - rhs.v09,
-                lhs.v10 - rhs.v10,
-                lhs.v11 - rhs.v11,
-                lhs.v12 - rhs.v12,
-                lhs.v13 - rhs.v13,
-                lhs.v14 - rhs.v14,
-                lhs.v15 - rhs.v15
+                (half)(lhs.v00 - rhs.v00),
+                (half)(lhs.v01 - rhs.v01),
+                (half)(lhs.v02 - rhs.v02),
+                (half)(lhs.v03 - rhs.v03),
+                (half)(lhs.v04 - rhs.v04),
+                (half)(lhs.v05 - rhs.v05),
+                (half)(lhs.v06 - rhs.v06),
+                (half)(lhs.v07 - rhs.v07),
+                (half)(lhs.v08 - rhs.v08),
+                (half)(lhs.v09 - rhs.v09),
+                (half)(lhs.v10 - rhs.v10),
+                (half)(lhs.v11 - rhs.v11),
+                (half)(lhs.v12 - rhs.v12),
+                (half)(lhs.v13 - rhs.v13),
+                (half)(lhs.v14 - rhs.v14),
+                (half)(lhs.v15 - rhs.v15)
             );
 	    }
 
@@ -258,22 +260,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 - rhs,
-                lhs.v01 - rhs,
-                lhs.v02 - rhs,
-                lhs.v03 - rhs,
-                lhs.v04 - rhs,
-                lhs.v05 - rhs,
-                lhs.v06 - rhs,
-                lhs.v07 - rhs,
-                lhs.v08 - rhs,
-                lhs.v09 - rhs,
-                lhs.v10 - rhs,
-                lhs.v11 - rhs,
-                lhs.v12 - rhs,
-                lhs.v13 - rhs,
-                lhs.v14 - rhs,
-                lhs.v15 - rhs
+                (half)(lhs.v00 - rhs),
+                (half)(lhs.v01 - rhs),
+                (half)(lhs.v02 - rhs),
+                (half)(lhs.v03 - rhs),
+                (half)(lhs.v04 - rhs),
+                (half)(lhs.v05 - rhs),
+                (half)(lhs.v06 - rhs),
+                (half)(lhs.v07 - rhs),
+                (half)(lhs.v08 - rhs),
+                (half)(lhs.v09 - rhs),
+                (half)(lhs.v10 - rhs),
+                (half)(lhs.v11 - rhs),
+                (half)(lhs.v12 - rhs),
+                (half)(lhs.v13 - rhs),
+                (half)(lhs.v14 - rhs),
+                (half)(lhs.v15 - rhs)
             );
 	    }
 
@@ -282,22 +284,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 * rhs.v00,
-                lhs.v01 * rhs.v01,
-                lhs.v02 * rhs.v02,
-                lhs.v03 * rhs.v03,
-                lhs.v04 * rhs.v04,
-                lhs.v05 * rhs.v05,
-                lhs.v06 * rhs.v06,
-                lhs.v07 * rhs.v07,
-                lhs.v08 * rhs.v08,
-                lhs.v09 * rhs.v09,
-                lhs.v10 * rhs.v10,
-                lhs.v11 * rhs.v11,
-                lhs.v12 * rhs.v12,
-                lhs.v13 * rhs.v13,
-                lhs.v14 * rhs.v14,
-                lhs.v15 * rhs.v15
+                (half)(lhs.v00 * rhs.v00),
+                (half)(lhs.v01 * rhs.v01),
+                (half)(lhs.v02 * rhs.v02),
+                (half)(lhs.v03 * rhs.v03),
+                (half)(lhs.v04 * rhs.v04),
+                (half)(lhs.v05 * rhs.v05),
+                (half)(lhs.v06 * rhs.v06),
+                (half)(lhs.v07 * rhs.v07),
+                (half)(lhs.v08 * rhs.v08),
+                (half)(lhs.v09 * rhs.v09),
+                (half)(lhs.v10 * rhs.v10),
+                (half)(lhs.v11 * rhs.v11),
+                (half)(lhs.v12 * rhs.v12),
+                (half)(lhs.v13 * rhs.v13),
+                (half)(lhs.v14 * rhs.v14),
+                (half)(lhs.v15 * rhs.v15)
             );
 	    }
 
@@ -306,22 +308,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 * rhs,
-                lhs.v01 * rhs,
-                lhs.v02 * rhs,
-                lhs.v03 * rhs,
-                lhs.v04 * rhs,
-                lhs.v05 * rhs,
-                lhs.v06 * rhs,
-                lhs.v07 * rhs,
-                lhs.v08 * rhs,
-                lhs.v09 * rhs,
-                lhs.v10 * rhs,
-                lhs.v11 * rhs,
-                lhs.v12 * rhs,
-                lhs.v13 * rhs,
-                lhs.v14 * rhs,
-                lhs.v15 * rhs
+                (half)(lhs.v00 * rhs),
+                (half)(lhs.v01 * rhs),
+                (half)(lhs.v02 * rhs),
+                (half)(lhs.v03 * rhs),
+                (half)(lhs.v04 * rhs),
+                (half)(lhs.v05 * rhs),
+                (half)(lhs.v06 * rhs),
+                (half)(lhs.v07 * rhs),
+                (half)(lhs.v08 * rhs),
+                (half)(lhs.v09 * rhs),
+                (half)(lhs.v10 * rhs),
+                (half)(lhs.v11 * rhs),
+                (half)(lhs.v12 * rhs),
+                (half)(lhs.v13 * rhs),
+                (half)(lhs.v14 * rhs),
+                (half)(lhs.v15 * rhs)
             );
 	    }
 
@@ -330,22 +332,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 / rhs.v00,
-                lhs.v01 / rhs.v01,
-                lhs.v02 / rhs.v02,
-                lhs.v03 / rhs.v03,
-                lhs.v04 / rhs.v04,
-                lhs.v05 / rhs.v05,
-                lhs.v06 / rhs.v06,
-                lhs.v07 / rhs.v07,
-                lhs.v08 / rhs.v08,
-                lhs.v09 / rhs.v09,
-                lhs.v10 / rhs.v10,
-                lhs.v11 / rhs.v11,
-                lhs.v12 / rhs.v12,
-                lhs.v13 / rhs.v13,
-                lhs.v14 / rhs.v14,
-                lhs.v15 / rhs.v15
+                (half)(lhs.v00 / rhs.v00),
+                (half)(lhs.v01 / rhs.v01),
+                (half)(lhs.v02 / rhs.v02),
+                (half)(lhs.v03 / rhs.v03),
+                (half)(lhs.v04 / rhs.v04),
+                (half)(lhs.v05 / rhs.v05),
+                (half)(lhs.v06 / rhs.v06),
+                (half)(lhs.v07 / rhs.v07),
+                (half)(lhs.v08 / rhs.v08),
+                (half)(lhs.v09 / rhs.v09),
+                (half)(lhs.v10 / rhs.v10),
+                (half)(lhs.v11 / rhs.v11),
+                (half)(lhs.v12 / rhs.v12),
+                (half)(lhs.v13 / rhs.v13),
+                (half)(lhs.v14 / rhs.v14),
+                (half)(lhs.v15 / rhs.v15)
             );
 	    }
 
@@ -354,22 +356,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                lhs.v00 / rhs,
-                lhs.v01 / rhs,
-                lhs.v02 / rhs,
-                lhs.v03 / rhs,
-                lhs.v04 / rhs,
-                lhs.v05 / rhs,
-                lhs.v06 / rhs,
-                lhs.v07 / rhs,
-                lhs.v08 / rhs,
-                lhs.v09 / rhs,
-                lhs.v10 / rhs,
-                lhs.v11 / rhs,
-                lhs.v12 / rhs,
-                lhs.v13 / rhs,
-                lhs.v14 / rhs,
-                lhs.v15 / rhs
+                (half)(lhs.v00 / rhs),
+                (half)(lhs.v01 / rhs),
+                (half)(lhs.v02 / rhs),
+                (half)(lhs.v03 / rhs),
+                (half)(lhs.v04 / rhs),
+                (half)(lhs.v05 / rhs),
+                (half)(lhs.v06 / rhs),
+                (half)(lhs.v07 / rhs),
+                (half)(lhs.v08 / rhs),
+                (half)(lhs.v09 / rhs),
+                (half)(lhs.v10 / rhs),
+                (half)(lhs.v11 / rhs),
+                (half)(lhs.v12 / rhs),
+                (half)(lhs.v13 / rhs),
+                (half)(lhs.v14 / rhs),
+                (half)(lhs.v15 / rhs)
             );
 	    }
 
@@ -380,22 +382,22 @@ namespace tg.ai
 	    {
 		    return new BehaviourContext
             (
-                math.lerp(lhs.v00, rhs.v00, t),
-                math.lerp(lhs.v01, rhs.v01, t),
-                math.lerp(lhs.v02, rhs.v02, t),
-                math.lerp(lhs.v03, rhs.v03, t),
-                math.lerp(lhs.v04, rhs.v04, t),
-                math.lerp(lhs.v05, rhs.v05, t),
-                math.lerp(lhs.v06, rhs.v06, t),
-                math.lerp(lhs.v07, rhs.v07, t),
-                math.lerp(lhs.v08, rhs.v08, t),
-                math.lerp(lhs.v09, rhs.v09, t),
-                math.lerp(lhs.v10, rhs.v10, t),
-                math.lerp(lhs.v11, rhs.v11, t),
-                math.lerp(lhs.v12, rhs.v12, t),
-                math.lerp(lhs.v13, rhs.v13, t),
-                math.lerp(lhs.v14, rhs.v14, t),
-                math.lerp(lhs.v15, rhs.v15, t)
+                (half)math.lerp(lhs.v00, rhs.v00, t),
+                (half)math.lerp(lhs.v01, rhs.v01, t),
+                (half)math.lerp(lhs.v02, rhs.v02, t),
+                (half)math.lerp(lhs.v03, rhs.v03, t),
+                (half)math.lerp(lhs.v04, rhs.v04, t),
+                (half)math.lerp(lhs.v05, rhs.v05, t),
+                (half)math.lerp(lhs.v06, rhs.v06, t),
+                (half)math.lerp(lhs.v07, rhs.v07, t),
+                (half)math.lerp(lhs.v08, rhs.v08, t),
+                (half)math.lerp(lhs.v09, rhs.v09, t),
+                (half)math.lerp(lhs.v10, rhs.v10, t),
+                (half)math.lerp(lhs.v11, rhs.v11, t),
+                (half)math.lerp(lhs.v12, rhs.v12, t),
+                (half)math.lerp(lhs.v13, rhs.v13, t),
+                (half)math.lerp(lhs.v14, rhs.v14, t),
+                (half)math.lerp(lhs.v15, rhs.v15, t)
             );
 	    }
 
