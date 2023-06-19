@@ -5,6 +5,8 @@ using Unity.Entities;
 namespace tg.ai
 {
     using tg.application;
+    using UnityEngine.InputSystem;
+    using UnityEngine.InputSystem.HID;
 
     /// <summary>
     /// This system will update all available sensors in the scene.
@@ -23,7 +25,11 @@ namespace tg.ai
         private static Collider2D[]     rbAttachedCollider  = new Collider2D[1];
         private static Collider2D[]     collisionBuffer     = new Collider2D[Sensor.Description.MAX_SENSOR_OUTPUTS];
         private static int              levelLayerIndex     = LayerMask.NameToLayer("Level");
-        private static int              levelLayerOnlyMask  = 1 << LayerMask.NameToLayer("Level");
+        private static ContactFilter2D  levelFilter         = new ContactFilter2D
+        {
+                                        layerMask           = 1 << LayerMask.NameToLayer("Level"),
+                                        useLayerMask        = true,
+        };
 
         private static int              levelRaysResolution = 8;
         private static Vector2[]        levelRays           = new Vector2[Perception.levelRaysResolution];
@@ -42,14 +48,20 @@ namespace tg.ai
                 // clear old sensor outputs from last frame
                 sensor.ValueRW.outputs.Clear();
 
-                var numCollisions       = Physics2D.OverlapCircleNonAlloc(rb.Value.position, sensor.ValueRO.desc.senorPerceptionRange, Perception.collisionBuffer, sensor.ValueRO.desc.sensorMask);
+                var sensorFilter    = new ContactFilter2D
+                {
+                    layerMask       = sensor.ValueRO.desc.sensorMask,
+                    useLayerMask    = true,
+                };
+
+                var numCollisions       = Physics2D.OverlapCircleNonAlloc(rb.Value.position, sensor.ValueRO.desc.range, Perception.collisionBuffer, sensor.ValueRO.desc.sensorMask);
 
                 rb.Value.GetAttachedColliders(Perception.rbAttachedCollider);
 
                 for(int i               = 0; i < numCollisions; i++)
                 {
                     // stop, if sensor output buffer is full
-                    if(sensor.ValueRO.outputs.Length == sensor.ValueRO.outputs.Capacity) { break; }
+                    if(sensor.ValueRO.outputs.Length == sensor.ValueRO.desc.maxOutouts) { break; }
 
                     var collider        = Perception.collisionBuffer[i];
 
@@ -64,30 +76,57 @@ namespace tg.ai
                         // in order to get a better perception, we will cast a rays in all directions and see where they hit the level
                         foreach(var dir in Perception.levelRays)
                         {
-                            var hasHit          = rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, Perception.levelLayerOnlyMask);
-
-                            if(hasHit > 0)
+                            var hasHit      = rbAttachedCollider[0].Cast(dir, Perception.levelFilter, Perception.hit2DBuffer, sensor.ValueRO.desc.range);
+                            if(hasHit       > 0)
                             {
                                 // record this result
-                                sensor.ValueRW.outputs.Add(new Sensor.Output(Perception.hit2DBuffer[0], BehaviourContext.dir2seg(in dir)));
+                                sensor.ValueRW.outputs.Add(new Sensor.Output(
+                                    point       : Perception.hit2DBuffer[0].point,
+                                    normal      : Perception.hit2DBuffer[0].normal,
+                                    distance    : Perception.hit2DBuffer[0].distance,
+                                    tag         : Perception.hit2DBuffer[0].rigidbody != null ? Perception.hit2DBuffer[0].rigidbody.tag : Perception.hit2DBuffer[0].collider.tag,
+                                    segment     : BehaviourContext.dir2seg(in dir)
+                                ));
 
                                 // we stop, if sensor buffer is full
-                                if(sensor.ValueRO.outputs.Length == sensor.ValueRO.outputs.Capacity) { break; }
+                                if(sensor.ValueRO.outputs.Length == sensor.ValueRO.desc.maxOutouts) { break; }
                             }
                         }
                     }
                     else
                     {
-                        var dir             = ((Vector2)collider.transform.position - (Vector2)rb.Value.position).normalized;
-                        var hasHit          = rbAttachedCollider[0].Raycast(dir, Perception.hit2DBuffer, sensor.ValueRO.desc.senorPerceptionRange, sensor.ValueRO.desc.sensorMask);
-
-                        if(hasHit > 0)
+                        var dif             = ((Vector2)collider.transform.position - (Vector2)rb.Value.position);
+                        var dis             = dif.magnitude;
+                        var dir             = dif.normalized;
+                        
+                        // in case the sesnor should only see things that are not hidden, we have to perform an additional raycast
+                        if(!sensor.ValueRO.desc.allowSeeHidden)
                         {
-                            // Ignore this result, if the collider in our sensor range is obstructed by another object and the sensor is not allowed to see these objects
-                            if(!sensor.ValueRO.desc.allowSeeHidden && (collider != Perception.hit2DBuffer[0].collider)) { continue; }
+                            var hasHit          = rbAttachedCollider[0].Cast(dir, sensorFilter, Perception.hit2DBuffer, sensor.ValueRO.desc.range);
+                            if(hasHit           > 0 && (collider != Perception.hit2DBuffer[0].collider))
+                            {
+                                // Ignore this result, if the collider in our sensor range is obstructed by another object
+                                continue;
+                            }
 
                             // record this result
-                            sensor.ValueRW.outputs.Add(new Sensor.Output(Perception.hit2DBuffer[0], BehaviourContext.dir2seg(in dir)));
+                            sensor.ValueRW.outputs.Add(new Sensor.Output(
+                                point       : Perception.hit2DBuffer[0].point,
+                                normal      : Perception.hit2DBuffer[0].normal,
+                                distance    : Perception.hit2DBuffer[0].distance,
+                                tag         : Perception.hit2DBuffer[0].rigidbody != null ? Perception.hit2DBuffer[0].rigidbody.tag : Perception.hit2DBuffer[0].collider.tag,
+                                segment     : BehaviourContext.dir2seg(in dir)
+                            ));
+                        }
+                        else
+                        {
+                            sensor.ValueRW.outputs.Add(new Sensor.Output(
+                                point       : collider.transform.position,
+                                normal      : new Vector2(-dir.y, dir.x),
+                                distance    : dis,
+                                tag         : collider.attachedRigidbody != null ? collider.attachedRigidbody.tag : collider.tag,
+                                segment     : BehaviourContext.dir2seg(in dir)
+                            ));
                         }
                     }
                 }

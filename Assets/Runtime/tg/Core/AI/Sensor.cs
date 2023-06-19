@@ -30,7 +30,12 @@ namespace tg.ai
             /// <summary>
             /// How far the sensor can see.
             /// </summary>
-            public float                        senorPerceptionRange;
+            public float                        range;
+
+            /// <summary>
+            /// Upper limit of how many oupputs this sensor generates.
+            /// </summary>
+            public int                          maxOutouts;
 
             /// <summary>
             /// What the sensor can see.
@@ -42,17 +47,18 @@ namespace tg.ai
             /// </summary>
             public bool                         allowSeeHidden;
 
-            public Description(float range, LayerMask mask, bool allowSeeHidden)
+            public Description(float range, int max, LayerMask mask, bool allowSeeHidden)
             {
-                this.senorPerceptionRange       = range;
+                this.range                      = range;
                 this.sensorMask                 = mask;
                 this.allowSeeHidden             = allowSeeHidden;
+                this.maxOutouts                 = math.min(max, MAX_SENSOR_OUTPUTS);
             }
 
             /// <summary>
             /// Returns a default sensor description that will percive all object in the world.
             /// </summary>
-            public static readonly Description  Default = new Description(10.0f, Physics2D.AllLayers, false);
+            public static readonly Description  Default = new Description(5.0f, MAX_SENSOR_OUTPUTS, Physics2D.AllLayers, false);
         }
 
         /// <summary>
@@ -224,16 +230,16 @@ namespace tg.ai
             /// Convert a raycast hit 2D into sensor output.
             /// </summary>
             /// <param name="hit2D"></param>
-            public Output(in RaycastHit2D hit2D, byte segment)
+            public Output(in Vector2 point, in Vector2 normal, float distance, string tag, byte segment)
             {
                 this.segmentValid       = 0;
                 this.segmentValid       |= (byte)(segment   << 0x04); // store segment index in the first part
                 this.segmentValid       |= (byte)(1         &  0x0F); // store a valid index in the second part
 
-                this.point              = new half2((half)hit2D.point.x, (half)hit2D.point.y);
-                this.normal             = new half2(hit2D.normal);
-                this.distance           = (half)hit2D.distance;
-                this.tag                = hit2D.rigidbody != null ? hit2D.rigidbody.tag : hit2D.collider.tag;
+                this.point              = new half2((half)point.x, (half)point.y);
+                this.normal             = new half2(normal);
+                this.distance           = (half)distance;
+                this.tag                = tag;
             }
         }
 
