@@ -195,6 +195,11 @@ namespace tg.editor.debug
 
         private void drawBehaviour(Pursue data)
         {
+            var position    = this.target.transform.position;
+            var target      = new Vector3(data.target.x, data.target.y, 0.0f);
+
+            Handles.DrawDottedLine(position, target, 4.0f);
+            Handles.DrawSolidDisc(target, Vector3.forward, 0.1f);
         }
 
         private void drawSensor()
