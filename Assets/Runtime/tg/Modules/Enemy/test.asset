@@ -12,19 +12,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22aa3e05cf80e4d92bdc326cc39dab92, type: 3}
   m_Name: test
   m_EditorClassIdentifier: 
-  activeBehaviour: 3
+  activeBehaviour: 11
   wander:
-    steeringOffset: 2.5
-    steeringRadius: 1.5
-  wanderWeight: 0.5
-  wanderBlend: 0.95
+    steeringOffset: 4.5
+    steeringRadius: 0.5
+  wanderWeight: 0.39999998
+  wanderBlend: 0.98999995
   avoid:
     range: 2
   avoidWeight: 1
   avoidBlend: 0
   fleeWeight: 1
   fleeBlend: 0
-  pursueWeight: 1
+  pursue:
+    minDistance: 1.5
+  pursueWeight: 0.59999996
   pursueBlend: 0
-  frameBlending: 0
-  contextBlurring: 1
+  frameBlending: 0.5
+  contextBlurring: 1.5
+  perceptionRange: 5
+  maxPerceptions: 1
+  allowSeeHidden: 0
+  filter:
+    serializedVersion: 2
+    m_Bits: 200
