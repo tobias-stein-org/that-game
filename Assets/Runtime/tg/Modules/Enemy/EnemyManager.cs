@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Entities; 
+using Unity.Mathematics;
 
 namespace tg.enemy {
 
@@ -96,6 +97,7 @@ namespace tg.enemy {
             {
                 ECB.AddComponent(enemyEntity, new ComponentTypeSet(
                    typeof(Enemy),
+                   typeof(EnemyInputData),
                    typeof(BehaviourContextData),
                    typeof(Sensor)
                 ));
@@ -103,6 +105,10 @@ namespace tg.enemy {
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
                 {
                     entity          = enemyEntity
+                });
+                ECB.SetComponent<EnemyInputData>(enemyEntity, new EnemyInputData
+                {
+                    lastBehaviourContextDecision = 0
                 });
 
                 ECB.SetComponent<Sensor>(enemyEntity, new Sensor(new Sensor.Description
@@ -130,25 +136,30 @@ namespace tg.enemy {
                     if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Wander) != 0)
                     {
                         buffer[IBehaviourContext<Wander>.ID]    = new BehaviourContextData(behaviour.wanderWeight, behaviour.wanderBlend);
+                        behaviour.wander.spawnPoint             = description.location.xy;
                         ECB.AddComponent<Wander>(enemyEntity, behaviour.wander);
+                        ECB.SetComponentEnabled<Wander>(enemyEntity, behaviour.wanderEnabled);
                     }
 
                     if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Avoid) != 0)
                     {
                         buffer[IBehaviourContext<Avoid>.ID]     = new BehaviourContextData(behaviour.avoidWeight, behaviour.avoidBlend);
                         ECB.AddComponent<Avoid>(enemyEntity, behaviour.avoid);
+                        ECB.SetComponentEnabled<Avoid>(enemyEntity, behaviour.avoidEnabled);
                     }
 
                     if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Flee) != 0)
                     {
                         buffer[IBehaviourContext<Flee>.ID]      = new BehaviourContextData(behaviour.fleeWeight, behaviour.fleeBlend);
                         ECB.AddComponent<Flee>(enemyEntity, behaviour.flee);
+                        ECB.SetComponentEnabled<Flee>(enemyEntity, behaviour.fleeEnabled);
                     }
 
                     if((behaviour.activeBehaviour & EnemyBehaviour.BehaviourMask.Wander) != 0)
                     {
                         buffer[IBehaviourContext<Pursue>.ID]    = new BehaviourContextData(behaviour.pursueWeight, behaviour.pursueBlend);
                         ECB.AddComponent<Pursue>(enemyEntity, behaviour.pursue);
+                        ECB.SetComponentEnabled<Pursue>(enemyEntity, behaviour.pursueEnabled);
                     }
                 }
                 
