@@ -88,9 +88,10 @@ namespace tg.enemy
 
                     var input       = aiEnemy.input;
 
-                    rb.Value.velocity = Vector2.LerpUnclamped(BehaviourContext.segmentDir[i], BehaviourContext.segmentDir[input.lastBehaviourContextDecision], rb.Value.velocity.magnitude * behaviour.blend);
-                    input.lastBehaviourContextDecision = (byte)i;
+                    rb.Value.AddForce(BehaviourContext.segmentDir[i] - rb.Value.velocity, ForceMode2D.Force);
+                    //rb.Value.velocity = Vector2.LerpUnclamped(BehaviourContext.segmentDir[i], BehaviourContext.segmentDir[input.lastBehaviourContextDecision], rb.Value.velocity.magnitude * behaviour.blend);
 
+                    input.lastBehaviourContextDecision = (byte)i;
 
                     aiEnemy.input   = input;
                 }
