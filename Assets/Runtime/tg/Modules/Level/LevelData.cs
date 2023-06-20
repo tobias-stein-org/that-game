@@ -11,10 +11,9 @@ using static tg.level.LevelData;
 namespace tg.level
 {
     /// <summary>
-    /// A commonly shared data object between level generation steps. Each step may add its own
-    /// relevant level data to the partial struct and can access data declared by other steps. 
+    /// A commonly shared data object between level generation steps. 
     /// </summary>
-    public partial struct LevelData : IComponentData, IDisposable
+    public struct LevelData : IComponentData, IDisposable
     {
         /// <summary>
         /// Level tiles can be build of multiple layers. Each layer has a certains index which determines, if a layer
@@ -68,12 +67,12 @@ namespace tg.level
             /// <summary>
             /// Unique chunk id. Chunks are created in order, which means chunks with a smaller id have been created first.
             /// </summary>
-            public int                              id { get; private set; }
+            public readonly int                     id;
 
             /// <summary>
             /// Logical boundaries of a chunk in the virtual world.
             /// </summary>
-            public RectInt                          bounds;
+            public readonly RectInt                 bounds;
 
             /// <summary>
             /// Holds the ids of accessable neighbouring chunks. If neighbour doesn't exist of is not accessable since its blocked
@@ -82,21 +81,9 @@ namespace tg.level
             public int4                             neighbours;
 
             /// <summary>
-            /// Wall size in for a certain chunk
-            /// </summary>
-            public int                              wallSize;
-
-            /// <summary>
-            /// Since chunks are created in an order they are connected
-            /// to their neighbour with an exit. This vector states on which
-            /// side of the chunk bounds the exit is.
-            /// </summary>
-            public Vector2Int                       pathExit;
-
-            /// <summary>
             /// Reference to the chunk owned tile data.
             /// </summary>
-            public NativeArray<Tile>                data;
+            internal NativeArray<Tile>              data;
 
             public Tile                             this[int tileId]
             {
@@ -114,24 +101,16 @@ namespace tg.level
             /// Creates a new chunk info element.
             /// </summary>
             /// <param name="chunkId"></param>
-            internal Chunk(int chunkId, int width, int height)
+            internal Chunk(int chunkId, in RectInt bounds)
             {
                 this.id             = chunkId;
                 this.neighbours     = -1;
+                this.bounds         = bounds;
 
-                this.bounds         = default;
-                this.wallSize       = 0;
-                this.pathExit       = default;
-
-                this.data           = new NativeArray<Tile>(Enumerable.Range(0, width * height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
+                this.data           = new NativeArray<Tile>(Enumerable.Range(0, bounds.width * bounds.height).Select(x => Tile.Default).ToArray(), Allocator.Persistent);
             }
 
-            public static readonly Chunk INVALID = new Chunk
-            {
-                id          = -1,
-                neighbours  = -1,
-                bounds      = default
-            };
+            public static readonly Chunk INVALID = new Chunk(-1, default);
 
             public bool valid { get { return this.id != -1; } }
 
@@ -266,14 +245,15 @@ namespace tg.level
 
         private int                     nextChunkId;
 
-        public ref Chunk createNewChunk(int width, int height)
+        public ref Chunk createNewChunk(int x, int y, int width, int height)
         {
             if(!this.chunks.IsCreated)
             {
                 this.chunks = new UnsafeList<Chunk>(8, Allocator.Persistent);
             }
 
-            var newChunk = new LevelData.Chunk(this.nextChunkId++, width, height);
+            
+            var newChunk = new LevelData.Chunk(this.nextChunkId++, new RectInt { x = x, y = y, width = width, height = height });
 
             this.chunks.Add(newChunk);
             return ref this.chunks.ElementAt(this.chunks.Length - 1);

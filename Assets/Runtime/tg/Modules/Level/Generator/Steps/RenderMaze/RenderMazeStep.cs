@@ -1334,7 +1334,7 @@ namespace tg.level
 
             private NativeHashSet<Vector2Int>               processedMapChunks;
 
-            public override IEnumerator<State> execute(Generator.Context context)
+            public override IEnumerator<StateBase> execute(Generator.Context context, StateBase lastStepState)
             {
                 // initialize module contraints
                 this.constraints                            = new ModuleConstraints(this.modules.AsReadOnly());
@@ -1400,7 +1400,7 @@ namespace tg.level
                 }
             }
 
-            private IEnumerator<State> initializeGrid(LevelData.Chunk chunk, Generator.Context context)
+            private IEnumerator<StateBase> initializeGrid(LevelData.Chunk chunk, Generator.Context context)
             {
                 var chunkLeft                           = context.level.getChunk(chunk.bounds.position + new Vector2Int(-chunk.bounds.width, 0));
                 var chunkRight                          = context.level.getChunk(chunk.bounds.position + new Vector2Int(chunk.bounds.width, 0));
@@ -1475,11 +1475,11 @@ namespace tg.level
                     };
 
                     context.scheduleBatch(initializeGridJob, this.grid.size, this.grid.width);
-                    yield return State.Default;
+                    yield return StateBase.Default;
                 }
             }
 
-            private IEnumerator<State> passOne(Generator.Context context, Grid grid, JobHandle dependsOn)
+            private IEnumerator<StateBase> passOne(Generator.Context context, Grid grid, JobHandle dependsOn)
             {
                 this.state.Value.hasSolution(false);
 
@@ -1506,7 +1506,7 @@ namespace tg.level
                 }
             }
 
-            private IEnumerator<State> passTwo(Generator.Context context, Grid grid, JobHandle dependsOn)
+            private IEnumerator<StateBase> passTwo(Generator.Context context, Grid grid, JobHandle dependsOn)
             {
                 this.state.Value.hasSolution(false);
 
@@ -1538,13 +1538,13 @@ namespace tg.level
                     };
 
                     context.scheduleBatch(postJob, this.grid.size, this.grid.width, dependsOn);
-                    yield return State.Default;
+                    yield return StateBase.Default;
 
                     if(this.state.Value.hasFailed() && !this.state.Value.isRecoverable()) { break; }
                 }
             }
 
-            private IEnumerator<State> runWFC(Generator.Context context, Grid grid, LevelData.Layer layer, JobHandle dependsOn)
+            private IEnumerator<StateBase> runWFC(Generator.Context context, Grid grid, LevelData.Layer layer, JobHandle dependsOn)
             {
                 this.state.Value.hasFailed(false);
                 this.state.Value.allCollapsed(false);
@@ -1579,7 +1579,7 @@ namespace tg.level
                     dependsOn = context.schedule(propagateJob, dependsOn);
                     dependsOn = context.schedule(updateMapChunkDataJob, dependsOn);
 
-                    yield return State.Default;
+                    yield return StateBase.Default;
                 }
 
                 if(this.state.Value.hasFailed())
@@ -1592,7 +1592,7 @@ namespace tg.level
                 {
                     dependsOn = this.doWaveFunctionCollapse(context, layer, dependsOn);
                     // wait for WFC iteration result
-                    yield return State.Default;
+                    yield return StateBase.Default;
 
                     // if WFC run into an unsolvable state, try to recover by restaring WFC from previous step
                     if(this.state.Value.hasFailed() && this.weightsBuffer.canUndo)
@@ -1613,13 +1613,13 @@ namespace tg.level
                         dependsOn = this.checkAllCellsCollapsed(context, layer, dependsOn);
 
                         // hand over controll to pipeline executor
-                        yield return State.Default;
+                        yield return StateBase.Default;
                     }
                 }
 
                 this.checkSolution(context, layer, dependsOn);
 
-                yield return State.Default;
+                yield return StateBase.Default;
             }
 
             private JobHandle doWaveFunctionCollapse(Generator.Context context, LevelData.Layer layer, JobHandle dependsOn)
