@@ -51,43 +51,48 @@ namespace tg.game
 		private static void spawnEnemies(in LevelData levelData)
 		{
 			var defaultBehaviour = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(ApplicationData)).GetSingleton<ApplicationData>().defaultEnemyBehaviour;
-			//for(int i = 1; i < levelData.numChunks; i++)
-			//{
-			//	var rng = Random.CreateFromIndex((uint)i);
 
-			//	ref var chunk = ref levelData.getChunkById(i);
+			for(int i = 1; i < levelData.numChunks; i++)
+			{
+				var rng = Random.CreateFromIndex((uint)i);
 
-			//	int requested = 0;
-			//	while(requested < 3)
-			//	{
-			//		var tileId = rng.NextInt(chunk.data.Length);
-			//		var tile = chunk[tileId];
-			//		if(tile.constructionType != LevelData.Tile.ConstructionType.Walkable) { continue; }
+				ref var chunk = ref levelData.getChunkById(i);
 
-			//		var tilePosX = tileId % chunk.bounds.width;
-			//		var tilePoxY = tileId / chunk.bounds.width;
+				int requested = 0;
+				while(requested < 3)
+				{
+					var tileId = rng.NextInt(chunk.data.Length);
+					var tile = chunk[tileId];
+					if(tile.constructionType != LevelData.Tile.ConstructionType.Walkable) { continue; }
 
-			//		EventQueue.publish(new SpawnEnemyRequestEvent
-			//		{
-			//			amount = 1,
-			//			desc = new SpawnRequestDescription { location = new float3(chunk.bounds.position.x + tilePosX, chunk.bounds.position.y + tilePoxY, 0.0f) }
-			//		});
+					var tilePosX = tileId % chunk.bounds.width;
+					var tilePoxY = tileId / chunk.bounds.width;
 
-			//		requested++;
-			//	}
-			//}
+					EventQueue.publish(new SpawnEnemyRequestEvent
+					{
+						amount = 1,
+						desc = new SpawnRequestDescription
+						{
+							location = new float3(chunk.bounds.position.x + tilePosX, chunk.bounds.position.y + tilePoxY, 0.0f),
+							behaviour = defaultBehaviour
+						}
+					});
+
+					requested++;
+				}
+			}
 
 			EventQueue.publish(new SpawnEnemyRequestEvent
 			{
 				amount = 1,
 				desc = new SpawnRequestDescription
 				{
-					location	= new float3(10, 10, 0.0f),
-					behaviour	= defaultBehaviour
+					location = new float3(10.5f, 10.0f, 0.0f),
+					behaviour = defaultBehaviour
 				}
-            });
+			});
 
-            StartNew.spawnPlayer(in levelData);
+			StartNew.spawnPlayer(in levelData);
         }
 
 		private static void spawnPlayer(in LevelData levelData)
