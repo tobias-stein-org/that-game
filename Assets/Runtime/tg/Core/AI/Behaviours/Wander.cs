@@ -13,10 +13,15 @@ namespace tg.ai.behaviour
     public struct Wander : IBehaviourContext<Wander>
     {
         public float            steeringOffset;
-        public float            steeringRadius;
+        public float2           steeringRadius;
+
+        public float            maxWanderRange;
 
         [NonSerialized]
         public float2           steeringForce;
+
+        [NonSerialized]
+        public float2           spawnPoint;
 
         public static Wander    Default
         {
@@ -24,9 +29,11 @@ namespace tg.ai.behaviour
             {
                 return new Wander
                 {
-                    steeringOffset  = 2.5f,
-                    steeringRadius  = 1.5f,
-                    steeringForce   = float2.zero
+                    steeringOffset      = 3.5f,
+                    steeringRadius      = new float2(0.1f, 1.0f),
+                    maxWanderRange      = 0.0f,
+                    steeringForce       = float2.zero,
+                    spawnPoint          = float2.zero
                 };
             }
         }
@@ -47,15 +54,9 @@ namespace tg.ai.behaviour
             {
                 var position                    = rb.Value.position;
                 var velocity                    = rb.Value.velocity;
-                var forward                     = velocity.normalized;
-
-                var theta                       = math.PI *
-                    // [-1.0; +1.0]
-                    //UnityEngine.Random.Range(-1.0f, 1.0f);
-                    noise.snoise(position);
-                    //noise.snoise(velocity);
-                    //noise.snoise(forward);
-
+                var speed                       = velocity.magnitude;
+                var forward                     = new Vector2(wander.ValueRO.steeringForce.x, wander.ValueRO.steeringForce.y).normalized;
+                var theta                       = math.PI * UnityEngine.Random.Range(-1.0f, 1.0f);
                 var wanderShapeHeading          = new Vector2(math.cos(theta), math.sin(theta));
 
                 /*
@@ -66,14 +67,35 @@ namespace tg.ai.behaviour
                  [E]-> forward
                  
                  */
-                wander.ValueRW.steeringForce    = (forward * wander.ValueRO.steeringOffset) + (wanderShapeHeading * wander.ValueRO.steeringRadius);
-                var wanderForceN                = math.normalize(wander.ValueRO.steeringForce);
+                var steeringForce                   = (forward * wander.ValueRO.steeringOffset) + (wanderShapeHeading * math.lerp(wander.ValueRO.steeringRadius.y, wander.ValueRO.steeringRadius.x, speed));
 
-                ref var behaviour               = ref this.getBehaviourContext(entity);
+                
+
+                wander.ValueRW.steeringForce        = steeringForce;
+                var wanderForceN                    = math.normalize(wander.ValueRO.steeringForce);
+
+
+                ref var behaviour                   = ref this.getBehaviourContext(entity);
                 {
-                    var context                 = BehaviourContext.zero;
-                    var segment                 = BehaviourContext.dir2seg(wanderForceN);
-                    context[segment]            = 1.0f - math.abs(Vector2.Dot(wanderForceN, forward));
+                    var context                     = BehaviourContext.zero;
+                    var segmentWander               = BehaviourContext.dir2seg(wanderForceN);
+                    //context[segmentWander]          = 1.0f;
+                    var dot                         = math.abs(Vector2.Dot(wanderForceN, forward));
+                    context[segmentWander]          = dot * dot;
+
+                    if(wander.ValueRO.maxWanderRange > 1e-5f)
+                    {
+                        var spawnPoint              = new Vector2(wander.ValueRO.spawnPoint.x, wander.ValueRO.spawnPoint.y);
+
+                        // draw gravity pull to spawn point
+                        var diffSpawn               = spawnPoint - (Vector2)position;
+                        var distance                = diffSpawn.magnitude;
+                        var pull                    = math.clamp(distance / math.max(wander.ValueRO.maxWanderRange, 1.0f), 0.0f, 1.0f);
+                        var segmentReturn           = BehaviourContext.dir2seg(diffSpawn.normalized);
+
+                        context[segmentReturn]      = pull * pull;
+                    }
+
                     behaviour.context           = context;
                 }
             }

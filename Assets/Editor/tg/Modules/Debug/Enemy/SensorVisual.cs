@@ -11,6 +11,7 @@ namespace tg.editor.debug
     using tg.ai.behaviour;
     using tg.debug;
     using tg.application;
+    using Codice.CM.Common;
 
     [CustomEditor(typeof(EnemyDebugging))]
     public class SensorVisual : Editor
@@ -46,9 +47,9 @@ namespace tg.editor.debug
             this.behaviourValueColor = new Gradient();
         
             GradientColorKey[] colorKeys = new GradientColorKey[3];
-            colorKeys[0] = new GradientColorKey(Color.red,   0.0f);
+            colorKeys[0] = new GradientColorKey(Color.red,   0.4f);
             colorKeys[1] = new GradientColorKey(Color.white, 0.5f);
-            colorKeys[2] = new GradientColorKey(Color.green, 1.0f);
+            colorKeys[2] = new GradientColorKey(Color.green, 0.6f);
         
             GradientAlphaKey[] alphaKeys = new GradientAlphaKey[3];
             alphaKeys[0] = new GradientAlphaKey(1.0f,        0.0f);
@@ -80,17 +81,22 @@ namespace tg.editor.debug
 
         private void drawBehaviourContext()
         {
-            var context     = this.target.behaviourContextData;
+            var behaviour   = this.target.behaviourContextData;
+            var context0    = behaviour.context;
+            var context1    = behaviour.context1;
             var position    = this.target.transform.position;
             var scale       = 2.0f;
 
             this.drawBehaviour();
 
-            if(!context.context.isValid)
+            if(!context0.isValid)
             {
                 Handles.Label(position, $"Behaviour Context not available!", this.behaviourWeightLabel);
                 return;
             }
+
+            context0    = behaviour.context.normalize();
+            context1    = behaviour.context1.normalize();
 
             Handles.color = Color.white * 0.5f;
             Handles.DrawWireDisc(position, Vector3.forward, scale);
@@ -101,8 +107,8 @@ namespace tg.editor.debug
 
             var i           = 0;
 
-            var min         = context.context[0];
-            var max         = context.context[0];
+            var min         = context0[0];
+            var max         = context0[0];
             var imin        = 0;
             var imax        = 0;
 
@@ -114,10 +120,10 @@ namespace tg.editor.debug
                 if((this.target.sensorDetails & EnemyDebugging.SensorDetails.ShowTargetSegment) != 0) { Handles.Label(position + offset, $"{i}"); }
 
                 // values are expected to be in the range of [-1; +1]
-                var value   = context.context[i];
+                var value   = context0[i];
                 
                 points[i]   = position + (offset * Mathf.Abs(value));
-                points1[i]  = position + (offset * Mathf.Abs(context.context1[i]));
+                points1[i]  = position + (offset * Mathf.Abs(context1[i]));
                 colors[i]   = this.behaviourValueColor.Evaluate((value + 1.0f) * 0.5f);
 
                 if(value > max) { max = value; imax = i; }
@@ -129,7 +135,7 @@ namespace tg.editor.debug
             colors[i]       = colors[0];
 
             Handles.color = Color.white * 0.33f;
-            Handles.DrawAAPolyLine(4.0f, points1);
+            //Handles.DrawAAPolyLine(4.0f, points1);
             Handles.DrawAAPolyLine(6.0f, colors, points);
 
             Handles.color   = Color.cyan;
@@ -138,7 +144,7 @@ namespace tg.editor.debug
             Handles.color   = Color.magenta;
             Handles.DrawLine(position, position + (Vector3)BehaviourContext.segmentDir[imin], 1.0f);
 
-            Handles.Label(position, $"W: {context.weight}, B: {context.blend}", this.behaviourWeightLabel);
+            Handles.Label(position, $"W: {behaviour.weight}, B: {behaviour.blend}", this.behaviourWeightLabel);
         }
 
         private void drawBehaviour()
@@ -167,20 +173,44 @@ namespace tg.editor.debug
         {
             var position                    = this.target.transform.position;
             var velocity                    = this.target.GetComponent<Rigidbody2D>().velocity;
-            var forward                     = velocity.normalized;
+            var speed                       = velocity.magnitude;
+            var forward                     = new Vector2(data.steeringForce.x, data.steeringForce.y).normalized;
 
             // draw forward vector (heading)
-            Handles.DrawLine(position, position + (Vector3)forward, 3.0f);
+            Handles.DrawLine(position, position + (Vector3)forward, 1.5f);
 
             // draw wander steering shape
             var steeringOffset              = (Vector3)forward * data.steeringOffset;
             Handles.DrawDottedLine(position, position + steeringOffset, 4.0f);
-            Handles.DrawWireDisc(position + steeringOffset, Vector3.forward, data.steeringRadius);
+
+            Handles.DrawWireDisc(position + steeringOffset, Vector3.forward, math.lerp(data.steeringRadius.y, data.steeringRadius.x, speed));
 
             // draw steering force
             var steeringForce               = position + new Vector3(data.steeringForce.x, data.steeringForce.y, 0.0f);
             Handles.DrawDottedLine(position, steeringForce, 4.0f);
             Handles.DrawSolidDisc(steeringForce, Vector3.forward, 0.1f);
+
+            if(data.maxWanderRange > 1e-5f)
+            {
+                var spawnPoint              = new Vector2(data.spawnPoint.x, data.spawnPoint.y);
+
+                // draw spawn point
+                Handles.DrawSolidDisc(spawnPoint, Vector3.forward, 0.2f);
+                // draw max allowed wander range
+                Handles.DrawWireDisc(spawnPoint, Vector3.forward, data.maxWanderRange);
+                // draw offset from spawn point
+                Handles.DrawDottedLine(position, steeringForce, 4.0f);
+
+                // draw gravity pull to spawn point
+                var diffSpawn               = spawnPoint - (Vector2)position;
+                var distance                = diffSpawn.magnitude;
+                var dirSpawn                = diffSpawn.normalized;
+                var pull                    = distance / math.max(data.maxWanderRange, 1.0f);
+
+                Handles.color               = Color.yellow * pull;
+                Handles.DrawLine(position, (Vector2)position + (dirSpawn * pull), 3.0f);
+                Handles.color               = Color.yellow;
+            }
         }
 
         private void drawBehaviour(Avoid data)
