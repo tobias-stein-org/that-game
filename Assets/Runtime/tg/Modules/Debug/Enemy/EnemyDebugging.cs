@@ -8,7 +8,6 @@ namespace tg.debug
     using tg.ai;
     using tg.ai.behaviour;
     using tg.enemy;
-    using static tg.level.generator.Generator;
 
     public class EnemyDebugging : MonoBehaviour
     {
