@@ -430,6 +430,29 @@ namespace tg.ai
                 (v15 * rhs.v15);
 	    }
 
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+	    public BehaviourContext clamp(float min = 0.0f, float max = 1.0f)
+	    {
+		    return new BehaviourContext(
+                (half)math.clamp(v00, min, max),
+                (half)math.clamp(v01, min, max),
+                (half)math.clamp(v02, min, max),
+                (half)math.clamp(v03, min, max),
+                (half)math.clamp(v04, min, max),
+                (half)math.clamp(v05, min, max),
+                (half)math.clamp(v06, min, max),
+                (half)math.clamp(v07, min, max),
+                (half)math.clamp(v08, min, max),
+                (half)math.clamp(v09, min, max),
+                (half)math.clamp(v10, min, max),
+                (half)math.clamp(v11, min, max),
+                (half)math.clamp(v12, min, max),
+                (half)math.clamp(v13, min, max),
+                (half)math.clamp(v14, min, max),
+                (half)math.clamp(v15, min, max)
+            );
+	    }
+
         /// <summary>
         /// Converts all values in range of [-1;+1]
         /// </summary>
