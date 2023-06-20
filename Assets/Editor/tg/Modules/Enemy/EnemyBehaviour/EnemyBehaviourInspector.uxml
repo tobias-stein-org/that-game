@@ -11,21 +11,25 @@
             <ui:Slider picking-mode="Ignore" label="Frame Blending" value="0" high-value="1" name="frameBlending" show-input-field="true" />
             <ui:Slider picking-mode="Ignore" label="Blurring" value="1" high-value="16" name="contextBlurring" show-input-field="true" />
             <ui:Foldout text="Wander" name="wander">
+                <ui:Toggle label="Enable on start" name="enabled" binding-path="wanderEnabled" />
                 <uie:PropertyField name="wander" />
                 <ui:Slider picking-mode="Ignore" label="Weight" value="1" high-value="1" name="weight" show-input-field="true" />
                 <ui:Slider picking-mode="Ignore" label="Frame Blend" value="0" high-value="1" name="blend" show-input-field="true" />
             </ui:Foldout>
             <ui:Foldout text="Avoid" name="avoid">
+                <ui:Toggle label="Enable on start" name="enabled" binding-path="avoidEnabled" />
                 <uie:PropertyField name="avoid" />
                 <ui:Slider picking-mode="Ignore" label="Weight" value="1" high-value="1" name="weight" show-input-field="true" />
                 <ui:Slider picking-mode="Ignore" label="Frame Blend" value="0" high-value="1" name="blend" show-input-field="true" />
             </ui:Foldout>
             <ui:Foldout text="Flee" name="flee">
+                <ui:Toggle label="Enable on start" name="enabled" binding-path="fleeEnabled" />
                 <uie:PropertyField name="flee" />
                 <ui:Slider picking-mode="Ignore" label="Weight" value="1" high-value="1" name="weight" show-input-field="true" />
                 <ui:Slider picking-mode="Ignore" label="Frame Blend" value="0" high-value="1" name="blend" show-input-field="true" />
             </ui:Foldout>
             <ui:Foldout text="Pursue" name="pursue">
+                <ui:Toggle label="Enable on start" name="enabled" binding-path="pursueEnabled" />
                 <uie:PropertyField name="pursue" />
                 <ui:Slider picking-mode="Ignore" label="Weight" value="1" high-value="1" name="weight" show-input-field="true" />
                 <ui:Slider picking-mode="Ignore" label="Frame Blend" value="0" high-value="1" name="blend" show-input-field="true" />

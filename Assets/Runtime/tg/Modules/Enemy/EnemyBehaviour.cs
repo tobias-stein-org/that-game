@@ -28,18 +28,22 @@ namespace tg.enemy
         public Wander           wander              = Wander.Default;
         public float            wanderWeight        = 1.0f;
         public float            wanderBlend         = 0.0f;
+        public bool             wanderEnabled       = true;
 
         public Avoid            avoid               = Avoid.Default;
         public float            avoidWeight         = 1.0f;
         public float            avoidBlend          = 0.0f;
+        public bool             avoidEnabled        = true;
 
         public Flee             flee                = Flee.Default;
         public float            fleeWeight          = 1.0f;
         public float            fleeBlend           = 0.0f;
+        public bool             fleeEnabled         = false;
 
         public Pursue           pursue              = Pursue.Default;
         public float            pursueWeight        = 1.0f;
         public float            pursueBlend         = 0.0f;
+        public bool             pursueEnabled       = false;
 
         public float            frameBlending       = 0.0f;
         public float            contextBlurring     = 1.0f;
