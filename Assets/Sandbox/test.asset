@@ -14,24 +14,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activeBehaviour: 11
   wander:
-    steeringOffset: 4.5
-    steeringRadius: 0.5
-  wanderWeight: 0.39999998
-  wanderBlend: 0.98999995
+    steeringOffset: 3.5
+    steeringRadius:
+      x: 0.2
+      y: 1.5
+    stayCloseToSpawn: 1
+  wanderWeight: 1
+  wanderBlend: 0
+  wanderEnabled: 1
   avoid:
     range: 2
   avoidWeight: 1
   avoidBlend: 0
+  avoidEnabled: 1
   fleeWeight: 1
   fleeBlend: 0
+  fleeEnabled: 0
   pursue:
     minDistance: 1.5
   pursueWeight: 0.59999996
   pursueBlend: 0
-  frameBlending: 0.5
-  contextBlurring: 1.5
+  pursueEnabled: 0
+  frameBlending: 0.14999999
+  contextBlurring: 0.8
   perceptionRange: 5
-  maxPerceptions: 1
+  maxPerceptions: 16
   allowSeeHidden: 0
   filter:
     serializedVersion: 2
