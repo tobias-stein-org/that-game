@@ -1,6 +1,7 @@
 using UnityEngine;
 
 using Unity.Entities;
+using Unity.Transforms;
 
 namespace tg.ai
 {
@@ -12,7 +13,7 @@ namespace tg.ai
     /// This system will update all available sensors in the scene.
     /// </summary>
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    [UpdateInGroup(typeof(TransformSystemGroup))]
     public partial struct Perception : ISystem
     {
         public void OnCreate(ref SystemState state)

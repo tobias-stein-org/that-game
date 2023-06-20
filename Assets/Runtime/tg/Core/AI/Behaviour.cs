@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Transforms;
 
 namespace tg.ai
 {
@@ -20,5 +21,7 @@ namespace tg.ai
     /// <summary>
     /// Defines a common system groud where all AI context behaviour systems should be placed into.
     /// </summary>
+    [UpdateAfter(typeof(TransformSystemGroup))]
+    [UpdateBefore(typeof(LateSimulationSystemGroup))]
     public partial class BehaviourSystemGroup : ComponentSystemGroup {}
 }
