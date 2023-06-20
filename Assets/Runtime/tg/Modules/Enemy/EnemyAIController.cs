@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Collections;
+using Unity.Mathematics;
 
 namespace tg.enemy
 {
@@ -14,6 +15,7 @@ namespace tg.enemy
     {
         readonly DynamicBuffer<BehaviourContextData>        behaviourContext;
         readonly RefRO<Enemy>                               enemy;
+        readonly RefRW<EnemyInputData>                      inputData;
 
         public  Entity                                      entity { get { return this.enemy.ValueRO.entity; } }
 
@@ -21,17 +23,26 @@ namespace tg.enemy
         {
             get { return this.behaviourContext.Reinterpret<BehaviourSolver.BehaviourContextDataInternal>()[IBehaviourContext<Solved>.ID]; }
         }
+
+        public EnemyInputData                               input
+        {
+            get { return this.inputData.ValueRO; }
+            set { this.inputData.ValueRW = value; }
+        }
     }
 
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
-    [UpdateAfter(typeof(BehaviourSolver))]
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     [RequireMatchingQueriesForUpdate]
     public partial struct EnemyAIController : ISystem
     {
+        private Unity.Mathematics.Random  random;
+
         public void OnCreate(ref SystemState state)
         {
             StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<EnemyAIController>(state.SystemHandle));
+
+            this.random = Unity.Mathematics.Random.CreateFromIndex((uint)state.SystemHandle.GetHashCode());
         }
 
         public void OnUpdate(ref SystemState state)
@@ -60,27 +71,29 @@ namespace tg.enemy
                     }
                 }
 
-                var contextData = aiEnemy.solvedContext;
-                var context0    = contextData.context;
-                var context1    = contextData.context1;
-                var max0        = context0[0];
-                var max1        = context1[0];
-                var imax0       = 0;
-                var imax1       = 0;
+                var behaviour       = aiEnemy.solvedContext;
+                var context         = behaviour.context.normalize();
+                var csum            = context.csum();
 
-                for(int i = 0; i < BehaviourContext.segmentDir.Length; i++)
+                if(csum > 1e-5f)
                 {
-                    var value0   = context0[i];
-                    var value1   = context1[i];
+                    var rng         = this.random.NextFloat(csum);
+                    var i           = 0;
+                    var acc         = 0.0f;
+                    for(i           = 0; i < context.length - 1; i++)
+                    {
+                        if(acc      >= rng) { break; }
+                        acc         += context[i];
+                    }
 
-                    if(value0 > max0) { max0 = value0; imax0 = i; }
-                    if(value1 > max1) { max1 = value0; imax1 = i; }
+                    var input       = aiEnemy.input;
+
+                    rb.Value.velocity = Vector2.LerpUnclamped(BehaviourContext.segmentDir[i], BehaviourContext.segmentDir[input.lastBehaviourContextDecision], rb.Value.velocity.magnitude * behaviour.blend);
+                    input.lastBehaviourContextDecision = (byte)i;
+
+
+                    aiEnemy.input   = input;
                 }
-
-                var dir0 = BehaviourContext.segmentDir[imax0];
-                var dir1 = BehaviourContext.segmentDir[imax1];
-
-                rb.Value.velocity = Vector2.Lerp(dir0, dir1, contextData.blend);
             }
         }
     }
