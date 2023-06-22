@@ -155,6 +155,7 @@ MonoBehaviour:
   playerPrefab: {fileID: 1364815521386583943, guid: ba0e6a31a430b43748ec0fa1423ab1f1, type: 3}
   enemyPrefab: {fileID: 3150801310722615856, guid: c8595e6206d74414ab6daef792ad2b6e, type: 3}
   defaultEnemyBehaviour: {fileID: 11400000, guid: b25b5e70f7f5f40b59bfa86460b9ce22, type: 2}
+  abilities: {fileID: 102900000, guid: b3b2a27754ab648648667c0a5a21a416, type: 3}
   inputActions: {fileID: -944628639613478452, guid: 8629c9f542ffb4946b9ddcf726e6d840, type: 3}
 --- !u!4 &2144347476
 Transform:
