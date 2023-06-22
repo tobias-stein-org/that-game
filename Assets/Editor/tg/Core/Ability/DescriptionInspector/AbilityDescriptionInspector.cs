@@ -36,6 +36,8 @@ namespace tg.editor.ability
                 desc.RegisterValueChangedCallback((ChangeEvent<string> e) => { FixedStringMethods.CopyFrom(ref this.target.meta.description, e.newValue); });
             }
 
+            ui.Q<VisualElement>("actions").Q<Button>("delete").clicked += this.deleteAbility;
+
             this.root.Add(ui);
             this.root.Add(this.createAbilityPropertView());
 
@@ -90,6 +92,14 @@ namespace tg.editor.ability
             }
 
             return view;
+        }
+
+        private void deleteAbility()
+        {
+            if(EditorUtility.DisplayDialog("Delete Ability", $"Do your really want to delete the '{this.target.meta.name}' ability?", "Delete", "Abort"))
+            {
+                AbilityEditor.deleteAbility(this.target);
+            }
         }
     }
 }

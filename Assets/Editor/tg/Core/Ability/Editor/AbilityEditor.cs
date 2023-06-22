@@ -21,6 +21,99 @@ namespace tg.editor.ability
         private const string    ABILITY_DIR     = "Assets/Abilities";
         private const string    ABILITY_LABEL   = "Ability";
 
+
+        private static void createAbility(string newAbilityFolder, string newAbilityName)
+        {
+            var activeScene                 = EditorSceneManager.GetActiveScene();
+            var abilitiesScene              = openAbilitySubScene();
+            {
+                AssetDatabase.CreateFolder(AbilityEditor.ABILITY_DIR, newAbilityName);
+            
+                var description             = ScriptableObject.CreateInstance<AbilityDescription>();
+
+                FixedStringMethods.CopyFrom(ref description.meta.name, newAbilityName);
+                FixedStringMethods.CopyFrom(ref description.meta.description, "Description missing.");
+
+                var newAbilityAsset         = $"{newAbilityFolder}/AbilityDesc.asset";
+                var newAbilityPrefab        = $"{newAbilityFolder}/AbilityPref.prefab";
+                                        
+                var newAbilityGO            = new GameObject(newAbilityName);
+
+                description.abilityPrefab   = PrefabUtility.SaveAsPrefabAsset(newAbilityGO, newAbilityPrefab);
+                GameObject.DestroyImmediate(newAbilityGO);
+
+                AssetDatabase.CreateAsset(description, newAbilityAsset);
+                AssetDatabase.SetLabels(description, new string[] { AbilityEditor.ABILITY_LABEL });
+
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+
+                var abilityGO = new GameObject(newAbilityName);
+                {
+                    abilityGO.transform.SetParent(null, true);
+                    var ability = abilityGO.AddComponent<AbilityAuthering>();
+                    {
+                        ability.description = description;
+                    }
+                }
+                SceneManager.MoveGameObjectToScene(abilityGO, abilitiesScene);
+                EditorSceneManager.MarkSceneDirty(abilitiesScene);
+
+
+                Selection.activeObject      = description;
+            }
+            EditorSceneManager.SaveScene(abilitiesScene);
+            EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
+        }
+
+        internal static void deleteAbility(AbilityDescription description)
+        {
+            var activeScene                 = EditorSceneManager.GetActiveScene();
+            var abilitiesScene              = openAbilitySubScene();
+            {
+                try
+                {
+                    var abilityGO           = abilitiesScene.GetRootGameObjects().First(GO => GO.name == description.meta.name);
+                    GameObject.DestroyImmediate(abilityGO);
+                    EditorSceneManager.MarkSceneDirty(abilitiesScene);
+                }
+                catch(System.Exception e) { UnityEngine.Debug.LogException(e); }
+            }
+            EditorSceneManager.SaveScene(abilitiesScene);
+            EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
+
+            try
+            {
+                AssetDatabase.DeleteAsset(System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(description)));
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+            catch(System.Exception e) { UnityEngine.Debug.LogException(e); }
+         
+
+            if(EditorWindow.HasOpenInstances<AbilityEditor>())
+            {
+                var wnd = GetWindow<AbilityEditor>();
+                wnd.refreshAbilities();
+                wnd.clearInspector();
+                
+            }
+        }
+
+        private static Scene openAbilitySubScene()
+        {
+            var abilitiesScene  = $"{AbilityEditor.ABILITY_DIR}/abilities.unity";
+            var exists          = System.IO.File.Exists(abilitiesScene);
+
+            if(!exists)
+            {
+                // create new empty scene
+                EditorSceneManager.SaveScene(EditorSceneManager.NewScene(NewSceneSetup.EmptyScene), abilitiesScene);
+            }
+
+            return EditorSceneManager.OpenScene(abilitiesScene, OpenSceneMode.Additive);
+        }
+
         /// <summary>
         /// Display a small pop-up dialog with an text field input for the new ability name.
         /// </summary>
@@ -96,10 +189,9 @@ namespace tg.editor.ability
                 else
                 {
                     
-                    this.create(newAbilityFolder);
+                    AbilityEditor.createAbility(newAbilityFolder, this.newAbilityName);
                     this.Close();
 
-                    
                     if(EditorWindow.HasOpenInstances<AbilityEditor>())
                     {
                         GetWindow<AbilityEditor>().refreshAbilities(this.newAbilityName);
@@ -110,64 +202,6 @@ namespace tg.editor.ability
             void cancel()
             {
                 this.Close();
-            }
-
-            void create(string newAbilityFolder)
-            {
-                var activeScene                 = EditorSceneManager.GetActiveScene();
-                var abilitiesScene              = this.openAbilitySubScene();
-                {
-                    AssetDatabase.CreateFolder(AbilityEditor.ABILITY_DIR, this.newAbilityName);
-                
-                    var description             = ScriptableObject.CreateInstance<AbilityDescription>();
-
-                    FixedStringMethods.CopyFrom(ref description.meta.name, this.newAbilityName);
-                    FixedStringMethods.CopyFrom(ref description.meta.description, "Description missing.");
-
-                    var newAbilityAsset         = $"{newAbilityFolder}/AbilityDesc.asset";
-                    var newAbilityPrefab        = $"{newAbilityFolder}/AbilityPref.prefab";
-                                            
-                    var newAbilityGO            = new GameObject(this.newAbilityName);
-
-                    description.abilityPrefab   = PrefabUtility.SaveAsPrefabAsset(newAbilityGO, newAbilityPrefab);
-                    GameObject.DestroyImmediate(newAbilityGO);
-
-                    AssetDatabase.CreateAsset(description, newAbilityAsset);
-                    AssetDatabase.SetLabels(description, new string[] { AbilityEditor.ABILITY_LABEL });
-
-                    AssetDatabase.SaveAssets();
-                    AssetDatabase.Refresh();
-
-                    var abilityGO = new GameObject(newAbilityName);
-                    {
-                        abilityGO.transform.SetParent(null, true);
-                        var ability = abilityGO.AddComponent<AbilityAuthering>();
-                        {
-                            ability.description = description;
-                        }
-                    }
-                    SceneManager.MoveGameObjectToScene(abilityGO, abilitiesScene);
-                    EditorSceneManager.MarkSceneDirty(abilitiesScene);
-
-
-                    Selection.activeObject      = description;
-                }
-                EditorSceneManager.SaveScene(abilitiesScene);
-                EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
-            }
-
-            Scene openAbilitySubScene()
-            {
-                var abilitiesScene  = $"{AbilityEditor.ABILITY_DIR}/abilities.unity";
-                var exists          = System.IO.File.Exists(abilitiesScene);
-
-                if(!exists)
-                {
-                    // create new empty scene
-                    EditorSceneManager.SaveScene(EditorSceneManager.NewScene(NewSceneSetup.EmptyScene), abilitiesScene);
-                }
-
-                return EditorSceneManager.OpenScene(abilitiesScene, OpenSceneMode.Additive);
             }
         }
 
@@ -216,6 +250,7 @@ namespace tg.editor.ability
         private VisualTreeAsset     visualTreeAsset = default;
 
         private VisualElement       leftPanel;
+        private VisualElement       rightPanel;
         private InspectorElement    abilityInspector;
 
         private List<AbilityDescription>   abilities;
@@ -241,15 +276,26 @@ namespace tg.editor.ability
                     this.leftPanel.Q<ToolbarButton>("create").clicked += () => CreateNewAbilityDialog.show();
                     this.leftPanel.Q<ToolbarSearchField>("search").RegisterValueChangedCallback((ChangeEvent<string> e) => { this.refreshFiltered(e.newValue); });
                 }
-                this.abilityInspector = new InspectorElement();
+
+                this.rightPanel = new VisualElement();
+                {
+                    this.clearInspector();
+                }
 
                 splitView.Add(this.leftPanel);
-                splitView.Add(this.abilityInspector);
+                splitView.Add(this.rightPanel);
             }
             this.rootVisualElement.Add(splitView);
 
             this.setupAbilityList();
             this.refreshAbilities();
+        }
+
+        internal void clearInspector()
+        {
+            this.rightPanel.Clear();
+            this.abilityInspector = new InspectorElement();
+            this.rightPanel.Add(this.abilityInspector);
         }
 
         internal void setupAbilityList()

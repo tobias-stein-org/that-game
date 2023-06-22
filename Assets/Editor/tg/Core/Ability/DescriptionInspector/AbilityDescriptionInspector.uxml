@@ -1,4 +1,7 @@
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <ui:VisualElement name="actions" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); align-self: flex-end; flex-direction: row; min-height: auto; height: 24px; margin-top: 6px; margin-bottom: 6px;">
+        <ui:Button text="Delete Ability" display-tooltip-when-elided="true" name="delete" />
+    </ui:VisualElement>
     <ui:TextField picking-mode="Ignore" label="Name" name="name" readonly="true" focusable="true" />
     <ui:TextField picking-mode="Ignore" label="Description" value="Description missing." name="description" multiline="true" style="min-height: 60px;" />
     <ui:Toggle label="Passive" name="isPassive" binding-path="meta.isPassive" />
