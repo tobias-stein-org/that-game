@@ -19,8 +19,10 @@ namespace tg.ability
                 {
                     AddComponent<AbilityData>(abilityEntity, new AbilityData
                     {
-                        ability = new assets.WeakAssetReference<AbilityDescription>(authoring.description)
+                        abilityPrefab = new assets.WeakAssetReference<GameObject>(authoring.description.abilityPrefab)
                     });
+
+                    AddComponent<AbilityMeta>(abilityEntity, authoring.description.meta);
                 }
             }
         }
