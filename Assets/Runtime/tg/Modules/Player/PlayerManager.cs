@@ -82,6 +82,9 @@ namespace tg.player
         {
             var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
             {
+#if UNITY_EDITOR
+                ECB.SetName(playerEntity, instance.name);
+#endif
                 ECB.AddComponent(playerEntity, new ComponentTypeSet(
                    typeof(Player),
                    typeof(PlayerInputData)

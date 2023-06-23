@@ -7,11 +7,13 @@ namespace tg.game
 	using tg.events;
 	using tg.enemy;
 	using tg.level;
+	using tg.ability;
+
     using tg.level.events;
 	using tg.player.events;
 	using tg.enemy.events;
 	using tg.game.events;
-    using static tg.level.LevelData;
+	using tg.ability.events;
 
     /// <summary>
     /// Start new Game does the following things:
@@ -44,7 +46,6 @@ namespace tg.game
 
 		void onNewLevelGeneratedEvent(NewLevelGeneratedEvent e)
 		{
-			EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
 			StartNew.spawnEnemies(in e.levelData);
 		}
 
@@ -105,6 +106,19 @@ namespace tg.game
                 -1.0f);
 
 			EventQueue.publish(new SpawnPlayerRequestEvent { location = spawnLocation });
+		}
+
+		void onPlayerSpawnedEvent(PlayerSpawnedEvent e)
+		{
+			var abilities = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(AbilityData)).ToEntityArray(Unity.Collections.Allocator.Temp);
+			if(abilities.Length > 0)
+			{
+				EventQueue.publish(new LearnAbilityEvent { entity = e.player.entity, ability = abilities[0] });
+			}
+
+			abilities.Dispose();
+
+			EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
 		}
     }
 }
