@@ -15,6 +15,7 @@ namespace tg.editor.ability
 {
     using tg.ability;
     using Unity.Entities.UniversalDelegates;
+    using static tg.ai.Sensor;
 
     public class AbilityEditor : EditorWindow
     {
@@ -95,8 +96,7 @@ namespace tg.editor.ability
             {
                 var wnd = GetWindow<AbilityEditor>();
                 wnd.refreshAbilities();
-                wnd.clearInspector();
-                
+                Selection.activeObject = null;
             }
         }
 
@@ -249,15 +249,13 @@ namespace tg.editor.ability
         [SerializeField]
         private VisualTreeAsset     visualTreeAsset = default;
 
-        private VisualElement       leftPanel;
-        private VisualElement       rightPanel;
-        private InspectorElement    abilityInspector;
+        private VisualElement               list;
 
-        private List<AbilityDescription>   abilities;
-        private List<AbilityDescription>   abilitiesFiltered;
+        private List<AbilityDescription>    abilities;
+        private List<AbilityDescription>    abilitiesFiltered;
 
-        private ToolbarSearchField  search;
-        private ListView            abilityList;
+        private ToolbarSearchField          search;
+        private ListView                    abilityList;
 
         [MenuItem("tg/Ability/Editor")]
         public static void OpenEditorWindow()
@@ -269,38 +267,21 @@ namespace tg.editor.ability
 
         public void CreateGUI()
         {
-            var splitView       = new TwoPaneSplitView(0, 300, TwoPaneSplitViewOrientation.Horizontal);
+            this.list  = this.visualTreeAsset.Instantiate();
             {
-                this.leftPanel  = this.visualTreeAsset.Instantiate();
-                {
-                    this.leftPanel.Q<ToolbarButton>("create").clicked += () => CreateNewAbilityDialog.show();
-                    this.leftPanel.Q<ToolbarSearchField>("search").RegisterValueChangedCallback((ChangeEvent<string> e) => { this.refreshFiltered(e.newValue); });
-                }
-
-                this.rightPanel = new VisualElement();
-                {
-                    this.clearInspector();
-                }
-
-                splitView.Add(this.leftPanel);
-                splitView.Add(this.rightPanel);
+                this.list.Q<ToolbarButton>("create").clicked += () => CreateNewAbilityDialog.show();
+                this.list.Q<ToolbarSearchField>("search").RegisterValueChangedCallback((ChangeEvent<string> e) => { this.refreshFiltered(e.newValue); });
             }
-            this.rootVisualElement.Add(splitView);
+
+            this.rootVisualElement.Add(list);
 
             this.setupAbilityList();
             this.refreshAbilities();
         }
 
-        internal void clearInspector()
-        {
-            this.rightPanel.Clear();
-            this.abilityInspector = new InspectorElement();
-            this.rightPanel.Add(this.abilityInspector);
-        }
-
         internal void setupAbilityList()
         {
-            this.abilityList                        = this.leftPanel.Q<ListView>("abilities");
+            this.abilityList                        = this.list.Q<ListView>("abilities");
             {
                 this.abilityList.makeItem           = () => new AbilityEntry();
 
@@ -309,7 +290,10 @@ namespace tg.editor.ability
                     var abilityEntry                = ve as AbilityEntry;
                     abilityEntry.abilityDesc        = this.abilitiesFiltered[i];
                     abilityEntry.userData           = this.abilitiesFiltered[i];
-                    abilityEntry.RegisterCallback((MouseDownEvent e) => { this.abilityInspector.Bind(new SerializedObject(this.abilitiesFiltered[i])); });
+                    abilityEntry.RegisterCallback((MouseDownEvent e) =>
+                    {
+                        Selection.activeObject      = this.abilitiesFiltered[i];
+                    });
                 };
 
                 this.abilityList.fixedItemHeight    = 28.0f;
@@ -330,14 +314,12 @@ namespace tg.editor.ability
                 .Select(assetPath   => (AbilityDescription)AssetDatabase.LoadMainAssetAtPath(assetPath))
                 .ToList();
             
-            this.refreshFiltered(this.leftPanel.Q<ToolbarSearchField>("search").value);
+            this.refreshFiltered(this.list.Q<ToolbarSearchField>("search").value);
 
             if(select != null)
             {
                 var index = this.abilitiesFiltered.FindIndex(ability => ability.meta.name.ToString() == select);
                 this.abilityList.selectedIndex = index;
-                this.abilityInspector.Bind(new SerializedObject(this.abilitiesFiltered[index]));
-
             }
         }
 
