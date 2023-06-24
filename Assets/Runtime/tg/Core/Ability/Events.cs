@@ -8,10 +8,10 @@ namespace tg.ability.events
     /// <summary>
     /// Event send by an entity player/enemy to learn an ability.
     /// </summary>
-    public struct LearnAbilityEvent : IEvent
+    public struct LearnAbilityEvent<T> : IEvent
     {
         public Entity entity;
-        public Entity ability;
+        public T ability;
     }
 
     /// <summary>

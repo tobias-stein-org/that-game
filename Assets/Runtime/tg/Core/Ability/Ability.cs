@@ -104,7 +104,7 @@ namespace tg.ability
 
         [BurstCompile]
         [CreateAfter(typeof(EventQueue))]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenInitializing, false)]
         public partial struct AbilitySystem : ISystem, IEventListener<AbilitySystem>
         {
             private struct EntityAbilityBinding : IEquatable<EntityAbilityBinding>
@@ -142,6 +142,10 @@ namespace tg.ability
 
             private NativeHashMap<EntityAbilityBinding, Entity> learnedEntityAbilities;
             private NativeList<UseAbilityEvent>                 usedAbilities;
+
+
+            private EntityQuery                                 abilityDataBecameAvialable;
+            private NativeHashMap<FixedString64Bytes, Entity>   name2Ability;
 
             [BurstCompile]
             private struct UpdateCooldown : IJobChunk
@@ -201,19 +205,30 @@ namespace tg.ability
             public void OnCreate(ref SystemState state)
             {
                 state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle)));
-                state.RequireForUpdate<Ability>();
 
-                this.abilityDataLookup      = state.GetComponentLookup<AbilityData>(true);
-                this.abilityMetaLookup      = state.GetComponentLookup<AbilityMeta>(true);
-                this.abilityCoolLookup      = state.GetComponentLookup<AbilityCooldown>(false);
-                this.abilityReadyLookup     = state.GetComponentLookup<AbilityReady>(false);
+                this.abilityDataBecameAvialable = state.GetEntityQuery(typeof(AbilityMeta));
+                this.abilityDataBecameAvialable.SetChangedVersionFilter(typeof(AbilityMeta));
 
-                this.cooldownTypeHandle     = state.GetComponentTypeHandle<AbilityCooldown>(false);
-                this.readyTypeHandle        = state.GetComponentTypeHandle<AbilityReady>(false);
-
-                this.updateCooldown         = state.GetEntityQuery(new EntityQueryDesc
+                state.RequireAnyForUpdate(new EntityQuery[]
                 {
-                    All                     = new ComponentType[] { typeof(AbilityCooldown) },
+                    this.abilityDataBecameAvialable,
+                    state.GetEntityQuery(typeof(Ability)),
+                });
+
+
+                this.name2Ability               = new NativeHashMap<FixedString64Bytes, Entity>(32, Allocator.Persistent);
+
+                this.abilityDataLookup          = state.GetComponentLookup<AbilityData>(true);
+                this.abilityMetaLookup          = state.GetComponentLookup<AbilityMeta>(true);
+                this.abilityCoolLookup          = state.GetComponentLookup<AbilityCooldown>(false);
+                this.abilityReadyLookup         = state.GetComponentLookup<AbilityReady>(false);
+
+                this.cooldownTypeHandle         = state.GetComponentTypeHandle<AbilityCooldown>(false);
+                this.readyTypeHandle            = state.GetComponentTypeHandle<AbilityReady>(false);
+
+                this.updateCooldown             = state.GetEntityQuery(new EntityQueryDesc
+                {
+                    All                         = new ComponentType[] { typeof(AbilityCooldown) },
                 });
 
                 //this.updateActive       = state.GetEntityQuery(new EntityQueryDesc
@@ -222,8 +237,8 @@ namespace tg.ability
                 //});
 
 
-                this.learnedEntityAbilities = new NativeHashMap<EntityAbilityBinding, Entity>(128, Allocator.Persistent);
-                this.usedAbilities          = new NativeList<UseAbilityEvent>(128, Allocator.Persistent);
+                this.learnedEntityAbilities     = new NativeHashMap<EntityAbilityBinding, Entity>(128, Allocator.Persistent);
+                this.usedAbilities              = new NativeList<UseAbilityEvent>(128, Allocator.Persistent);
 
                 EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle));
             }
@@ -232,6 +247,7 @@ namespace tg.ability
             {
                 this.learnedEntityAbilities.Dispose();
                 this.usedAbilities.Dispose();
+                this.name2Ability.Dispose();
             }
 
             public void OnUpdate(ref SystemState state)
@@ -242,6 +258,18 @@ namespace tg.ability
                 this.abilityReadyLookup.Update(ref state);
                 this.cooldownTypeHandle.Update(ref state);
                 this.readyTypeHandle.Update(ref state);
+
+                if(!this.abilityDataBecameAvialable.IsEmpty)
+                {
+                    var entity  = this.abilityDataBecameAvialable.ToEntityArray(Allocator.Temp);
+                    var meta    = this.abilityDataBecameAvialable.ToComponentDataArray<AbilityMeta>(Allocator.Temp);
+
+                    for(int i = 0; i < entity.Length; i++)
+                    {
+                        if(!this.name2Ability.TryAdd(meta[i].name, entity[i])) { this.name2Ability[meta[i].name] = entity[i]; }
+                        Debug.Log($"Ability '{meta[i].name}' found.");
+                    }
+                }
 
                 // active triggered abilities
                 if(!this.usedAbilities.IsEmpty)
@@ -301,7 +329,19 @@ namespace tg.ability
 
             void onUseAbilityEvent(UseAbilityEvent e) { this.usedAbilities.Add(e); }
 
-            void onLearnAbilityEvent(LearnAbilityEvent e)
+            void onLearnAbilityEvent(LearnAbilityEvent<FixedString64Bytes> e)
+            {
+                if(this.name2Ability.TryGetValue(e.ability, out Entity ability))
+                {
+                    this.onLearnAbilityEvent(new LearnAbilityEvent<Entity> { ability = ability, entity = e.entity });
+                }
+                else
+                {
+                    Debug.LogError($"{e}: wants to learn {e.ability}, but it does not exist.");
+                }
+            }
+
+            void onLearnAbilityEvent(LearnAbilityEvent<Entity> e)
             {
                 var entityManager       = World.DefaultGameObjectInjectionWorld.EntityManager;
 
