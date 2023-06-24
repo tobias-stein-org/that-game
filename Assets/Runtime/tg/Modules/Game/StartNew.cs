@@ -8,6 +8,7 @@ namespace tg.game
 	using tg.enemy;
 	using tg.level;
 	using tg.ability;
+    using tg.ability.entities;
 
     using tg.level.events;
 	using tg.player.events;
