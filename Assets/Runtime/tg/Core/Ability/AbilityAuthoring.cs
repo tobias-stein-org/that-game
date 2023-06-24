@@ -3,6 +3,8 @@ using Unity.Entities;
 
 namespace tg.ability
 {
+    using tg.ability.entities;
+
     public class AbilityAuthering : MonoBehaviour
     {
         public AbilityDescription  description;

@@ -24,316 +24,341 @@ namespace tg.ability
 
     }
 
-    public struct Ability : IComponentData
+    [DisallowMultipleComponent]
+    public class Ability : MonoBehaviour
     {
-        public Entity   owner;
-        public Entity   ability;
+        public Entity   caster;
+        public Vector2  initialDirection;
+
+        protected virtual void Awake()
+        {
+            // Do not put any ability logic inside the awake method! Use Start instead.
+        }
     }
 
-    [Serializable]
-    public struct AbilityMeta : IComponentData
+    namespace entities
     {
-        public enum Target : byte
+        [Serializable]
+        public struct AbilityMeta : IComponentData
         {
-            None,
-            Self,
-            Point,
-            Target,
-            Area,
-            Global
-        }
-
-        public enum Activation : byte
-        {
-            Instant,
-            Charge,
-            Channel
-        }
-
-        public  FixedString64Bytes              name;
-
-        public  FixedString128Bytes             description;
-
-        public  bool                            isPassive;
-                                                
-        public  Target                          target;
-                                                
-        public  Activation                      activation;
-                                                
-        public  float                           cost;
-                                                
-        public  float                           cooldown;
-        public  bool                            hasCooldown { get { return this.cooldown > 0.0f; } }
-                                                
-        public  float                           duration;
-    }
-
-    public struct AbilityData : IComponentData
-    {
-        public WeakAssetReference<GameObject>  abilityPrefab;
-    }
-
-    public struct AbilityLearned : IComponentData, IEnableableComponent {}
-
-    public struct AbilityReady : IComponentData, IEnableableComponent {}
-
-    //public struct AbilityActive : IComponentData, IEnableableComponent
-    //{
-    //    public float                            activated;
-    //}
-
-    public struct AbilityCooldown : IComponentData, IEnableableComponent
-    {
-        public float                            cooldown;
-    }
-
-
-    [BurstCompile]
-    [CreateAfter(typeof(EventQueue))]
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    public partial struct AbilitySystem : ISystem, IEventListener<AbilitySystem>
-    {
-        private struct EntityAbilityBinding : IEquatable<EntityAbilityBinding>
-        {
-            public readonly Entity entity;
-            public readonly Entity ability;
-
-            public EntityAbilityBinding(in Entity entity, in Entity ability)
+            public enum Target : byte
             {
-                this.entity     = entity;
-                this.ability    = ability;
+                None,
+                Self,
+                Point,
+                Target,
+                Area,
+                Global
             }
 
-            public bool Equals(EntityAbilityBinding other)
+            public enum Activation : byte
             {
-                return this.entity.Equals(other.entity) && this.ability.Equals(other.ability);   
+                Instant,
+                Charge,
+                Channel
             }
 
-            public override int GetHashCode()
-            {
-                return (int)math.hash(new int2(this.entity.Index, this.ability.Index));
-            }
+            public  FixedString64Bytes              name;
+
+            public  FixedString128Bytes             description;
+
+            public  bool                            isPassive;
+                                                
+            public  Target                          target;
+                                                
+            public  Activation                      activation;
+                                                
+            public  float                           cost;
+                                                
+            public  float                           cooldown;
+            public  bool                            hasCooldown { get { return this.cooldown > 0.0f; } }
+                                                
+            public  float                           duration;
         }
 
-        private ComponentLookup<AbilityData>                abilityDataLookup;
-        private ComponentLookup<AbilityMeta>                abilityMetaLookup;
-        private ComponentLookup<AbilityCooldown>            abilityCoolLookup;
-        private ComponentLookup<AbilityReady>               abilityReadyLookup;
-
-        private ComponentTypeHandle<AbilityCooldown>        cooldownTypeHandle;
-        private ComponentTypeHandle<AbilityReady>           readyTypeHandle;
-
-        private EntityQuery                                 updateCooldown;
-        //private EntityQuery                     updateActive;
-
-        private NativeHashMap<EntityAbilityBinding, Entity> learnedEntityAbilities;
-        private NativeList<UseAbilityEvent>                 usedAbilities;
-
-        [BurstCompile]
-        private struct UpdateCooldown : IJobChunk
+        public struct AbilityData : IComponentData
         {
-            public ComponentTypeHandle<AbilityCooldown> cooldownTypeHandle;
-            public ComponentTypeHandle<AbilityReady>    readyTypeHandle;
-            public double                               deltaTime;
-
-            [BurstCompile]
-            public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-            {
-                NativeArray<AbilityCooldown>    cooldowns   = chunk.GetNativeArray(ref this.cooldownTypeHandle);
-                NativeArray<AbilityReady>       readies     = chunk.GetNativeArray(ref this.readyTypeHandle);
-
-                var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-                while(enumerator.NextEntityIndex(out var i))
-                {
-                    cooldowns[i] = new AbilityCooldown { cooldown = cooldowns[i].cooldown - (float)this.deltaTime };
-
-                    if(cooldowns[i].cooldown <= 0.0f)
-                    {
-                        chunk.SetComponentEnabled<AbilityCooldown>(ref this.cooldownTypeHandle, i, false);
-                        chunk.SetComponentEnabled<AbilityReady>(ref this.readyTypeHandle, i, true);
-                    }
-                }
-            }
+            public WeakAssetReference<GameObject>  abilityPrefab;
         }
 
-        //[BurstCompile]
-        //private struct UpdateActive : IJobChunk
+        public struct AbilityLearned : IComponentData, IEnableableComponent {}
+
+        public struct AbilityReady : IComponentData, IEnableableComponent {}
+
+        //public struct AbilityActive : IComponentData, IEnableableComponent
         //{
-        //    public ComponentTypeHandle<Ability>         abilityTypeHandle;
-        //    public ComponentTypeHandle<AbilityActive>   activeTypeHandle;
-        //    public ComponentLookup<AbilityMeta>         abilityMetaLookup;
-
-        //    public double                               deltaTime;
-
-        //    [BurstCompile]
-        //    public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
-        //    {
-        //        NativeArray<Ability>        abilities = chunk.GetNativeArray(ref this.abilityTypeHandle);
-        //        NativeArray<AbilityActive>  cooldowns = chunk.GetNativeArray(ref this.activeTypeHandle);
-
-        //        var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
-        //        while(enumerator.NextEntityIndex(out var i))
-        //        {
-        //            //cooldowns[i] = new AbilityCooldown { cooldown = cooldowns[i].cooldown - (float)this.deltaTime };
-
-        //            //if(cooldowns[i].cooldown <= 0.0f)
-        //            //{
-        //            //    chunk.SetComponentEnabled<AbilityCooldown>(ref this.activeTypeHandle, i, false);
-        //            //}
-        //        }
-        //    }
+        //    public float                            activated;
         //}
 
-        public void OnCreate(ref SystemState state)
+        public struct AbilityCooldown : IComponentData, IEnableableComponent
         {
-            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle)));
-            state.RequireForUpdate<Ability>();
-
-            this.abilityDataLookup      = state.GetComponentLookup<AbilityData>(true);
-            this.abilityMetaLookup      = state.GetComponentLookup<AbilityMeta>(true);
-            this.abilityCoolLookup      = state.GetComponentLookup<AbilityCooldown>(false);
-            this.abilityReadyLookup     = state.GetComponentLookup<AbilityReady>(false);
-
-            this.cooldownTypeHandle     = state.GetComponentTypeHandle<AbilityCooldown>(false);
-            this.readyTypeHandle        = state.GetComponentTypeHandle<AbilityReady>(false);
-
-            this.updateCooldown         = state.GetEntityQuery(new EntityQueryDesc
-            {
-                All                     = new ComponentType[] { typeof(AbilityCooldown) },
-            });
-
-            //this.updateActive       = state.GetEntityQuery(new EntityQueryDesc
-            //{
-            //    All                 = new ComponentType[] { typeof(AbilityActive) },
-            //});
-
-
-            this.learnedEntityAbilities = new NativeHashMap<EntityAbilityBinding, Entity>(128, Allocator.Persistent);
-            this.usedAbilities          = new NativeList<UseAbilityEvent>(128, Allocator.Persistent);
-
-            EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle));
+            public float                            cooldown;
         }
 
-        public void OnDestroy(ref SystemState state)
+        public struct Ability : IComponentData
         {
-            this.learnedEntityAbilities.Dispose();
-            this.usedAbilities.Dispose();
+            public Entity   owner;
+            public Entity   ability;
         }
 
-        public void OnUpdate(ref SystemState state)
-        {
-            this.abilityDataLookup.Update(ref state);
-            this.abilityMetaLookup.Update(ref state);
-            this.abilityCoolLookup.Update(ref state);
-            this.abilityReadyLookup.Update(ref state);
-            this.cooldownTypeHandle.Update(ref state);
-            this.readyTypeHandle.Update(ref state);
 
-            // active triggered abilities
-            if(!this.usedAbilities.IsEmpty)
+        [BurstCompile]
+        [CreateAfter(typeof(EventQueue))]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        public partial struct AbilitySystem : ISystem, IEventListener<AbilitySystem>
+        {
+            private struct EntityAbilityBinding : IEquatable<EntityAbilityBinding>
             {
-                var buffer = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-                foreach(var used in this.usedAbilities)
+                public readonly Entity entity;
+                public readonly Entity ability;
+
+                public EntityAbilityBinding(in Entity entity, in Entity ability)
                 {
-                    var binding             = new EntityAbilityBinding(used.entity, used.ability);
-                    var ability             = this.learnedEntityAbilities[binding];
-                    var data                = this.abilityDataLookup[used.ability];
-                    var meta                = this.abilityMetaLookup[used.ability];
-
-                    // stop right here, if ability is not ready yet
-                    if(!this.abilityReadyLookup.IsComponentEnabled(ability))
-                    {
-                        Debug.Log($"{used.entity}: ability '{meta.name}' is not ready yet. [{this.abilityCoolLookup.GetRefRO(ability).ValueRO.cooldown}]");
-                        return;
-                    }
-
-                    spawn.request.create(data.abilityPrefab, new Vector3(used.point.x, used.point.y, 0f));
-
-                    // update cooldown and ready state
-                    if(meta.hasCooldown)
-                    {
-                        buffer.SetComponent<AbilityCooldown>(ability, new AbilityCooldown
-                        {
-                            cooldown = meta.cooldown
-                        });
-                        buffer.SetComponentEnabled<AbilityCooldown>(ability, true);
-                        buffer.SetComponentEnabled<AbilityReady>(ability, false);
-                    }
-
-                    Debug.Log($"{used.entity}: used ability '{meta.name}'.");
+                    this.entity     = entity;
+                    this.ability    = ability;
                 }
-                this.usedAbilities.Clear();
+
+                public bool Equals(EntityAbilityBinding other)
+                {
+                    return this.entity.Equals(other.entity) && this.ability.Equals(other.ability);   
+                }
+
+                public override int GetHashCode()
+                {
+                    return (int)math.hash(new int2(this.entity.Index, this.ability.Index));
+                }
             }
 
-            var updateCooldown              = new UpdateCooldown
-            {                               
-                cooldownTypeHandle          = this.cooldownTypeHandle,
-                readyTypeHandle             = this.readyTypeHandle,
-                deltaTime                   = state.World.Time.DeltaTime
-            };                              
-                                            
-            state.Dependency                = updateCooldown.ScheduleParallel(this.updateCooldown, state.Dependency);
-        }
+            private ComponentLookup<AbilityData>                abilityDataLookup;
+            private ComponentLookup<AbilityMeta>                abilityMetaLookup;
+            private ComponentLookup<AbilityCooldown>            abilityCoolLookup;
+            private ComponentLookup<AbilityReady>               abilityReadyLookup;
 
-        void onUseAbilityEvent(UseAbilityEvent e) { this.usedAbilities.Add(e); }
+            private ComponentTypeHandle<AbilityCooldown>        cooldownTypeHandle;
+            private ComponentTypeHandle<AbilityReady>           readyTypeHandle;
 
-        void onLearnAbilityEvent(LearnAbilityEvent e)
-        {
-            var entityManager       = World.DefaultGameObjectInjectionWorld.EntityManager;
+            private EntityQuery                                 updateCooldown;
+            //private EntityQuery                     updateActive;
 
-            if(!entityManager.IsComponentEnabled<AbilityLearned>(e.ability))
+            private NativeHashMap<EntityAbilityBinding, Entity> learnedEntityAbilities;
+            private NativeList<UseAbilityEvent>                 usedAbilities;
+
+            [BurstCompile]
+            private struct UpdateCooldown : IJobChunk
             {
-                var data            = entityManager.GetComponentData<AbilityData>(e.ability);
-                var self            = this;
-                EventQueue.publish(new RequestLoadAssetsEvent
+                public ComponentTypeHandle<AbilityCooldown> cooldownTypeHandle;
+                public ComponentTypeHandle<AbilityReady>    readyTypeHandle;
+                public double                               deltaTime;
+
+                [BurstCompile]
+                public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
                 {
-                    assets          = new NativeArray<UntypedWeakReferenceId>( new UntypedWeakReferenceId[] { data.abilityPrefab }, Allocator.Persistent),
-                    onComplete      = (bool hasErrors) =>
+                    NativeArray<AbilityCooldown>    cooldowns   = chunk.GetNativeArray(ref this.cooldownTypeHandle);
+                    NativeArray<AbilityReady>       readies     = chunk.GetNativeArray(ref this.readyTypeHandle);
+
+                    var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+                    while(enumerator.NextEntityIndex(out var i))
                     {
-                        if(!hasErrors)
+                        cooldowns[i] = new AbilityCooldown { cooldown = cooldowns[i].cooldown - (float)this.deltaTime };
+
+                        if(cooldowns[i].cooldown <= 0.0f)
                         {
-                            self.doLearnAbility(entityManager, e.entity, e.ability);
+                            chunk.SetComponentEnabled<AbilityCooldown>(ref this.cooldownTypeHandle, i, false);
+                            chunk.SetComponentEnabled<AbilityReady>(ref this.readyTypeHandle, i, true);
                         }
                     }
+                }
+            }
+
+            //[BurstCompile]
+            //private struct UpdateActive : IJobChunk
+            //{
+            //    public ComponentTypeHandle<Ability>         abilityTypeHandle;
+            //    public ComponentTypeHandle<AbilityActive>   activeTypeHandle;
+            //    public ComponentLookup<AbilityMeta>         abilityMetaLookup;
+
+            //    public double                               deltaTime;
+
+            //    [BurstCompile]
+            //    public void Execute(in ArchetypeChunk chunk, int unfilteredChunkIndex, bool useEnabledMask, in v128 chunkEnabledMask)
+            //    {
+            //        NativeArray<Ability>        abilities = chunk.GetNativeArray(ref this.abilityTypeHandle);
+            //        NativeArray<AbilityActive>  cooldowns = chunk.GetNativeArray(ref this.activeTypeHandle);
+
+            //        var enumerator = new ChunkEntityEnumerator(useEnabledMask, chunkEnabledMask, chunk.Count);
+            //        while(enumerator.NextEntityIndex(out var i))
+            //        {
+            //            //cooldowns[i] = new AbilityCooldown { cooldown = cooldowns[i].cooldown - (float)this.deltaTime };
+
+            //            //if(cooldowns[i].cooldown <= 0.0f)
+            //            //{
+            //            //    chunk.SetComponentEnabled<AbilityCooldown>(ref this.activeTypeHandle, i, false);
+            //            //}
+            //        }
+            //    }
+            //}
+
+            public void OnCreate(ref SystemState state)
+            {
+                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle)));
+                state.RequireForUpdate<Ability>();
+
+                this.abilityDataLookup      = state.GetComponentLookup<AbilityData>(true);
+                this.abilityMetaLookup      = state.GetComponentLookup<AbilityMeta>(true);
+                this.abilityCoolLookup      = state.GetComponentLookup<AbilityCooldown>(false);
+                this.abilityReadyLookup     = state.GetComponentLookup<AbilityReady>(false);
+
+                this.cooldownTypeHandle     = state.GetComponentTypeHandle<AbilityCooldown>(false);
+                this.readyTypeHandle        = state.GetComponentTypeHandle<AbilityReady>(false);
+
+                this.updateCooldown         = state.GetEntityQuery(new EntityQueryDesc
+                {
+                    All                     = new ComponentType[] { typeof(AbilityCooldown) },
                 });
 
-                // note: we have to enable the state right away, otherwise we might run into the problem of loading the ability twice
-                entityManager.SetComponentEnabled<AbilityLearned>(e.ability, true);
+                //this.updateActive       = state.GetEntityQuery(new EntityQueryDesc
+                //{
+                //    All                 = new ComponentType[] { typeof(AbilityActive) },
+                //});
+
+
+                this.learnedEntityAbilities = new NativeHashMap<EntityAbilityBinding, Entity>(128, Allocator.Persistent);
+                this.usedAbilities          = new NativeList<UseAbilityEvent>(128, Allocator.Persistent);
+
+                EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle));
             }
-            else
+
+            public void OnDestroy(ref SystemState state)
             {
-                this.doLearnAbility(entityManager, e.entity, e.ability);
+                this.learnedEntityAbilities.Dispose();
+                this.usedAbilities.Dispose();
             }
-        }
 
-        private void doLearnAbility(in EntityManager entityManager, in Entity entity, in Entity ability) 
-        {
-            var entityAbility   = entityManager.CreateEntity(new ComponentType[]
+            public void OnUpdate(ref SystemState state)
             {
-                typeof(Ability),
-                typeof(AbilityReady),
-                //typeof(AbilityActive),
-                typeof(AbilityCooldown)
-            });
+                this.abilityDataLookup.Update(ref state);
+                this.abilityMetaLookup.Update(ref state);
+                this.abilityCoolLookup.Update(ref state);
+                this.abilityReadyLookup.Update(ref state);
+                this.cooldownTypeHandle.Update(ref state);
+                this.readyTypeHandle.Update(ref state);
 
-#if UNITY_EDITOR
-            var entityName  = entityManager.GetName(entity);
-            var meta        = entityManager.GetComponentData<AbilityMeta>(ability);
+                // active triggered abilities
+                if(!this.usedAbilities.IsEmpty)
+                {
+                    var buffer = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+                    foreach(var used in this.usedAbilities)
+                    {
+                        var binding             = new EntityAbilityBinding(used.entity, used.ability);
+                        var ability             = this.learnedEntityAbilities[binding];
+                        var data                = this.abilityDataLookup[used.ability];
+                        var meta                = this.abilityMetaLookup[used.ability];
 
-            entityManager.SetName(entityAbility, $"{meta.name}-{entityName}");
-            Debug.Log($"'{entityName}' learned '{meta.name}' ability.");
-#endif
+                        // stop right here, if ability is not ready yet
+                        if(!this.abilityReadyLookup.IsComponentEnabled(ability))
+                        {
+                            Debug.Log($"{used.entity}: ability '{meta.name}' is not ready yet. [{this.abilityCoolLookup.GetRefRO(ability).ValueRO.cooldown}]");
+                            continue;
+                        }
 
-            entityManager.SetComponentData<Ability>(entityAbility, new Ability
+                        spawn.request.create(data.abilityPrefab, new Vector3(used.point.x, used.point.y, 0f), 0f, (GameObject abilityGO) =>
+                        {
+                            var ability = abilityGO.GetComponentInChildren<tg.ability.Ability>() ?? abilityGO.AddComponent<tg.ability.Ability>();
+                            {
+                                ability.caster              = used.entity;
+                                ability.initialDirection    = used.direction;
+                            }
+                        });
+
+                        // update cooldown and ready state
+                        if(meta.hasCooldown)
+                        {
+                            buffer.SetComponent<AbilityCooldown>(ability, new AbilityCooldown
+                            {
+                                cooldown = meta.cooldown
+                            });
+                            buffer.SetComponentEnabled<AbilityCooldown>(ability, true);
+                            buffer.SetComponentEnabled<AbilityReady>(ability, false);
+                        }
+
+                        Debug.Log($"{used.entity}: used ability '{meta.name}'.");
+                    }
+                    this.usedAbilities.Clear();
+                }
+
+                this.cooldownTypeHandle.Update(ref state);
+                this.readyTypeHandle.Update(ref state);
+
+                var updateCooldown              = new UpdateCooldown
+                {                               
+                    cooldownTypeHandle          = this.cooldownTypeHandle,
+                    readyTypeHandle             = this.readyTypeHandle,
+                    deltaTime                   = state.World.Time.DeltaTime
+                };                              
+                                            
+                state.Dependency                = updateCooldown.ScheduleParallel(this.updateCooldown, state.Dependency);
+            }
+
+            void onUseAbilityEvent(UseAbilityEvent e) { this.usedAbilities.Add(e); }
+
+            void onLearnAbilityEvent(LearnAbilityEvent e)
             {
-                owner           = entity,
-                ability         = ability
-            });
-            entityManager.SetComponentEnabled<AbilityReady>(entityAbility, true);
-            //entityManager.SetComponentEnabled<AbilityActive>(abilityEntity, false);
-            entityManager.SetComponentEnabled<AbilityCooldown>(entityAbility, false);
+                var entityManager       = World.DefaultGameObjectInjectionWorld.EntityManager;
 
-            this.learnedEntityAbilities.Add(new EntityAbilityBinding(entity, ability), entityAbility);
+                if(!entityManager.IsComponentEnabled<AbilityLearned>(e.ability))
+                {
+                    var data            = entityManager.GetComponentData<AbilityData>(e.ability);
+                    var self            = this;
+                    EventQueue.publish(new RequestLoadAssetsEvent
+                    {
+                        assets          = new NativeArray<UntypedWeakReferenceId>( new UntypedWeakReferenceId[] { data.abilityPrefab }, Allocator.Persistent),
+                        onComplete      = (bool hasErrors) =>
+                        {
+                            if(!hasErrors)
+                            {
+                                self.doLearnAbility(entityManager, e.entity, e.ability);
+                            }
+                        }
+                    });
+
+                    // note: we have to enable the state right away, otherwise we might run into the problem of loading the ability twice
+                    entityManager.SetComponentEnabled<AbilityLearned>(e.ability, true);
+                }
+                else
+                {
+                    this.doLearnAbility(entityManager, e.entity, e.ability);
+                }
+            }
+
+            private void doLearnAbility(in EntityManager entityManager, in Entity entity, in Entity ability) 
+            {
+                var entityAbility   = entityManager.CreateEntity(new ComponentType[]
+                {
+                    typeof(Ability),
+                    typeof(AbilityReady),
+                    //typeof(AbilityActive),
+                    typeof(AbilityCooldown)
+                });
+
+    #if UNITY_EDITOR
+                var entityName  = entityManager.GetName(entity);
+                var meta        = entityManager.GetComponentData<AbilityMeta>(ability);
+
+                entityManager.SetName(entityAbility, $"{meta.name}-{entityName}");
+                Debug.Log($"'{entityName}' learned '{meta.name}' ability.");
+    #endif
+
+                entityManager.SetComponentData<Ability>(entityAbility, new Ability
+                {
+                    owner           = entity,
+                    ability         = ability
+                });
+                entityManager.SetComponentEnabled<AbilityReady>(entityAbility, true);
+                //entityManager.SetComponentEnabled<AbilityActive>(abilityEntity, false);
+                entityManager.SetComponentEnabled<AbilityCooldown>(entityAbility, false);
+
+                this.learnedEntityAbilities.Add(new EntityAbilityBinding(entity, ability), entityAbility);
+            }
         }
     }
 }

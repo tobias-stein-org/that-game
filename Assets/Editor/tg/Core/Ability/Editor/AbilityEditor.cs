@@ -14,8 +14,8 @@ using Unity.Collections;
 namespace tg.editor.ability
 {
     using tg.ability;
-    using Unity.Entities.UniversalDelegates;
-    using static tg.ai.Sensor;
+    using tg.ability.entities;
+
 
     public class AbilityEditor : EditorWindow
     {
