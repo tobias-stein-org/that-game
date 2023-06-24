@@ -7,6 +7,8 @@ using Unity.Mathematics;
 namespace tg.player
 {
     using tg.ability;
+    using tg.ability.entities;
+
     using tg.ability.events;
     using tg.application;
     using tg.events;
@@ -29,7 +31,7 @@ namespace tg.player
 
         protected override void OnUpdate()
         {
-            foreach(var (input, player) in SystemAPI.Query<RefRW<PlayerInputData>, Player>())
+            foreach(var (input, player, transform) in SystemAPI.Query<RefRW<PlayerInputData>, Player, SystemAPI.ManagedAPI.UnityEngineComponent<Transform>>())
             //foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
                 input.ValueRW.moveXY  = playerActions.FindAction("move").ReadValue<Vector2>();
@@ -38,11 +40,16 @@ namespace tg.player
 
                 if(playerActions.FindAction("cast").WasPerformedThisFrame())
                 {
-                    Debug.Log("cast");
                     var abilities = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(AbilityData)).ToEntityArray(Unity.Collections.Allocator.Temp);
 			        if(abilities.Length > 0)
 			        {
-				        EventQueue.publish(new UseAbilityEvent { entity = player.entity, ability = abilities[0] });
+				        EventQueue.publish(new UseAbilityEvent
+                        {
+                            entity      = player.entity,
+                            ability     = abilities[0],
+                            point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
+                            direction   = input.ValueRO.moveXY
+                        });
 			        }
 
 			        abilities.Dispose();

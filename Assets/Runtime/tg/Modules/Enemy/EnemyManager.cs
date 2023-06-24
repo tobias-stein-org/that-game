@@ -13,6 +13,7 @@ namespace tg.enemy {
     using tg.player;
     using tg.ai;
     using tg.ai.behaviour;
+    using tg.physics.entities;
 
     /// <summary>
     /// Added to spawned enemy entities.
@@ -99,7 +100,8 @@ namespace tg.enemy {
                    typeof(Enemy),
                    typeof(EnemyInputData),
                    typeof(BehaviourContextData),
-                   typeof(Sensor)
+                   typeof(Sensor),
+                   typeof(WithManagedCollider)
                 ));
 
                 ECB.SetComponent<Enemy>(enemyEntity, new Enemy
@@ -110,7 +112,6 @@ namespace tg.enemy {
                 {
                     lastBehaviourContextDecision = 0
                 });
-
                 ECB.SetComponent<Sensor>(enemyEntity, new Sensor(new Sensor.Description
                 {
                     range           = description.behaviour.perceptionRange,
@@ -118,6 +119,11 @@ namespace tg.enemy {
                     allowSeeHidden  = description.behaviour.allowSeeHidden,
                     sensorMask      = description.behaviour.filter
                 }));
+                ECB.SetComponent<WithManagedCollider>(enemyEntity, new WithManagedCollider
+                {
+                    entity          = enemyEntity,
+                    gameOb          = instance
+                });
 
                 var buffer          = ECB.SetBuffer<BehaviourContextData>(enemyEntity);
                 buffer.Length       = BehaviourContextInternal.MAX_BEHAVIOURS;
