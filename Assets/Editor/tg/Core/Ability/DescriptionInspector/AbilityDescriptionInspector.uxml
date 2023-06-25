@@ -5,8 +5,8 @@
     <ui:TextField picking-mode="Ignore" label="Name" name="name" readonly="true" focusable="true" />
     <ui:TextField picking-mode="Ignore" label="Description" value="Description missing." name="description" multiline="true" style="min-height: 60px;" />
     <ui:Toggle label="Passive" name="isPassive" binding-path="meta.isPassive" />
-    <ui:EnumField label="Target" type="tg.ability.AbilityMeta+Target, tg.runtime" name="target" binding-path="meta.target" />
-    <ui:EnumField label="Activation" type="tg.ability.AbilityMeta+Activation, tg.runtime" name="activation" binding-path="meta.activation" />
+    <ui:EnumField label="Target" type="tg.ability.entities.AbilityMeta+Target, tg.runtime" name="target" binding-path="meta.target" />
+    <ui:EnumField label="Activation" type="tg.ability.entities.AbilityMeta+Activation, tg.runtime" name="activation" binding-path="meta.activation" />
     <ui:FloatField label="Cost" value="0" name="cost" binding-path="meta.cost" />
     <ui:FloatField label="Cooldown" value="0" name="cooldown" binding-path="meta.cooldown" />
     <ui:FloatField label="Duration" value="0" name="duration" binding-path="meta.duration" />
