@@ -141,7 +141,7 @@ namespace tg.ability
             //private EntityQuery                     updateActive;
 
             private NativeHashMap<EntityAbilityBinding, Entity> learnedEntityAbilities;
-            private NativeList<UseAbilityEvent>                 usedAbilities;
+            private NativeList<UseAbilityEvent<Entity>>         usedAbilities;
 
 
             private EntityQuery                                 abilityDataBecameAvialable;
@@ -238,7 +238,7 @@ namespace tg.ability
 
 
                 this.learnedEntityAbilities     = new NativeHashMap<EntityAbilityBinding, Entity>(128, Allocator.Persistent);
-                this.usedAbilities              = new NativeList<UseAbilityEvent>(128, Allocator.Persistent);
+                this.usedAbilities              = new NativeList<UseAbilityEvent<Entity>>(128, Allocator.Persistent);
 
                 EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<AbilitySystem>(state.SystemHandle));
             }
@@ -327,7 +327,17 @@ namespace tg.ability
                 state.Dependency                = updateCooldown.ScheduleParallel(this.updateCooldown, state.Dependency);
             }
 
-            void onUseAbilityEvent(UseAbilityEvent e) { this.usedAbilities.Add(e); }
+            void onUseAbilityEvent(UseAbilityEvent<Entity> e) { this.usedAbilities.Add(e); }
+            void onUseAbilityEvent(UseAbilityEvent<FixedString64Bytes> e)
+            {
+                this.usedAbilities.Add(new UseAbilityEvent<Entity>
+                {
+                    ability                         = this.name2Ability[e.ability],
+                    entity                          = e.entity,
+                    point                           = e.point,
+                    direction                       = e.direction
+                });
+            }
 
             void onLearnAbilityEvent(LearnAbilityEvent<FixedString64Bytes> e)
             {

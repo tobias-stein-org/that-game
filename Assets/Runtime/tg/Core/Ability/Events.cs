@@ -10,19 +10,19 @@ namespace tg.ability.events
     /// </summary>
     public struct LearnAbilityEvent<T> : IEvent
     {
-        public Entity entity;
-        public T ability;
+        public Entity   entity;
+        public T        ability;
     }
 
     /// <summary>
     /// Send by an entity that want to use its ability
     /// </summary>
-    public struct UseAbilityEvent : IEvent
+    public struct UseAbilityEvent<T> : IEvent
     {
-        public Entity entity;
-        public Entity ability;
+        public Entity   entity;
+        public T        ability;
 
-        public float2 point;
-        public float2 direction;
+        public float2   point;
+        public float2   direction;
     }
 }
