@@ -120,6 +120,7 @@ namespace tg.game
 			//abilities.Dispose();
 
 			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "FIREBALL_1" });
+			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "ICEBLAST_1" });
 
 			EventQueue.unsubscribe(World.DefaultGameObjectInjectionWorld.Unmanaged.GetUnsafeSystemRef<StartNew>(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<StartNew>()));
 		}

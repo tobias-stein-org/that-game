@@ -38,21 +38,26 @@ namespace tg.player
                 input.ValueRW.melee   = playerActions.FindAction("melee").ReadValue<float>();
                 input.ValueRW.cast    = playerActions.FindAction("cast").ReadValue<float>();
 
-                if(playerActions.FindAction("cast").WasPerformedThisFrame())
+                if(playerActions.FindAction("ability0").WasPerformedThisFrame())
                 {
-                    var abilities = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(AbilityData)).ToEntityArray(Unity.Collections.Allocator.Temp);
-			        if(abilities.Length > 0)
-			        {
-				        EventQueue.publish(new UseAbilityEvent
-                        {
-                            entity      = player.entity,
-                            ability     = abilities[0],
-                            point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
-                            direction   = input.ValueRO.moveXY
-                        });
-			        }
+				    EventQueue.publish(new UseAbilityEvent<Unity.Collections.FixedString64Bytes>
+                    {
+                        entity      = player.entity,
+                        ability     = "FIREBALL_1",
+                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
+                        direction   = input.ValueRO.moveXY
+                    });
+                }
 
-			        abilities.Dispose();
+                if(playerActions.FindAction("ability1").WasPerformedThisFrame())
+                {
+				    EventQueue.publish(new UseAbilityEvent<Unity.Collections.FixedString64Bytes>
+                    {
+                        entity      = player.entity,
+                        ability     = "ICEBLAST_1",
+                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
+                        direction   = input.ValueRO.moveXY
+                    });
                 }
             }
         }
