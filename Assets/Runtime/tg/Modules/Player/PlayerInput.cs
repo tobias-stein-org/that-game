@@ -6,7 +6,12 @@ using Unity.Mathematics;
 
 namespace tg.player
 {
+    using tg.ability;
+    using tg.ability.entities;
+
+    using tg.ability.events;
     using tg.application;
+    using tg.events;
 
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
     public partial class PlayerInput : SystemBase
@@ -26,11 +31,34 @@ namespace tg.player
 
         protected override void OnUpdate()
         {
-            foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
+            foreach(var (input, player, transform) in SystemAPI.Query<RefRW<PlayerInputData>, Player, SystemAPI.ManagedAPI.UnityEngineComponent<Transform>>())
+            //foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
-                playerInput.ValueRW.moveXY  = playerActions.FindAction("move").ReadValue<Vector2>();
-                playerInput.ValueRW.melee   = playerActions.FindAction("melee").ReadValue<float>();
-                playerInput.ValueRW.cast    = playerActions.FindAction("cast").ReadValue<float>();
+                input.ValueRW.moveXY  = playerActions.FindAction("move").ReadValue<Vector2>();
+                input.ValueRW.melee   = playerActions.FindAction("melee").ReadValue<float>();
+                input.ValueRW.cast    = playerActions.FindAction("cast").ReadValue<float>();
+
+                if(playerActions.FindAction("ability0").WasPerformedThisFrame())
+                {
+				    EventQueue.publish(new UseAbilityEvent<Unity.Collections.FixedString64Bytes>
+                    {
+                        entity      = player.entity,
+                        ability     = "FIREBALL_1",
+                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
+                        direction   = input.ValueRO.moveXY
+                    });
+                }
+
+                if(playerActions.FindAction("ability1").WasPerformedThisFrame())
+                {
+				    EventQueue.publish(new UseAbilityEvent<Unity.Collections.FixedString64Bytes>
+                    {
+                        entity      = player.entity,
+                        ability     = "ICEBLAST_1",
+                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
+                        direction   = input.ValueRO.moveXY
+                    });
+                }
             }
         }
     }

@@ -1,3 +1,6 @@
+using Cinemachine;
+    using UnityEngine;
+
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
@@ -10,8 +13,7 @@ namespace tg.player
     using tg.level;
     using tg.player.events;
     using tg.spawn.events;
-    using Cinemachine;
-    using UnityEngine;
+    using tg.physics.entities;
 
     /// <summary>
     /// Added to spawned player entities.
@@ -59,7 +61,10 @@ namespace tg.player
 
         void onKillPlayerEvent(KillPlayerEvent e)
         {
+            if(!World.DefaultGameObjectInjectionWorld.IsCreated) { return; }
+
             var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
+
             var playerGO        = entityManager.GetComponentObject<Transform>(e.player.entity).gameObject;
 
             GameObject.Destroy(playerGO);
@@ -82,9 +87,13 @@ namespace tg.player
         {
             var playerEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
             {
+#if UNITY_EDITOR
+                ECB.SetName(playerEntity, instance.name);
+#endif
                 ECB.AddComponent(playerEntity, new ComponentTypeSet(
                    typeof(Player),
-                   typeof(PlayerInputData)
+                   typeof(PlayerInputData),
+                   typeof(WithManagedCollider)
                 ));
 
                 ECB.SetComponent<Player>(playerEntity, new Player
@@ -96,6 +105,12 @@ namespace tg.player
                 {
                     moveSpeed   = 10.0f,
                     moveXY      = UnityEngine.Vector2.zero
+                });
+
+                ECB.SetComponent<WithManagedCollider>(playerEntity, new WithManagedCollider
+                {
+                    entity      = playerEntity,
+                    gameOb      = instance
                 });
 
                 ECB.AddComponent(playerEntity, instance.transform);

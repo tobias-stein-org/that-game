@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 using Unity.Entities;
 using Unity.Entities.Content;
@@ -12,6 +13,7 @@ namespace tg.application
     using tg.assets;
     using tg.application.events;
     using tg.enemy;
+    using UnityEditor;
 
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [CreateAfter(typeof(EventQueue))]
@@ -44,6 +46,7 @@ namespace tg.application
             {
                 appData.playerPrefab,
                 appData.enemyPrefab,
+                appData.abilities,
                 appData.defaultEnemyBehaviour,
                 appData.inputActions
             },
@@ -98,6 +101,11 @@ namespace tg.application
 
         public EnemyBehaviour       defaultEnemyBehaviour;
 
+        /// <summary>
+        /// Scene reference to the SubScene containing all default application abilities.
+        /// </summary>
+        public SceneAsset           abilities;
+
         public InputActionAsset     inputActions;
 
 #if UNITY_EDITOR
@@ -118,9 +126,10 @@ namespace tg.application
                 {
                     playerPrefab            = new WeakAssetReference<GameObject>(authoring.playerPrefab),
                     enemyPrefab             = new WeakAssetReference<GameObject>(authoring.enemyPrefab),
+                    abilities               = new WeakAssetReference<SceneAsset>(authoring.abilities),
                     defaultEnemyBehaviour   = new WeakAssetReference<EnemyBehaviour>(authoring.defaultEnemyBehaviour),
                     inputActions            = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
-                });
+                });;
             }
         }
 #endif
@@ -130,6 +139,9 @@ namespace tg.application
     {
         public WeakAssetReference<GameObject>          playerPrefab;
         public WeakAssetReference<GameObject>          enemyPrefab;
+
+        public WeakAssetReference<SceneAsset>          abilities;
+
         public WeakAssetReference<EnemyBehaviour>      defaultEnemyBehaviour;
 
         public WeakAssetReference<InputActionAsset>    inputActions;

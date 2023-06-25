@@ -58,8 +58,13 @@ namespace tg.level
         {
             this.layers = new Dictionary<LevelData.Layer, Tilemap>(LevelData.Layer.MAX_LAYERS);
 
-            var gridGO  = new GameObject("Level.Grid");
+            var gridGO  = new GameObject("Level");
             {
+                var rb          = gridGO.AddComponent<Rigidbody2D>();
+                {
+                    rb.bodyType = RigidbodyType2D.Static;
+                }
+
                 gridGO.layer    = LayerMask.NameToLayer("Level");
                 gridGO.tag      = "Level";
 

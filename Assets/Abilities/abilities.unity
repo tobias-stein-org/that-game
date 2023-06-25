@@ -123,7 +123,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &2144347474
+--- !u!1 &789037377
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -131,39 +131,80 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2144347476}
-  - component: {fileID: 2144347475}
+  - component: {fileID: 789037379}
+  - component: {fileID: 789037378}
   m_Layer: 0
-  m_Name: App
+  m_Name: ICEBLAST_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2144347475
+--- !u!114 &789037378
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144347474}
+  m_GameObject: {fileID: 789037377}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f6f2d22a3dc34dc88f3388bbb1d1e56, type: 3}
+  m_Script: {fileID: 11500000, guid: 51817ac3e50494bdf8e9ab9a678222e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPrefab: {fileID: 1364815521386583943, guid: ba0e6a31a430b43748ec0fa1423ab1f1, type: 3}
-  enemyPrefab: {fileID: 3150801310722615856, guid: c8595e6206d74414ab6daef792ad2b6e, type: 3}
-  defaultEnemyBehaviour: {fileID: 11400000, guid: b25b5e70f7f5f40b59bfa86460b9ce22, type: 2}
-  abilities: {fileID: 102900000, guid: b3b2a27754ab648648667c0a5a21a416, type: 3}
-  inputActions: {fileID: -944628639613478452, guid: 8629c9f542ffb4946b9ddcf726e6d840, type: 3}
---- !u!4 &2144347476
+  description: {fileID: 11400000, guid: 7c650cf6314374d779f1695c9ea7544f, type: 2}
+--- !u!4 &789037379
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144347474}
+  m_GameObject: {fileID: 789037377}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1695318438
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1695318440}
+  - component: {fileID: 1695318439}
+  m_Layer: 0
+  m_Name: FIREBALL_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1695318439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1695318438}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51817ac3e50494bdf8e9ab9a678222e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  description: {fileID: 11400000, guid: e3a40962ac3584548a4f087f73641cd3, type: 2}
+--- !u!4 &1695318440
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1695318438}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
