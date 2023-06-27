@@ -40,7 +40,7 @@ namespace tg.enemy
 
         public void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<EnemyAIController>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<EnemyAIController>(state.SystemHandle)));
 
             this.random = Unity.Mathematics.Random.CreateFromIndex((uint)state.SystemHandle.GetHashCode());
         }

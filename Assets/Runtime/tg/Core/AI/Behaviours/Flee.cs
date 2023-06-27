@@ -29,7 +29,7 @@ namespace tg.ai.behaviour
     {
         void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<FleeBehaviour>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<FleeBehaviour>(state.SystemHandle)));
         }
 
         void OnUpdate (ref SystemState state)

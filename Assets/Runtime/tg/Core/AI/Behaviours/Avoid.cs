@@ -31,7 +31,7 @@ namespace tg.ai.behaviour
     {
         void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AvoidBehaviour>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<AvoidBehaviour>(state.SystemHandle)));
         }
 
 

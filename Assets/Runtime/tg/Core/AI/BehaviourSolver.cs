@@ -22,7 +22,7 @@ namespace tg.ai
 
         public void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<BehaviourReset>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<BehaviourReset>(state.SystemHandle)));
 
             this.aiEntitiesQuery        = state.GetEntityQuery(typeof(BehaviourContextData));
 
@@ -90,7 +90,7 @@ namespace tg.ai
 
         public void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<BehaviourSolver>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<BehaviourSolver>(state.SystemHandle)));
 
             this.aiEntitiesQuery        = state.GetEntityQuery(typeof(BehaviourContextData));
 

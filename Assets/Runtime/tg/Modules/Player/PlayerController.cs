@@ -12,7 +12,7 @@ namespace tg.player
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireAnyForUpdate(StateManager.state(this));
+            state.RequireForUpdate(StateManager.state(this));
             state.RequireForUpdate<PlayerInputData>();
         }
 
