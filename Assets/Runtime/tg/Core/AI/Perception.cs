@@ -18,7 +18,7 @@ namespace tg.ai
     {
         public void OnCreate(ref SystemState state)
         {
-            StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<Perception>(state.SystemHandle));
+            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<Perception>(state.SystemHandle)));
             state.RequireForUpdate<Sensor>();
         }
 

@@ -10,6 +10,8 @@ namespace tg.application
     using tg.application.events;
     using tg.game.events;
 
+    using tg.ui.entities;
+
     [Flags]
     public enum ApplicationStateMask
     {
@@ -123,8 +125,23 @@ namespace tg.application
             });
         }
 
+
+        private EntityQuery checkMenuOpened;
+        private EntityQuery checkMenuClosed;
+
         protected override void OnCreate()
         {
+            this.checkMenuOpened = this.EntityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIViewMenu), typeof(UIViewShow) } });
+            this.checkMenuOpened.SetChangedVersionFilter(typeof(UIViewShow));
+            this.checkMenuClosed = this.EntityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIViewMenu) }, Disabled = new ComponentType[] { typeof(UIViewShow) } });
+            this.checkMenuClosed.SetChangedVersionFilter(typeof(UIViewShow));
+
+            this.RequireAnyForUpdate(new EntityQuery[]
+            {
+                this.checkMenuOpened,
+                this.checkMenuClosed
+            });
+
             EventQueue.subscribe(this);
 
             // once this system becomes active, it will put the application in the initialization state.
@@ -133,7 +150,30 @@ namespace tg.application
 
         protected override void OnUpdate()
         {
-            this.Enabled = false;
+            if(!this.checkMenuOpened.IsEmpty)
+            {
+                var numOpenMenus = SystemAPI.QueryBuilder().WithAll<UIViewShow, UIViewMenu>().Build().CalculateEntityCount();
+                if(numOpenMenus > 0 && !this.EntityManager.HasComponent<MenuOpenState>(this.SystemHandle))
+                {
+                    this.EntityManager.AddComponent<MenuOpenState>(this.SystemHandle);
+                    // pauses all animations and physics
+                    UnityEngine.Time.timeScale = 0f;
+                }
+            }
+
+            if(!this.checkMenuClosed.IsEmpty)
+            {
+                var numOpenMenus = SystemAPI.QueryBuilder().WithAll<UIViewShow, UIViewMenu>().Build().CalculateEntityCount();
+                if(numOpenMenus == 0 && this.EntityManager.HasComponent<MenuOpenState>(this.SystemHandle))
+                {
+                    this.EntityManager.RemoveComponent<MenuOpenState>(this.SystemHandle);
+                    if(!this.EntityManager.HasComponent<PausedState>(this.SystemHandle))
+                    {
+                        // resume all animations and physics
+                        UnityEngine.Time.timeScale = 1f;
+                    }
+                }
+            }
         }
 
         /// <summary>
