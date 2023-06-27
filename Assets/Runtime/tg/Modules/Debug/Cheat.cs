@@ -21,7 +21,7 @@ namespace tg.debug
             this.RequireForUpdate(StateManager.state(this));
         }
 
-        protected override void OnUpdate()
+        protected override void OnStartRunning()
         {
             var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
 
@@ -29,11 +29,9 @@ namespace tg.debug
             debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
             debugActions.FindAction("kill_player").performed += onKillPlayer;
             debugActions.FindAction("new_level").performed += onNewLevel;
-
-            this.Enabled = false;
         }
 
-        void onApplicationQuitEvent(RequestApplicationQuitEvent e)
+        protected override void OnStopRunning()
         {
             var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
             
