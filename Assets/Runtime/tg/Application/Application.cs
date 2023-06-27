@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 using Unity.Entities;
 using Unity.Entities.Content;
@@ -48,7 +49,8 @@ namespace tg.application
                 appData.enemyPrefab,
                 appData.abilities,
                 appData.defaultEnemyBehaviour,
-                appData.inputActions
+                appData.inputActions,
+                appData.uiTheme,
             },
             (hadErrors) =>
             {
@@ -108,18 +110,26 @@ namespace tg.application
 
         public InputActionAsset     inputActions;
 
+        public ThemeStyleSheet      uiTheme;
+
 #if UNITY_EDITOR
         class Baker : Baker<Application>
         {
             public override void Bake(Application authoring)
             {
                 this.DependsOn(authoring.playerPrefab);
+                this.DependsOn(authoring.enemyPrefab);
                 this.DependsOn(authoring.inputActions);
+                this.DependsOn(authoring.defaultEnemyBehaviour);
+                this.DependsOn(authoring.abilities);
+                this.DependsOn(authoring.uiTheme);
 
                 if(authoring.playerPrefab == null) { return; }
+                if(authoring.enemyPrefab == null) { return; }
                 if(authoring.inputActions == null) { return; }
                 if(authoring.defaultEnemyBehaviour == null) { return; }
                 if(authoring.inputActions == null) { return; }
+                if(authoring.uiTheme == null) { return; }
 
                 var appData = GetEntity(TransformUsageFlags.None);
                 AddComponent<ApplicationData>(appData, new ApplicationData
@@ -129,6 +139,7 @@ namespace tg.application
                     abilities               = new WeakAssetReference<SceneAsset>(authoring.abilities),
                     defaultEnemyBehaviour   = new WeakAssetReference<EnemyBehaviour>(authoring.defaultEnemyBehaviour),
                     inputActions            = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
+                    uiTheme                 = new WeakAssetReference<ThemeStyleSheet>(authoring.uiTheme),
                 });;
             }
         }
@@ -137,14 +148,16 @@ namespace tg.application
 
     public struct ApplicationData : IComponentData
     {
-        public WeakAssetReference<GameObject>          playerPrefab;
-        public WeakAssetReference<GameObject>          enemyPrefab;
+        public WeakAssetReference<GameObject>           playerPrefab;
+        public WeakAssetReference<GameObject>           enemyPrefab;
 
-        public WeakAssetReference<SceneAsset>          abilities;
+        public WeakAssetReference<SceneAsset>           abilities;
 
-        public WeakAssetReference<EnemyBehaviour>      defaultEnemyBehaviour;
+        public WeakAssetReference<EnemyBehaviour>       defaultEnemyBehaviour;
 
-        public WeakAssetReference<InputActionAsset>    inputActions;
+        public WeakAssetReference<InputActionAsset>     inputActions;
+
+        public WeakAssetReference<ThemeStyleSheet>      uiTheme;
     }
 }
 
