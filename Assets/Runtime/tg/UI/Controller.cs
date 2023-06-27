@@ -41,7 +41,6 @@ namespace tg.ui.view
                 // Get event types from all currently referenced assemblies.
                 foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    // get all defined event types in this assembly
                     List<Type> UIControllers = asm
                         // get all types from this assembly
                         .GetTypes()

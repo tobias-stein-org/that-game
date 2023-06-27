@@ -178,6 +178,7 @@ namespace tg.ui
                     view.userData           = data;
                     view.name               = data.name;
                     view.name               = data.name;
+                    view.pickingMode        = PickingMode.Ignore;
                     view.style.position     = Position.Absolute;
 
                     if(data.matchViewport)
@@ -185,7 +186,6 @@ namespace tg.ui
                         view.style.top      = view.style.left   = 0;
                         view.style.width    = view.style.height = Length.Percent(100.0f);
                     }
-
 
                     // add view based on sort index
                     {
@@ -211,6 +211,8 @@ namespace tg.ui
                             }
                         }
                     }
+
+                    ui.rootVisualElement.MarkDirtyRepaint();
                 }
 
                 // create a new entity representing the VisualElement 
