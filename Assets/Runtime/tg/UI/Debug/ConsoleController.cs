@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,10 +8,12 @@ using UnityEngine.UIElements;
 
 namespace tg.ui.view.debug
 {
+    using tg.debug.entities;
+    using static PlasticPipe.PlasticProtocol.Messages.Serialization.ItemHandlerMessagesSerialization;
+
     public class ConsoleController : IViewController
     {
         private bool initialized    = false;
-
 
         public void activated(VisualElement view)
         {
@@ -23,16 +26,15 @@ namespace tg.ui.view.debug
                 history.makeItem        = () => new Label();
                 history.bindItem        = (ve, i) =>
                 {
+                    var data            = (Tuple<string, Color>)history.itemsSource[i];
                     var label           = ve as Label;
                     label.focusable     = false;
-                    label.text          = (string)history.itemsSource[i];
-                    label.style.color   = Color.white * 0.8f;
+                    label.text          = data.Item1;
+                    label.style.color   = data.Item2 * 0.8f;
                 };
 
                 history.fixedItemHeight = 20;
-                history.itemsSource     = new List<string>();
-
-                input.delegatesFocus    = false;
+                history.itemsSource     = new List<Tuple<string, Color>>();
 
                 input.RegisterValueChangedCallback((ChangeEvent<string> e) =>
                 {
@@ -46,9 +48,32 @@ namespace tg.ui.view.debug
                         var cmd = input.value.Substring(0, input.value.Length - 1).Trim();
                         if(!string.IsNullOrEmpty(cmd))
                         {
-                            // TODO: process command
+                            if(cmd.Equals("/clear"))
+                            {
+                                history.itemsSource.Clear();
+                            }
+                            else
+                            {
+                                var result = Console.invokeCommand(cmd);
 
-                            history.itemsSource.Add(cmd);
+                                if(result.hasError && result.result.Length > 0)
+                                {
+                                    this.append(history, new Tuple<string, Color>(cmd, Color.red));
+                                }
+                                else
+                                {
+                                    this.append(history, new Tuple<string, Color>(cmd, Color.white));
+                                }
+
+                                if(result.result.Length > 0)
+                                {
+                                    foreach(var str in result.result)
+                                    {
+                                        this.append(history, new Tuple<string, Color>(str, result.hasError ? Color.red : Color.white));
+                                    }
+                                }
+                            }
+
                             history.RefreshItems();
                             defer(() => history.ScrollToItem(-1));
                         }
@@ -62,6 +87,15 @@ namespace tg.ui.view.debug
             }
 
             defer(input.Focus);
+        }
+
+        private void append(ListView history, Tuple<string, Color> elem)
+        {
+            history.itemsSource.Add(elem);
+            if(history.itemsSource.Count > 5000)
+            {
+                history.itemsSource.RemoveAt(0);
+            }
         }
 
         private void defer(System.Action action)
