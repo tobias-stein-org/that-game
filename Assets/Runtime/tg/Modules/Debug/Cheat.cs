@@ -63,9 +63,14 @@ namespace tg.debug
             }
         }
 
-        private void onQuit(InputAction.CallbackContext obj)
+        [ConsoleCommand(name: "quit", help: "Terminates current application instance.")]
+        private static void onQuit(InputAction.CallbackContext obj)
         {
             EventQueue.publish(new RequestApplicationQuitEvent {});
+        }
+
+        protected override void OnUpdate()
+        {
         }
     }
 }
