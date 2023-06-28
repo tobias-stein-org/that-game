@@ -14,6 +14,9 @@ namespace tg.ability
         public float            range = 2.0f;
 
         [AbilityProperty]
+        public float            knowbackForce = 500.0f;
+
+        [AbilityProperty]
         public float            attackAnimationTime = 0.1f;
 
         public SpriteRenderer   sr;
@@ -28,7 +31,7 @@ namespace tg.ability
             //this.sr.gameObject.transform.Translate(0f, this.range, 0f);
             this.transform.localScale *= this.range;
 
-            transform.rotation = Quaternion.AngleAxis(Mathf.Atan2(this.initialDirection.y, this.initialDirection.x) * Mathf.Rad2Deg, Vector3.forward);
+            transform.rotation = Quaternion.AngleAxis(Mathf.Atan2(this.initialDirection.x, -this.initialDirection.y) * Mathf.Rad2Deg, Vector3.forward);
         }
 
         // Update is called once per frame
@@ -49,7 +52,7 @@ namespace tg.ability
             // no self-damage
             if(entity == this.caster) { return; }
 
-            collision.attachedRigidbody?.AddForce(this.initialDirection * 300f, ForceMode2D.Force);
+            collision.attachedRigidbody?.AddForce(this.initialDirection * this.knowbackForce, ForceMode2D.Force);
 
             Debug.Log($"{this.caster}'s melee attack dealt damage to {entity}");
         }

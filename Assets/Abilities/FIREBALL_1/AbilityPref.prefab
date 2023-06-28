@@ -47,6 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   initialDirection: {x: 0, y: 0}
+  force: 10
 --- !u!50 &670168969788535767
 Rigidbody2D:
   serializedVersion: 4

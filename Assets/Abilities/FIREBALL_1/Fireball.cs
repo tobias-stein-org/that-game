@@ -8,11 +8,14 @@ namespace tg.ability
 
     public class Fireball : Ability
     {
+        [AbilityProperty]
+        public float force = 15.0f;
+
         // Start is called before the first frame update
         void Start()
         {
             var rb = GetComponentInChildren<Rigidbody2D>();
-            rb.AddForce(this.initialDirection * 20.0f, ForceMode2D.Impulse);
+            rb.AddForce(this.initialDirection * this.force, ForceMode2D.Impulse);
         }
 
         void OnCollisionEnter2D(Collision2D collision)
@@ -25,13 +28,6 @@ namespace tg.ability
 
             // destroy the fire ball
             Destroy(this.gameObject, Time.deltaTime);
-        }
-
-
-        // Update is called once per frame
-        void Update()
-        {
-        
         }
     }
 }

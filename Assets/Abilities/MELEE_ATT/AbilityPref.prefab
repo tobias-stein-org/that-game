@@ -149,7 +149,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialDirection: {x: 0, y: 0}
   range: 2
-  attackAnimationTime: 0.25
+  knowbackForce: 5000
+  attackAnimationTime: 0.3
   sr: {fileID: 8991691656722609644}
 --- !u!1 &8065800273925209390
 GameObject:
