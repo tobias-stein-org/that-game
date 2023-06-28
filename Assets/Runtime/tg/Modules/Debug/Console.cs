@@ -266,8 +266,6 @@ namespace tg.debug
                 {
                     return CommandInvocationResult.error($"'{nameAndParams[0]}' command does not exist.");
                 }
-
-                return CommandInvocationResult.success("");
             }
 
             private static Dictionary<string, Command> cmds;
