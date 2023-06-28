@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 namespace tg.ui.view.debug
 {
     using tg.debug.entities;
-    using static PlasticPipe.PlasticProtocol.Messages.Serialization.ItemHandlerMessagesSerialization;
 
     public class ConsoleController : IViewController
     {
