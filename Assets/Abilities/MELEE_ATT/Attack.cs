@@ -49,6 +49,8 @@ namespace tg.ability
             // no self-damage
             if(entity == this.caster) { return; }
 
+            collision.attachedRigidbody?.AddForce(this.initialDirection * 300f, ForceMode2D.Force);
+
             Debug.Log($"{this.caster}'s melee attack dealt damage to {entity}");
         }
     }
