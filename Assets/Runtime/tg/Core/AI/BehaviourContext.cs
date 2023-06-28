@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -7,9 +8,6 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Entities.UniversalDelegates;
-using UnityEngine.UIElements;
-using System.Collections;
 
 namespace tg.ai
 {
@@ -126,8 +124,7 @@ namespace tg.ai
 
         static BehaviourContext()
         {
-            var sectorOffset                    = Quaternion.AngleAxis(360.0f / 16.0f, Vector3.forward);
-
+            var sectorOffset = new Quaternion(0.0f, 0.0f, 0.19509f, 0.98079f); // Quaternion.AngleAxis(360.0f / 16.0f, Vector3.forward);
             BehaviourContext.segmentDir[0]       = Vector3.right;
             for(int i = 1; i < BehaviourContext.segmentDir.Length; i++)
             {
