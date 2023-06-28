@@ -11,12 +11,10 @@ namespace tg.player
     using tg.events;
     using tg.player.events;
 
-    public class PlayerAuthoring : MonoBehaviour, IEventListener<PlayerAuthoring>
+    public class PlayerAuthoring : MonoBehaviour
     {
         private void Awake()
         {
-            EventQueue.subscribe(this);
-
             CinemachineVirtualCamera vcam               = null;
             var cameraGO                                = new GameObject("Camera");
             {
@@ -64,11 +62,6 @@ namespace tg.player
                     vcam.Follow                         = this.transform;
                 }
             }
-        }
-
-        private void OnDestroy()
-        {
-            EventQueue.unsubscribe(this);
         }
     }
 }
