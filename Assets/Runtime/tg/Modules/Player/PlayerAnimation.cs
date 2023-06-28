@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.player
 {
@@ -17,10 +18,10 @@ namespace tg.player
         {
             foreach(var (animator, playerInput) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Animator>, PlayerInputData>().WithAll<Player>())
             {
-                if(playerInput.moveXY.sqrMagnitude > 1e-5f)
+                if(math.lengthsq(playerInput.move) > 1e-5f)
                 {
-                    animator.Value.SetFloat("moveX", playerInput.moveXY.x);
-                    animator.Value.SetFloat("moveY", playerInput.moveXY.y);
+                    animator.Value.SetFloat("moveX", playerInput.look.x);
+                    animator.Value.SetFloat("moveY", playerInput.look.y);
 
                     animator.Value.Play("running");
                 }
