@@ -36,7 +36,7 @@ namespace tg.player
             //foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
                 float2 position         = (Vector2)transform.Value.position;
-                input.ValueRW.move    = playerActions.FindAction("move").ReadValue<Vector2>();
+                input.ValueRW.move      = playerActions.FindAction("move").ReadValue<Vector2>();
                 input.ValueRW.melee     = playerActions.FindAction("melee").ReadValue<float>();
                 input.ValueRW.cast      = playerActions.FindAction("cast").ReadValue<float>();
 
