@@ -28,7 +28,7 @@ namespace tg.player
             {
                 foreach(var input in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
                 {
-                    if(math.lengthsq(input.ValueRO.move) > Physics2D.velocityThreshold)
+                    if(math.lengthsq(input.ValueRO.move) > 1e-5f)
                     {
                         var r0 = Quaternion.LookRotation((Vector2)input.ValueRO.look, Vector3.forward);
                         var r1 = Quaternion.LookRotation((Vector2)input.ValueRO.move, Vector3.forward);
