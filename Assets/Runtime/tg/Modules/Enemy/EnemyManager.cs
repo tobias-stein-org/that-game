@@ -83,7 +83,10 @@ namespace tg.enemy {
                 });
                 ECB.SetComponent<EnemyInputData>(enemyEntity, new EnemyInputData
                 {
-                    lastBehaviourContextDecision = 0
+                    moveSpeed       = 2.0f,
+                    turnSpeed       = 4 * 360.0f,
+                    move            = float2.zero,
+                    look            = new float2(-1.0f, 0.0f)
                 });
                 ECB.SetComponent<Sensor>(enemyEntity, new Sensor(new Sensor.Description
                 {

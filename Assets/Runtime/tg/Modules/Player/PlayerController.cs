@@ -6,7 +6,9 @@ using Unity.Mathematics;
 
 namespace tg.player
 {
+    using tg.ai;
     using tg.application;
+    using Unity.Entities.UniversalDelegates;
 
     namespace entities
     {
@@ -30,10 +32,15 @@ namespace tg.player
                 {
                     if(math.lengthsq(input.ValueRO.move) > 1e-5f)
                     {
-                        var r0 = Quaternion.LookRotation((Vector2)input.ValueRO.look, Vector3.forward);
-                        var r1 = Quaternion.LookRotation((Vector2)input.ValueRO.move, Vector3.forward);
+                        //note: code is basically the conversion of UnityEngine.Quaternion.RotateTowards
+                        var q0 = quaternion.LookRotation(new float3(input.ValueRO.look, 0f), Vector3.forward);
+                        var q1 = quaternion.LookRotation(new float3(input.ValueRO.move, 0f), Vector3.forward);
 
-                        input.ValueRW.look = (Vector2)(Quaternion.RotateTowards(r0, r1, SystemAPI.Time.DeltaTime * input.ValueRO.turnSpeed) * Vector3.forward);
+                        float num = math.min(math.abs(math.dot(q0, q1)), 1f);
+                        num = num > 0.999999f ? 0f : (math.acos(num) * 2f * 57.29578f);
+
+                        var look = num == 0f ? q1 : math.slerp(q0, q1, math.min(1f, SystemAPI.Time.DeltaTime * input.ValueRO.turnSpeed / num));
+                        input.ValueRW.look  = math.mul(look, new float3(0f, 0f, 1f)).xy;
                     }
                 }
             }
@@ -55,10 +62,17 @@ namespace tg.player
 
             public void OnUpdate(ref SystemState state)
             {
-                foreach(var (rigidBody, playerInput) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>, PlayerInputData>().WithAll<Player>())
+                foreach(var (rigidBody, input) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Rigidbody2D>, PlayerInputData>().WithAll<Player>())
                 {
-                    // set velocity from player input to drive player object, physics will take care of collicion handling for us
-                    rigidBody.Value.velocity = playerInput.move * playerInput.moveSpeed;
+                    if(math.lengthsq(input.move) > 1e-5)
+                    {
+                        // set velocity from player input to drive player object, physics will take care of collicion handling for us
+                        rigidBody.Value.velocity = input.look * input.moveSpeed;
+                    }
+                    else
+                    {
+                        rigidBody.Value.velocity = Vector2.zero;
+                    }
                 }
             }
         }

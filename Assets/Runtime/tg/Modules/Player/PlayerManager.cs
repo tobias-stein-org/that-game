@@ -103,8 +103,8 @@ namespace tg.player
 
                 ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
                 {
-                    moveSpeed   = 10.0f,
-                    turnSpeed   = 720.0f,
+                    moveSpeed   = 5.0f,
+                    turnSpeed   = 4 * 360.0f,
                     move        = float2.zero,
                     look        = new float2(-1.0f, 0.0f)
                 });

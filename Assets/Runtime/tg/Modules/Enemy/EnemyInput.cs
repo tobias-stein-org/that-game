@@ -1,12 +1,21 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace tg.enemy
 {
     public struct EnemyInputData : IComponentData
     {
+        public float2   look;
+        public float2   move;
+
         /// <summary>
-        /// Contains the last index (decsion) of the previous behaviour context.
+        /// Degrees per second.
         /// </summary>
-        public byte    lastBehaviourContextDecision;
+        public float    turnSpeed;
+
+        /// <summary>
+        /// Units per second.
+        /// </summary>
+        public float    moveSpeed;
     }
 }
