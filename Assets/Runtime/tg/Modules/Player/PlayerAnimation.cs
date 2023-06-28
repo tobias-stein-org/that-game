@@ -18,10 +18,11 @@ namespace tg.player
         {
             foreach(var (animator, playerInput) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Animator>, PlayerInputData>().WithAll<Player>())
             {
+                animator.Value.SetFloat("moveX", playerInput.look.x);
+                animator.Value.SetFloat("moveY", playerInput.look.y);
+
                 if(math.lengthsq(playerInput.move) > 1e-5f)
                 {
-                    animator.Value.SetFloat("moveX", playerInput.look.x);
-                    animator.Value.SetFloat("moveY", playerInput.look.y);
 
                     animator.Value.Play("running");
                 }
