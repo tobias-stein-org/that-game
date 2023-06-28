@@ -392,6 +392,8 @@ namespace tg.ability
 
     #if UNITY_EDITOR
                 var entityName  = entityManager.GetName(entity);
+                entityName      = string.IsNullOrEmpty(entityName) ? entity.ToString() : entityName;
+
                 var meta        = entityManager.GetComponentData<AbilityMeta>(ability);
 
                 entityManager.SetName(entityAbility, $"{meta.name}-{entityName}");
