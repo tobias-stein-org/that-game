@@ -119,6 +119,7 @@ namespace tg.game
 
 			//abilities.Dispose();
 
+			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "MELEE_ATT" });
 			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "FIREBALL_1" });
 			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "ICEBLAST_1" });
 
