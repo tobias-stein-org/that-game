@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 
 using UnityEngine;
 
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Collections;
@@ -16,17 +17,31 @@ namespace tg.ai
         /// <summary>
         /// The upper limit of how many ai behaviours there can be used during the application run-time.
         /// </summary>
-        internal const int MAX_BEHAVIOURS           = 8;
+        internal const int MAX_BEHAVIOURS                                   = 8;
 
         /// <summary>
         /// Running sequence counter for any new derived context behaviour type.
+        /// Note: We have to do this cumbersome static implementation to be Burst compatible/
         /// </summary>
-        internal static int NEXT_BEHAVIOUR_INDEX    = 0;
+        internal static readonly SharedStatic<int> NEXT_BEHAVIOUR_INDEX     = SharedStatic<int>.GetOrCreate<SharedStaticContext, SharedStaticContext.IntFieldKey>();
+
+        static BehaviourContextInternal()
+        {
+            NEXT_BEHAVIOUR_INDEX.Data                                       = 0;
+        }
+
+        /// <summary>
+        /// See: https://docs.unity3d.com/Packages/com.unity.burst@1.7/manual/docs/AdvancedUsages.html#shared-static
+        /// </summary>
+        private class SharedStaticContext
+        {
+            public class IntFieldKey {}
+        }
 
         internal static int nextBehaviourIndex()
         {
-            Unity.Assertions.Assert.IsTrue(BehaviourContextInternal.NEXT_BEHAVIOUR_INDEX < BehaviourContextInternal.MAX_BEHAVIOURS, $"You have reached the upper limit of '{MAX_BEHAVIOURS}' AI behaviours. If you need more increase the 'BehaviourContextInternal.MAX_BEHAVIOURS' limit.");
-            return BehaviourContextInternal.NEXT_BEHAVIOUR_INDEX++;
+            Unity.Assertions.Assert.IsTrue(BehaviourContextInternal.NEXT_BEHAVIOUR_INDEX.Data < BehaviourContextInternal.MAX_BEHAVIOURS, $"You have reached the upper limit of '{MAX_BEHAVIOURS}' AI behaviours. If you need more increase the 'BehaviourContextInternal.MAX_BEHAVIOURS' limit.");
+            return BehaviourContextInternal.NEXT_BEHAVIOUR_INDEX.Data++;
         }
 
         /// <summary>
