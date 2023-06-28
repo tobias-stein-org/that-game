@@ -61,7 +61,7 @@ namespace tg.game
 				ref var chunk = ref levelData.getChunkById(i);
 
 				int requested = 0;
-				while(requested < 3)
+				while(requested < 6)
 				{
 					var tileId = rng.NextInt(chunk.data.Length);
 					var tile = chunk[tileId];
@@ -84,15 +84,15 @@ namespace tg.game
 				}
 			}
 
-			EventQueue.publish(new SpawnEnemyRequestEvent
-			{
-				amount = 1,
-				desc = new SpawnRequestDescription
-				{
-					location = new float3(10.5f, 10.0f, 0.0f),
-					behaviour = defaultBehaviour
-				}
-			});
+			//EventQueue.publish(new SpawnEnemyRequestEvent
+			//{
+			//	amount = 1,
+			//	desc = new SpawnRequestDescription
+			//	{
+			//		location = new float3(10.5f, 10.0f, 0.0f),
+			//		behaviour = defaultBehaviour
+			//	}
+			//});
 
 			StartNew.spawnPlayer(in levelData);
         }
