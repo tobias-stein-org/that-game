@@ -63,6 +63,8 @@ namespace tg.spawn
 				public int					objectId;
 
 				public bool Equals(SpawnRequest other) { return this.id.Equals(other.id); }
+
+				public bool isValid			{ get { return this.id != Entity.Null; } }
 			}
 
 			internal class PostSpawnActionData<T> : IComponentData
@@ -127,6 +129,8 @@ namespace tg.spawn
 
 					while(process.TryDequeue(out SpawnRequest spawnRequest))
 					{
+						if(!spawnRequest.isValid) { continue; }
+
 						var ECB = this.pending[spawnRequest];
 
 						if(spawnRequest.entity != Entity.Null)
@@ -139,7 +143,6 @@ namespace tg.spawn
 
 						if(spawnRequest.objectId != -1)
 						{
-							
 							// note: we reuse the initial prefab varaible and replace it with the actual object instance
 							spawnRequest.objectId = UnityEngine.GameObject.Instantiate(
 								Resources.InstanceIDToObject(spawnRequest.objectId),
