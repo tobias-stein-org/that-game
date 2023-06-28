@@ -222,5 +222,5 @@ MonoBehaviour:
     target: 0
     activation: 0
     cost: 0
-    cooldown: 5
+    cooldown: 3
     duration: 0
