@@ -169,6 +169,13 @@ namespace tg.ui
 
             void spawnView(ref SystemState state, UIViewData data, UIDocument ui)
             {
+                if(this.views.ContainsKey(data.name))
+                {
+                    UnityEngine.Debug.LogWarning($"View '{data.name}' already spawned.");
+                    return;
+                }
+
+
                 var TController             = Type.GetType(data.controller.assemblyReference);
                 var controller              = (IViewController)Activator.CreateInstance(TController);
 

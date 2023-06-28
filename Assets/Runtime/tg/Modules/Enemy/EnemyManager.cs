@@ -14,6 +14,7 @@ namespace tg.enemy {
     using tg.ai;
     using tg.ai.behaviour;
     using tg.physics.entities;
+    using tg.ability.events;
 
     /// <summary>
     /// Added to spawned enemy entities.
@@ -64,37 +65,9 @@ namespace tg.enemy {
             }
         }
 
-        void onEntitySpawnedEvent(EntitySpawnedEvent e)
-        {
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            if(entityManager.HasComponent<Enemy>(e.entity))
-            {
-                var enemy               = entityManager.GetComponentData<Enemy>(e.entity);
-#if UNITY_EDITOR
-                var enemyDebugging      = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.entity).gameObject.AddComponent<EnemyDebugging>();
-                {
-                    enemyDebugging.self = enemy;
-                }
-#endif
-
-                EventQueue.publish(new EnemySpawnedEvent { enemy = enemy });
-            }
-        }
-
-        void onKillEnemyEvent(KillEnemyEvent e)
-        {
-            var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy.entity).gameObject;
-
-            GameObject.Destroy(playerGO);
-            entityManager.DestroyEntity(e.enemy.entity);
-
-            EventQueue.publish(new EnemyDiedEvent { enemy = e.enemy });
-        }
-
         private static void createEnemyEntity(GameObject instance, SpawnRequestDescription description)
         {
-            var enemyEntity = tg.spawn.request.create(out EntityCommandBuffer ECB);
+            var enemyEntity = tg.spawn.request.create(out EntityCommandBuffer ECB, default, 0f, EnemyManager.learnAbilities);
             {
                 ECB.AddComponent(enemyEntity, new ComponentTypeSet(
                    typeof(Enemy),
@@ -175,6 +148,41 @@ namespace tg.enemy {
             }
         }
 
+        private static void learnAbilities(Entity entity)
+        {
+            EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = entity, ability = "MELEE_ATT" });
+            EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = entity, ability = "FIREBALL_1" });
+        }
+
+        void onEntitySpawnedEvent(EntitySpawnedEvent e)
+        {
+            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+            if(entityManager.HasComponent<Enemy>(e.entity))
+            {
+                var enemy               = entityManager.GetComponentData<Enemy>(e.entity);
+#if UNITY_EDITOR
+                var enemyDebugging      = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.entity).gameObject.AddComponent<EnemyDebugging>();
+                {
+                    enemyDebugging.self = enemy;
+                }
+#endif
+
+                EventQueue.publish(new EnemySpawnedEvent { enemy = enemy });
+            }
+        }
+
+        void onKillEnemyEvent(KillEnemyEvent e)
+        {
+            var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy.entity).gameObject;
+
+            GameObject.Destroy(playerGO);
+            entityManager.DestroyEntity(e.enemy.entity);
+
+            EventQueue.publish(new EnemyDiedEvent { enemy = e.enemy });
+        }
+
+        
         private void killAllEnemies()
         {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;

@@ -104,7 +104,9 @@ namespace tg.player
                 ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
                 {
                     moveSpeed   = 10.0f,
-                    moveXY      = UnityEngine.Vector2.zero
+                    turnSpeed   = 720.0f,
+                    move        = float2.zero,
+                    look        = new float2(-1.0f, 0.0f)
                 });
 
                 ECB.SetComponent<WithManagedCollider>(playerEntity, new WithManagedCollider

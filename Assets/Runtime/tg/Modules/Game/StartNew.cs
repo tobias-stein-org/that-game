@@ -111,14 +111,7 @@ namespace tg.game
 
 		void onPlayerSpawnedEvent(PlayerSpawnedEvent e)
 		{
-			//var abilities = World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(typeof(AbilityData)).ToEntityArray(Unity.Collections.Allocator.Temp);
-			//if(abilities.Length > 0)
-			//{
-			//	EventQueue.publish(new LearnAbilityEvent<Entity> { entity = e.player.entity, ability = abilities[0] });
-			//}
-
-			//abilities.Dispose();
-
+			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "MELEE_ATT" });
 			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "FIREBALL_1" });
 			EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player.entity, ability = "ICEBLAST_1" });
 

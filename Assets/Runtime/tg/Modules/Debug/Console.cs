@@ -276,6 +276,8 @@ namespace tg.debug
 
             static void fetchConsoleCommands()
             {
+                if(isBusy) { return; }
+
                 isBusy = true;
 
                 var t0 = DateTime.Now;

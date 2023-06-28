@@ -35,9 +35,10 @@ namespace tg.player
             foreach(var (input, player, transform) in SystemAPI.Query<RefRW<PlayerInputData>, Player, SystemAPI.ManagedAPI.UnityEngineComponent<Transform>>())
             //foreach(var playerInput in SystemAPI.Query<RefRW<PlayerInputData>>().WithAll<Player>())
             {
-                input.ValueRW.moveXY  = playerActions.FindAction("move").ReadValue<Vector2>();
-                input.ValueRW.melee   = playerActions.FindAction("melee").ReadValue<float>();
-                input.ValueRW.cast    = playerActions.FindAction("cast").ReadValue<float>();
+                float2 position         = (Vector2)transform.Value.position;
+                input.ValueRW.move      = playerActions.FindAction("move").ReadValue<Vector2>();
+                input.ValueRW.melee     = playerActions.FindAction("melee").ReadValue<float>();
+                input.ValueRW.cast      = playerActions.FindAction("cast").ReadValue<float>();
 
                 if(playerActions.FindAction("ability0").WasPerformedThisFrame())
                 {
@@ -45,8 +46,8 @@ namespace tg.player
                     {
                         entity      = player.entity,
                         ability     = "FIREBALL_1",
-                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
-                        direction   = input.ValueRO.moveXY
+                        point       = position + (input.ValueRO.look * 1.5f),
+                        direction   = input.ValueRO.look
                     });
                 }
 
@@ -56,8 +57,19 @@ namespace tg.player
                     {
                         entity      = player.entity,
                         ability     = "ICEBLAST_1",
-                        point       = (Vector2)transform.Value.position + (input.ValueRO.moveXY * 1.5f),
-                        direction   = input.ValueRO.moveXY
+                        point       = position + (input.ValueRO.look * 1.5f),
+                        direction   = input.ValueRO.look
+                    });
+                }
+
+                if(playerActions.FindAction("melee").WasPerformedThisFrame())
+                {
+                    EventQueue.publish(new UseAbilityEvent<Unity.Collections.FixedString64Bytes>
+                    {
+                        entity      = player.entity,
+                        ability     = "MELEE_ATT",
+                        point       = position + (input.ValueRO.look * 1.5f),
+                        direction   = input.ValueRO.look
                     });
                 }
             }
@@ -66,8 +78,17 @@ namespace tg.player
 
     public struct PlayerInputData : IComponentData
     {
-        public Vector2  moveXY;
+        public float2   look;
+        public float2   move;
 
+        /// <summary>
+        /// Degrees per second.
+        /// </summary>
+        public float    turnSpeed;
+
+        /// <summary>
+        /// Units per second.
+        /// </summary>
         public float    moveSpeed;
 
         public float    melee;
