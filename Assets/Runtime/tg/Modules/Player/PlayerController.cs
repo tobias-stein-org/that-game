@@ -67,7 +67,7 @@ namespace tg.player
                     if(math.lengthsq(input.move) > 1e-5)
                     {
                         // set velocity from player input to drive player object, physics will take care of collicion handling for us
-                        rigidBody.Value.velocity = input.look * input.moveSpeed;
+                        rigidBody.Value.velocity = input.move * input.moveSpeed;
                     }
                     else
                     {
