@@ -5,8 +5,9 @@ using Unity.Entities;
 
 namespace tg.application
 {
+    using tg.debug;
     using tg.events;
-
+    
     using tg.application.events;
     using tg.game.events;
 
@@ -158,6 +159,10 @@ namespace tg.application
                     this.EntityManager.AddComponent<MenuOpenState>(this.SystemHandle);
                     // pauses all animations and physics
                     UnityEngine.Time.timeScale = 0f;
+
+                    // note: apparently this is necessary to gurantee all InputAction callback un/subscriptions are still updated.
+                    // seeting the timeScale to zero seems to disable this functionality so a manual update seems to be required.
+                    UnityEngine.InputSystem.InputSystem.Update();
                 }
             }
 
@@ -174,6 +179,23 @@ namespace tg.application
                     }
                 }
             }
+        }
+
+        [ConsoleCommand("pause", "Pause or unpause the application.")]
+        static void pauseCmd() { EventQueue.publish(new PauseEvent { }); }
+
+        void onPauseEvent(PauseEvent e)
+        {
+            // unpause
+            if(this.EntityManager.HasComponent<PausedState>(this.SystemHandle)) 
+            {
+                this.EntityManager.RemoveComponent<PausedState>(this.SystemHandle);
+            }
+            else // pause
+            {
+                this.EntityManager.AddComponent<PausedState>(this.SystemHandle);
+            }
+
         }
 
         /// <summary>

@@ -11,4 +11,7 @@ namespace tg.application.events
     }
 
     public struct RequestApplicationQuitEvent : IEvent {}
+
+
+    public struct PauseEvent : IEvent {}
 }
