@@ -23,22 +23,26 @@ namespace tg.debug
 
         protected override void OnStartRunning()
         {
-            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
-
-            debugActions.FindAction("quit").performed += onQuit;
-            debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
-            debugActions.FindAction("kill_player").performed += onKillPlayer;
-            debugActions.FindAction("new_level").performed += onNewLevel;
+            if(SystemAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            {
+                var debugActions = data.inputActions.result.FindActionMap("Debug");
+                debugActions.FindAction("quit").performed += onQuit;
+                debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
+                debugActions.FindAction("kill_player").performed += onKillPlayer;
+                debugActions.FindAction("new_level").performed += onNewLevel;
+            }
         }
 
         protected override void OnStopRunning()
         {
-            var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
-            
-            debugActions.FindAction("quit").performed -= onQuit;
-            debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
-            debugActions.FindAction("kill_player").performed -= onKillPlayer;
-            debugActions.FindAction("new_level").performed -= onNewLevel;
+            if(SystemAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            {
+                var debugActions = data.inputActions.result.FindActionMap("Debug");
+                debugActions.FindAction("quit").performed -= onQuit;
+                debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
+                debugActions.FindAction("kill_player").performed -= onKillPlayer;
+                debugActions.FindAction("new_level").performed -= onNewLevel;
+            }
         }
 
         private void onNewLevel(InputAction.CallbackContext obj)
