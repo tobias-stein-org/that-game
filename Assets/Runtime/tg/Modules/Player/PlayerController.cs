@@ -7,8 +7,7 @@ using Unity.Mathematics;
 namespace tg.player
 {
     using tg.ai;
-    using tg.application;
-    using Unity.Entities.UniversalDelegates;
+    using tg.application.entities;
 
     namespace entities
     {
