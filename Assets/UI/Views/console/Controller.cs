@@ -1,39 +1,39 @@
 using System;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace tg.ui.view.debug
+namespace tg.ui.view
 {
     using tg.debug.entities;
 
-    public class ConsoleController : IViewController
+    public class consoleController : IViewController
     {
-        private bool initialized    = false;
+        private bool initialized = false;
 
         public void activated(VisualElement view)
         {
-            var input               = view.Q<TextField>("input");
-            var history             = view.Q<ListView>("history");
-            var scroll              = history.Q<ScrollView>();
+            var input = view.Q<TextField>("input");
+            var history = view.Q<ListView>("history");
+            var scroll = history.Q<ScrollView>();
 
             if(!this.initialized)
             {
-                history.makeItem        = () => new Label();
-                history.bindItem        = (ve, i) =>
+                history.makeItem = () => new Label();
+                history.bindItem = (ve, i) =>
                 {
-                    var data            = (Tuple<string, Color>)history.itemsSource[i];
-                    var label           = ve as Label;
-                    label.focusable     = false;
-                    label.text          = data.Item1;
-                    label.style.color   = data.Item2 * 0.8f;
+                    var data = (Tuple<string, Color>)history.itemsSource[i];
+                    var label = ve as Label;
+                    label.focusable = false;
+                    label.text = data.Item1;
+                    label.style.color = data.Item2 * 0.8f;
                 };
 
                 history.fixedItemHeight = 20;
-                history.itemsSource     = new List<Tuple<string, Color>>();
+                history.itemsSource = new List<Tuple<string, Color>>();
 
                 input.RegisterValueChangedCallback((ChangeEvent<string> e) =>
                 {
@@ -82,7 +82,7 @@ namespace tg.ui.view.debug
                     }
                 });
 
-                this.initialized        = true;
+                this.initialized = true;
             }
 
             defer(input.Focus);

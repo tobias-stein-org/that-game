@@ -176,7 +176,7 @@ namespace tg.ui
                 }
 
 
-                var TController             = Type.GetType(data.controller.assemblyReference);
+                var TController             = Type.GetType(data.controller);
                 var controller              = (IViewController)Activator.CreateInstance(TController);
 
                 // create new runtime UI VisualElement

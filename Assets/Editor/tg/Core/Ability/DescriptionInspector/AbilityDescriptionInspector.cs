@@ -1,6 +1,5 @@
 using System.Linq;
 using System.Collections.Generic;
-using System.Reflection;
 
 using UnityEditor;
 using UnityEngine;
@@ -12,7 +11,6 @@ using Unity.Collections;
 namespace tg.editor.ability
 {
     using tg.ability;
-    using tg.ability.entities;
 
     [CustomEditor(typeof(AbilityDescription))]
     public class AbilityDescriptionInspector : Editor

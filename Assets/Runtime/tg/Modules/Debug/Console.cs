@@ -223,7 +223,7 @@ namespace tg.debug
                 }
             }
 
-            internal static CommandInvocationResult invokeCommand(string cmdStr)
+            public static CommandInvocationResult invokeCommand(string cmdStr)
             {
                 var nameAndParams = cmdStr.Split(' ', 2);
 

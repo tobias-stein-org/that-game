@@ -17,7 +17,7 @@ namespace tg.editor.ability
     public class AbilityEditor : EditorWindow
     {
         private const string    ABILITY_DIR                 = "Assets/Abilities";
-        private const string    ABILITY_ADDRESSABLE_GROUP   = "Ability";
+        private const string    ABILITY_ADDRESSABLE_GROUP   = "Abilities";
         private const string    ABILITY_ADDRESSABLE_PREFIX  = "tg.ability.";
 
         private static void createAbility(string newAbilityFolder, string newAbilityName)
@@ -214,21 +214,20 @@ namespace tg.editor.ability
         }
 
         [SerializeField]
-        private VisualTreeAsset     visualTreeAsset = default;
+        private VisualTreeAsset             visualTreeAsset = default;
 
         private VisualElement               list;
 
         private List<AbilityDescription>    abilities;
         private List<AbilityDescription>    abilitiesFiltered;
 
-        private ToolbarSearchField          search;
         private ListView                    abilityList;
 
         [MenuItem("tg/Ability/Editor")]
         public static void OpenEditorWindow()
         {
             var wnd             = GetWindow<AbilityEditor>();
-            wnd.titleContent    = new GUIContent("AbilityEditor");
+            wnd.titleContent    = new GUIContent("Ability Editor");
             wnd.position        = new Rect(0, 0, 800, 600);
         }
 
