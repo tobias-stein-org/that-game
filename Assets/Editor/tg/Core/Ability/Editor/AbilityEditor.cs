@@ -6,86 +6,76 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
-using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
+using UnityEditor.AddressableAssets;
 
 using Unity.Collections;
 
 namespace tg.editor.ability
 {
     using tg.ability;
-    using tg.ability.entities;
-
 
     public class AbilityEditor : EditorWindow
     {
-        private const string    ABILITY_DIR     = "Assets/Abilities";
-        private const string    ABILITY_LABEL   = "Ability";
-
+        private const string    ABILITY_DIR                 = "Assets/Abilities";
+        private const string    ABILITY_ADDRESSABLE_GROUP   = "Ability";
+        private const string    ABILITY_ADDRESSABLE_PREFIX  = "tg.ability.";
 
         private static void createAbility(string newAbilityFolder, string newAbilityName)
         {
-            var activeScene                 = EditorSceneManager.GetActiveScene();
-            var abilitiesScene              = openAbilitySubScene();
-            {
-                AssetDatabase.CreateFolder(AbilityEditor.ABILITY_DIR, newAbilityName);
+            AssetDatabase.CreateFolder(AbilityEditor.ABILITY_DIR, newAbilityName);
             
-                var description             = ScriptableObject.CreateInstance<AbilityDescription>();
+            var description                 = ScriptableObject.CreateInstance<AbilityDescription>();
 
-                FixedStringMethods.CopyFrom(ref description.meta.name, newAbilityName);
-                FixedStringMethods.CopyFrom(ref description.meta.description, "Description missing.");
+            FixedStringMethods.CopyFrom(ref description.meta.name, newAbilityName);
+            FixedStringMethods.CopyFrom(ref description.meta.description, "Description missing.");
 
-                var newAbilityAsset         = $"{newAbilityFolder}/AbilityDesc.asset";
-                var newAbilityPrefab        = $"{newAbilityFolder}/AbilityPref.prefab";
-                                        
-                var newAbilityGO            = new GameObject(newAbilityName);
+            var newAbilityAsset             = $"{newAbilityFolder}/AbilityDesc.asset";
+            var newAbilityPrefab            = $"{newAbilityFolder}/AbilityPref.prefab";
+                                    
+            var newAbilityGO                = new GameObject(newAbilityName);
 
-                description.abilityPrefab   = PrefabUtility.SaveAsPrefabAsset(newAbilityGO, newAbilityPrefab);
-                GameObject.DestroyImmediate(newAbilityGO);
+            description.abilityPrefab       = PrefabUtility.SaveAsPrefabAsset(newAbilityGO, newAbilityPrefab);
+            GameObject.DestroyImmediate(newAbilityGO);
 
-                AssetDatabase.CreateAsset(description, newAbilityAsset);
-                AssetDatabase.SetLabels(description, new string[] { AbilityEditor.ABILITY_LABEL });
+            AssetDatabase.CreateAsset(description, newAbilityAsset);
+            AssetDatabase.SetLabels(description, new string[] { AbilityDescription.label });
 
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
+            var addressableAssetSettings    = AddressableAssetSettingsDefaultObject.Settings;
+            var abilitiesGroup              = addressableAssetSettings.FindGroup(ABILITY_ADDRESSABLE_GROUP) ?? addressableAssetSettings.CreateGroup(ABILITY_ADDRESSABLE_GROUP, false, false, false, null, typeof(UnityEditor.AddressableAssets.Settings.GroupSchemas.BundledAssetGroupSchema));
+            var adressableEntry             = addressableAssetSettings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(newAbilityAsset), abilitiesGroup);
+            adressableEntry.address         = $"{ABILITY_ADDRESSABLE_PREFIX}{newAbilityName}";
+            adressableEntry.SetLabel(AbilityDescription.label, true);
 
-                var abilityGO = new GameObject(newAbilityName);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            var abilityGO = new GameObject(newAbilityName);
+            {
+                abilityGO.transform.SetParent(null, true);
+                var ability = abilityGO.AddComponent<AbilityAuthering>();
                 {
-                    abilityGO.transform.SetParent(null, true);
-                    var ability = abilityGO.AddComponent<AbilityAuthering>();
-                    {
-                        ability.description = description;
-                    }
+                    ability.description     = description;
                 }
-                SceneManager.MoveGameObjectToScene(abilityGO, abilitiesScene);
-                EditorSceneManager.MarkSceneDirty(abilitiesScene);
-
-
-                Selection.activeObject      = description;
             }
-            EditorSceneManager.SaveScene(abilitiesScene);
-            EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
+
+            Selection.activeObject          = description;
         }
 
         internal static void deleteAbility(AbilityDescription description)
         {
-            var activeScene                 = EditorSceneManager.GetActiveScene();
-            var abilitiesScene              = openAbilitySubScene();
-            {
-                try
-                {
-                    var abilityGO           = abilitiesScene.GetRootGameObjects().First(GO => GO.name == description.meta.name);
-                    GameObject.DestroyImmediate(abilityGO);
-                    EditorSceneManager.MarkSceneDirty(abilitiesScene);
-                }
-                catch(System.Exception e) { UnityEngine.Debug.LogException(e); }
-            }
-            EditorSceneManager.SaveScene(abilitiesScene);
-            EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
-
             try
             {
-                AssetDatabase.DeleteAsset(System.IO.Path.GetDirectoryName(AssetDatabase.GetAssetPath(description)));
+                var assetPath   = AssetDatabase.GetAssetPath(description);
+
+                AssetDatabase.DeleteAsset(System.IO.Path.GetDirectoryName(assetPath));
+
+                var addressableAssetSettings = AddressableAssetSettingsDefaultObject.Settings;
+                var abilitiesGroup = addressableAssetSettings.FindGroup(ABILITY_ADDRESSABLE_GROUP);
+                if(abilitiesGroup != null)
+                {
+                    addressableAssetSettings.RemoveAssetEntry(AssetDatabase.AssetPathToGUID(assetPath));
+                }
+
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
             }
@@ -98,20 +88,6 @@ namespace tg.editor.ability
                 wnd.refreshAbilities();
                 Selection.activeObject = null;
             }
-        }
-
-        private static Scene openAbilitySubScene()
-        {
-            var abilitiesScene  = $"{AbilityEditor.ABILITY_DIR}/abilities.unity";
-            var exists          = System.IO.File.Exists(abilitiesScene);
-
-            if(!exists)
-            {
-                // create new empty scene
-                EditorSceneManager.SaveScene(EditorSceneManager.NewScene(NewSceneSetup.EmptyScene), abilitiesScene);
-            }
-
-            return EditorSceneManager.OpenScene(abilitiesScene, OpenSceneMode.Additive);
         }
 
         /// <summary>
@@ -309,7 +285,7 @@ namespace tg.editor.ability
         internal void refreshAbilities(string select = null)
         {
             this.abilities          = AssetDatabase
-                .FindAssets($"l: {AbilityEditor.ABILITY_LABEL}", new string[] { AbilityEditor.ABILITY_DIR })
+                .FindAssets($"l: {AbilityDescription.label}", new string[] { AbilityEditor.ABILITY_DIR })
                 .Select(assetGUID   => AssetDatabase.GUIDToAssetPath(assetGUID))
                 .Select(assetPath   => (AbilityDescription)AssetDatabase.LoadMainAssetAtPath(assetPath))
                 .ToList();
