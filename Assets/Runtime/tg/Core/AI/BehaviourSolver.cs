@@ -1,14 +1,10 @@
 using Unity.Entities;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
 
 namespace tg.ai
 {
-    using System;
-    using tg.ai.behaviour;
-    using tg.application;
-    using tg.enemy;
+    using tg.application.entities;
 
     /// <summary>
     /// This system will ensure all AI behaviour context are invalidated before next update.

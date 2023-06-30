@@ -15,4 +15,5 @@ namespace tg.assets.events
         public NativeArray<UntypedWeakReferenceId>      assets;
         public AssetRequestCompleteCallback             onComplete;
     }
+
 }

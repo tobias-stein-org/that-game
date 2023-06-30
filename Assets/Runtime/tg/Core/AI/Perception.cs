@@ -5,7 +5,7 @@ using Unity.Transforms;
 
 namespace tg.ai
 {
-    using tg.application;
+    using tg.application.entities;
     using UnityEngine.InputSystem;
     using UnityEngine.InputSystem.HID;
 

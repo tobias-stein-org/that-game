@@ -13,7 +13,7 @@ using Unity.Collections;
 
 namespace tg.ui
 {
-    using tg.application;
+    using tg.application.entities;
     using tg.events;
     using tg.application.events;
     using tg.ui.view;
@@ -248,14 +248,14 @@ namespace tg.ui
 
             void onApplicationInitializedEvent(ApplicationInitializedEvent e)
             {
-                var appData = e.appData;
-                var uiGO    = new GameObject("UI");
+                var appData                     = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentData<ApplicationData>(World.DefaultGameObjectInjectionWorld.GetExistingSystem<Applicaiton>());
+                var uiGO                        = new GameObject("UI");
                 {
                     uiGO.AddComponent<EventSystem>();
 
                     var uiInput = uiGO.AddComponent<InputSystemUIInputModule>();
                     {
-                        var inputActions        = appData.inputActions.result;
+                        var inputActions        = appData.inputActions;
                         var inputUI             = inputActions.FindActionMap("UI");
 
                         uiInput.actionsAsset    = inputActions;
@@ -271,7 +271,7 @@ namespace tg.ui
                     var ps  = ScriptableObject.CreateInstance<PanelSettings>();
                     {
                         ps.name                 = "tg";
-                        ps.themeStyleSheet      = appData.uiTheme.result;
+                        ps.themeStyleSheet      = appData.uiTheme;
 
 #if UNITY_STANDALONE
                         ps.screenMatchMode      = PanelScreenMatchMode.MatchWidthOrHeight;

@@ -14,7 +14,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.spawn
 {
-	using tg.application;
+	using tg.application.entities;
     using tg.spawn.events;
     using static UnityEngine.EventSystems.EventTrigger;
 

@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 namespace tg.debug
 {
     using tg.events;
-    using tg.application;
-    using tg.player;
+    using tg.application.entities;
+    using tg.player.entities;
 
     using tg.level.events;
     using tg.player.events;
@@ -23,9 +23,9 @@ namespace tg.debug
 
         protected override void OnStartRunning()
         {
-            if(SystemAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
             {
-                var debugActions = data.inputActions.result.FindActionMap("Debug");
+                var debugActions = data.inputActions.FindActionMap("Debug");
                 debugActions.FindAction("quit").performed += onQuit;
                 debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
                 debugActions.FindAction("kill_player").performed += onKillPlayer;
@@ -35,9 +35,9 @@ namespace tg.debug
 
         protected override void OnStopRunning()
         {
-            if(SystemAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
             {
-                var debugActions = data.inputActions.result.FindActionMap("Debug");
+                var debugActions = data.inputActions.FindActionMap("Debug");
                 debugActions.FindAction("quit").performed -= onQuit;
                 debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
                 debugActions.FindAction("kill_player").performed -= onKillPlayer;
@@ -61,9 +61,9 @@ namespace tg.debug
 
         private void onKillPlayer(InputAction.CallbackContext obj)
         {
-            foreach(var player in SystemAPI.Query<Player>())
+            foreach(var (player, entity) in SystemAPI.Query<Player>().WithEntityAccess())
             {
-                EventQueue.publish(new KillPlayerEvent { player = player });   
+                EventQueue.publish(new KillPlayerEvent { player = entity });   
             }
         }
 

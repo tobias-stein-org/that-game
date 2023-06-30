@@ -6,6 +6,7 @@ using Unity.Mathematics;
 namespace tg.ai.behaviour
 {
     using tg.application;
+    using tg.application.entities;
     using tg.ai;
 
     [Serializable]

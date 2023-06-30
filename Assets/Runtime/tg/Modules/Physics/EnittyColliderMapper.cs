@@ -8,7 +8,7 @@ using Unity.Collections;
 
 namespace tg.physics
 {
-    using tg.application;
+    using tg.application.entities;
     using tg.events;
     using tg.spawn.events;
 

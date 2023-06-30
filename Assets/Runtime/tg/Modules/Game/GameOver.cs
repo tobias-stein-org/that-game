@@ -3,7 +3,7 @@ using UnityEngine.Scripting;
 
 namespace tg.game
 {
-	using tg.application;
+	using tg.application.entities;
 	using tg.events;
 	using tg.level;
 	using tg.player.events;

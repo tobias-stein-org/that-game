@@ -14,7 +14,7 @@ using Unity.Entities;
 
 namespace tg.debug
 {
-    using tg.application;
+    using tg.application.entities;
     using tg.events;
     using tg.ui.events;
     using tg.ui.view;
@@ -337,7 +337,7 @@ namespace tg.debug
 
             protected override void OnUpdate()
             {
-                var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
+                var debugActions = SystemAPI.ManagedAPI.GetSingleton<ApplicationData>().inputActions.FindActionMap("Debug");
 
                 debugActions.FindAction("console").performed += toggleConsole;
 
