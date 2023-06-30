@@ -333,7 +333,7 @@
             "actions": [
                 {
                     "name": "click",
-                    "type": "Button",
+                    "type": "PassThrough",
                     "id": "1f2f9733-24ab-4264-8c52-ed024c346441",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -351,7 +351,7 @@
                 },
                 {
                     "name": "submit",
-                    "type": "Button",
+                    "type": "PassThrough",
                     "id": "355e74f4-cf3b-412e-ac54-396fbc96563b",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -360,7 +360,7 @@
                 },
                 {
                     "name": "cancel",
-                    "type": "Button",
+                    "type": "PassThrough",
                     "id": "9dc0eac6-6c10-4096-8456-47c4211f5c53",
                     "expectedControlType": "Button",
                     "processors": "",
