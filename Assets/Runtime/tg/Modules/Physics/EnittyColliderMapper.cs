@@ -45,7 +45,7 @@ namespace tg.physics
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-        public partial class EnityColliderMapper : SystemBase, IEventListener<EnityColliderMapper>
+        public partial class EnityColliderMapper : SystemBase
         {
             private EntityQuery withManagedCollider;
 
@@ -58,8 +58,6 @@ namespace tg.physics
                 this.withManagedCollider.SetChangedVersionFilter(typeof(WithManagedCollider));
 
                 this.RequireForUpdate(this.withManagedCollider);
-
-                EventQueue.subscribe(this);
             }
 
             protected override void OnDestroy()
