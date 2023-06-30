@@ -204,7 +204,6 @@ MonoBehaviour:
   controller: {fileID: 11400000, guid: 604ec693785224132820cfcbf7d8f527, type: 2}
   show: 0
   matchViewport: 1
-  pauseGame: 1
   isMenu: 1
   sort: 0
 --- !u!1 &2144347474
