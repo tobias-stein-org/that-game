@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 22aa3e05cf80e4d92bdc326cc39dab92, type: 3}
-  m_Name: test
+  m_Name: DefaultBehaviour
   m_EditorClassIdentifier: 
   activeBehaviour: 11
   wander:
