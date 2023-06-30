@@ -49,15 +49,6 @@ namespace tg.editor.ability
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            var abilityGO = new GameObject(newAbilityName);
-            {
-                abilityGO.transform.SetParent(null, true);
-                var ability = abilityGO.AddComponent<AbilityAuthering>();
-                {
-                    ability.description     = description;
-                }
-            }
-
             Selection.activeObject          = description;
         }
 
