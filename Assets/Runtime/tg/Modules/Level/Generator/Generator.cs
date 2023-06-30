@@ -104,6 +104,9 @@ namespace tg.level.generator
 
         public event LevelGenerator_Start              onLevelGeneratorStarted;
         public event LevelGenerator_Finish             onLevelGeneratorFinished;
+        public event Pipeline.StepStart                onStepStarted;
+        public event Pipeline.StepUpdate               onStepUpdated;
+        public event Pipeline.StepFinish               onStepFinished;
 
         #endregion
 
@@ -127,10 +130,16 @@ namespace tg.level.generator
 
         internal Generator(GeneratorSettings settings)
         {
-            this.pipeline           = settings.steps.Aggregate(Pipeline.create(), (builder, step) => builder.add(step)).build();
-            this.context            = new Context(settings);
+            this.pipeline                   = settings.steps.Aggregate(Pipeline.create(), (builder, step) => builder.add(step)).build();
 
-            this.frameTimeBudget    = settings.maxFrameProcessTimeMs;
+
+            this.pipeline.onStepStarted     += (in LevelGeneratorStep step, in LevelData levelData) => this.onStepStarted?.Invoke(step, in levelData);
+            this.pipeline.onStepUpdated     += (in LevelGeneratorStep step, in LevelData levelData) => this.onStepUpdated?.Invoke(step, in levelData);
+            this.pipeline.onStepFinished    += (in LevelGeneratorStep step, in LevelData levelData) => this.onStepFinished?.Invoke(step, in levelData);
+
+            this.context                    = new Context(settings);
+
+            this.frameTimeBudget            = settings.maxFrameProcessTimeMs;
 
             this.context.initialize();
         }
