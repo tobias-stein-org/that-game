@@ -4,13 +4,11 @@ using Unity.Mathematics;
 
 namespace tg.enemy {
 
-    using tg.application;
+    using tg.application.entities;
     using tg.debug;
     using tg.events;
     using tg.enemy.events;
     using tg.spawn.events;
-    using tg.player.events;
-    using tg.player;
     using tg.ai;
     using tg.ai.behaviour;
     using tg.physics.entities;
@@ -21,10 +19,6 @@ namespace tg.enemy {
     /// </summary>
     public struct Enemy : IComponentData
     {
-        /// <summary>
-        /// Reference to actual enemy entity.
-        /// </summary>
-        public Entity                   entity;
     }
 
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
@@ -54,7 +48,7 @@ namespace tg.enemy {
 
         void onSpawnEnemyRequestEvent(SpawnEnemyRequestEvent e)
         {
-            var appData = SystemAPI.GetSingleton<ApplicationData>();
+            var appData = SystemAPI.ManagedAPI.GetSingleton<ApplicationData>();
 
             for(int i = 0; i < e.amount; i++)
             {
@@ -77,10 +71,6 @@ namespace tg.enemy {
                    typeof(WithManagedCollider)
                 ));
 
-                ECB.SetComponent<Enemy>(enemyEntity, new Enemy
-                {
-                    entity          = enemyEntity
-                });
                 ECB.SetComponent<EnemyInputData>(enemyEntity, new EnemyInputData
                 {
                     moveSpeed       = 2.0f,
@@ -162,25 +152,24 @@ namespace tg.enemy {
             var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             if(entityManager.HasComponent<Enemy>(e.entity))
             {
-                var enemy               = entityManager.GetComponentData<Enemy>(e.entity);
 #if UNITY_EDITOR
                 var enemyDebugging      = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.entity).gameObject.AddComponent<EnemyDebugging>();
                 {
-                    enemyDebugging.self = enemy;
+                    enemyDebugging.self = e.entity;
                 }
 #endif
 
-                EventQueue.publish(new EnemySpawnedEvent { enemy = enemy });
+                EventQueue.publish(new EnemySpawnedEvent { enemy = e.entity });
             }
         }
 
         void onKillEnemyEvent(KillEnemyEvent e)
         {
             var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy.entity).gameObject;
+            var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy).gameObject;
 
             GameObject.Destroy(playerGO);
-            entityManager.DestroyEntity(e.enemy.entity);
+            entityManager.DestroyEntity(e.enemy);
 
             EventQueue.publish(new EnemyDiedEvent { enemy = e.enemy });
         }
