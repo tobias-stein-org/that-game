@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 using UnityEditor;
 using UnityEngine;
@@ -86,7 +87,8 @@ namespace tg.editor.ability
         /// </summary>
         internal class CreateNewAbilityDialog : EditorWindow
         {
-            private string newAbilityName   = "New ability name";
+            private const string pattern = @"^(?![_\d])[\w]+$";
+            private string newAbilityName   = "NEW_ABILITY";
 
             public static void show()
             {
@@ -110,7 +112,6 @@ namespace tg.editor.ability
                 var input = new TextField("Name", FixedString64Bytes.UTF8MaxLengthInBytes, false, false, '*');
                 {
                     input.SetValueWithoutNotify(this.newAbilityName);
-                    input.RegisterCallback((ChangeEvent<string> e) => { this.newAbilityName = e.newValue; });
                     input.Focus();
 
                     this.rootVisualElement.Add(input);
@@ -134,6 +135,12 @@ namespace tg.editor.ability
                         ok.text = "OK";
                         actions.Add(ok);
                     }
+
+                    input.RegisterCallback((ChangeEvent<string> e) =>
+                    {
+                        this.newAbilityName = e.newValue;
+                        ok.SetEnabled(Regex.IsMatch(e.newValue, pattern));
+                    });
 
                     this.rootVisualElement.Add(actions);
                 }

@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 using UnityEditor;
 using UnityEngine;
@@ -60,7 +61,7 @@ namespace tg.ui.view
 
             view.name       = newViewName;
             view.view       = uxml;
-            view.controller = $"tg.ui.view.{newViewName}Controller, tg.runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+            view.controller = $"tg.ui.view.{newViewName}Controller";
 
             AssetDatabase.CreateAsset(view, newViewSO);
 
@@ -114,7 +115,8 @@ namespace tg.ui.view
         /// </summary>
         internal class CreateNewViewDialog : EditorWindow
         {
-            private string newViewName = "New view name";
+            private const string pattern    = @"^(?![_\d])[\w]+$";
+            private string newViewName      = "NEW_VIEW";
 
             public static void show()
             {
@@ -138,7 +140,6 @@ namespace tg.ui.view
                 var input = new TextField("Name", FixedString64Bytes.UTF8MaxLengthInBytes, false, false, '*');
                 {
                     input.SetValueWithoutNotify(this.newViewName);
-                    input.RegisterCallback((ChangeEvent<string> e) => { this.newViewName = e.newValue; });
                     input.Focus();
 
                     this.rootVisualElement.Add(input);
@@ -162,6 +163,13 @@ namespace tg.ui.view
                         ok.text = "OK";
                         actions.Add(ok);
                     }
+
+                    input.RegisterCallback((ChangeEvent<string> e) =>
+                    {
+                        this.newViewName = e.newValue;
+                        ok.SetEnabled(Regex.IsMatch(e.newValue, pattern));
+                    });
+
 
                     this.rootVisualElement.Add(actions);
                 }
