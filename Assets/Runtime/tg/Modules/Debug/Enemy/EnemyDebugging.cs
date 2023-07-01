@@ -7,11 +7,10 @@ namespace tg.debug
 {
     using tg.ai;
     using tg.ai.behaviour;
-    using tg.enemy;
 
     public class EnemyDebugging : MonoBehaviour
     {
-        public Enemy                    self;
+        public Entity                   self;
 
         private Coroutine               fetch;
 
@@ -103,7 +102,7 @@ namespace tg.debug
         public SensorDetails            sensorDetails           = SensorDetails.ShowRange | SensorDetails.ShowOutput | SensorDetails.ShowDistance | SensorDetails.ShowTargetTag;
         public ContextBehaviourDetails  contextBehaviourDetails = ContextBehaviourDetails.Solved;
 
-        private IEnumerator fetchSensorData(EntityManager entityManager, Enemy self)
+        private IEnumerator fetchSensorData(EntityManager entityManager, Entity self)
         {
             while(true)
             {
@@ -112,18 +111,18 @@ namespace tg.debug
 
                 if((this.sensorDetails & SensorDetails.Hide) == 0)
                 {
-                    this.sensor = entityManager.GetComponentData<Sensor>(self.entity);
+                    this.sensor = entityManager.GetComponentData<Sensor>(self);
                 }
 
                 if(this.contextBehaviourDetails != ContextBehaviourDetails.Hide)
                 {
-                    var buffer = entityManager.GetBuffer<BehaviourContextData>(self.entity, true);
+                    var buffer = entityManager.GetBuffer<BehaviourContextData>(self, true);
                     for(int i = 0; i < buffer.Length; i++) { this.behaviourContextDataArray[i] = buffer[i]; }
 
-                    this.behaviourDataArray[IBehaviourContext<Wander>.ID] = this.getComponentSafely<Wander>(entityManager, self.entity);
-                    this.behaviourDataArray[IBehaviourContext<Flee>.ID] = this.getComponentSafely<Flee>(entityManager, self.entity);
-                    this.behaviourDataArray[IBehaviourContext<Avoid>.ID] = this.getComponentSafely<Avoid>(entityManager, self.entity);
-                    this.behaviourDataArray[IBehaviourContext<Pursue>.ID] = this.getComponentSafely<Pursue>(entityManager, self.entity);
+                    this.behaviourDataArray[IBehaviourContext<Wander>.ID] = this.getComponentSafely<Wander>(entityManager, self);
+                    this.behaviourDataArray[IBehaviourContext<Flee>.ID] = this.getComponentSafely<Flee>(entityManager, self);
+                    this.behaviourDataArray[IBehaviourContext<Avoid>.ID] = this.getComponentSafely<Avoid>(entityManager, self);
+                    this.behaviourDataArray[IBehaviourContext<Pursue>.ID] = this.getComponentSafely<Pursue>(entityManager, self);
                 }
             }
         }

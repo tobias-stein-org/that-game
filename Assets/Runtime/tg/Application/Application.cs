@@ -1,163 +1,131 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
+
 using Unity.Entities;
-using Unity.Entities.Content;
-using Unity.Entities.Serialization;
 
 
 namespace tg.application
 {
     using tg.events;
-    using tg.assets;
     using tg.application.events;
     using tg.enemy;
-    using UnityEditor;
+    using tg.game.entities;
 
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
-    [CreateAfter(typeof(EventQueue))]
-    public partial struct ApplicationManager : ISystem, ISystemStartStop, IEventListener<ApplicationManager>
+    namespace entities
     {
-        void OnCreate(ref SystemState state)
-	    {
-            state.RequireForUpdate<ApplicationData>();
-
-            EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<ApplicationManager>(state.SystemHandle));
-	    }
-
-	    void OnDestroy(ref SystemState state)
-	    {
-
-	    }
-
-	    void OnUpdate(ref SystemState state)
-	    {
-            state.Enabled = false;
-	    }
-       
-        public void OnStartRunning(ref SystemState state)
+        [UpdateInGroup(typeof(InitializationSystemGroup))]
+        [CreateAfter(typeof(EventQueue))]
+        public partial class Applicaiton : SystemBase, IEventListener<Applicaiton>
         {
-            // Initialize app data ...
-            var appData         = SystemAPI.GetSingleton<ApplicationData>();
-            var appDataEntity   = SystemAPI.GetSingletonEntity<ApplicationData>();
+            protected override void OnCreate()
+	        {
+                EventQueue.subscribe(this);
+	        }
 
-            reqeust.load(new UntypedWeakReferenceId[]
+            protected override void OnUpdate()
+	        {
+                this.Enabled = false;
+	        }
+
+            protected override void OnStartRunning()
             {
-                appData.playerPrefab,
-                appData.enemyPrefab,
-                appData.abilities,
-                appData.defaultEnemyBehaviour,
-                appData.inputActions,
-                appData.uiTheme,
-            },
-            (hadErrors) =>
-            {
-                if(hadErrors) { throw new System.Exception("Failed to load application data."); }
+                // Initialize app data ...
 
-                // activate 'tg.input.actions' 
-                appData.inputActions.result.Enable();
-
-                EventQueue.publish(new ApplicationInitializedEvent { appData = appData });
-            });
-        }
-
-        public void OnStopRunning(ref SystemState state)
-        {
-        }
-
-        void onApplicationQuitEvent(RequestApplicationQuitEvent e)
-        {
-            EventQueue.publish(new QuitApplicationEvent {});
-        }
-
-        void onQuitApplicationEvent(QuitApplicationEvent e)
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.ExitPlaymode();
-#else
-            UnityEngine.Application.Quit();
-#endif
-        }
-
-
-        /// <summary>
-        /// Application internal evnet. Application manager will self induce this event once the "request quit" event has been received.
-        /// Having this extra internal event, will give other systems listening to the "request quit" event to perform clean-up.
-        /// </summary>
-        private struct QuitApplicationEvent : IEvent {}
-    }
-
-    /// <summary>
-    /// Contains general settings and resource references used in this application.
-    /// </summary>
-    public class Application : MonoBehaviour
-    {
-        /// <summary>
-        /// Player prefab asset.
-        /// </summary>
-        public GameObject           playerPrefab;
-
-        public GameObject           enemyPrefab;
-
-        public EnemyBehaviour       defaultEnemyBehaviour;
-
-        /// <summary>
-        /// Scene reference to the SubScene containing all default application abilities.
-        /// </summary>
-        public SceneAsset           abilities;
-
-        public InputActionAsset     inputActions;
-
-        public ThemeStyleSheet      uiTheme;
-
-#if UNITY_EDITOR
-        class Baker : Baker<Application>
-        {
-            public override void Bake(Application authoring)
-            {
-                this.DependsOn(authoring.playerPrefab);
-                this.DependsOn(authoring.enemyPrefab);
-                this.DependsOn(authoring.inputActions);
-                this.DependsOn(authoring.defaultEnemyBehaviour);
-                this.DependsOn(authoring.abilities);
-                this.DependsOn(authoring.uiTheme);
-
-                if(authoring.playerPrefab == null) { return; }
-                if(authoring.enemyPrefab == null) { return; }
-                if(authoring.inputActions == null) { return; }
-                if(authoring.defaultEnemyBehaviour == null) { return; }
-                if(authoring.inputActions == null) { return; }
-                if(authoring.uiTheme == null) { return; }
-
-                var appData = GetEntity(TransformUsageFlags.None);
-                AddComponent<ApplicationData>(appData, new ApplicationData
+                var appData = new ApplicationData();
+                var op1 = Addressables.LoadAssetAsync<GameObject>("tg.player");
+                op1.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded)
                 {
-                    playerPrefab            = new WeakAssetReference<GameObject>(authoring.playerPrefab),
-                    enemyPrefab             = new WeakAssetReference<GameObject>(authoring.enemyPrefab),
-                    abilities               = new WeakAssetReference<SceneAsset>(authoring.abilities),
-                    defaultEnemyBehaviour   = new WeakAssetReference<EnemyBehaviour>(authoring.defaultEnemyBehaviour),
-                    inputActions            = new WeakAssetReference<InputActionAsset>(authoring.inputActions),
-                    uiTheme                 = new WeakAssetReference<ThemeStyleSheet>(authoring.uiTheme),
-                });;
+                    appData.playerPrefab = operation.Result; }
+                };
+                var op2 = Addressables.LoadAssetAsync<GameObject>("tg.enemy");
+                op2.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.enemyPrefab = operation.Result; } };
+                var op3 = Addressables.LoadAssetAsync<EnemyBehaviour>("tg.enemy.defaultBehaviour");
+                op3.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.defaultEnemyBehaviour = operation.Result; } };
+                var op4 = Addressables.LoadAssetAsync<InputActionAsset>("tg.input.actions");
+                op4.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.inputActions = operation.Result; } };
+                var op5 = Addressables.LoadAssetAsync<ThemeStyleSheet>("tg.ui.theme");
+                op5.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.uiTheme = operation.Result; } };
+
+                var loadOp = Addressables.ResourceManager.CreateGenericGroupOperation(new List<AsyncOperationHandle> { op1, op2, op3, op4, op5 }, true);
+                loadOp.Completed += operation =>
+                {
+                    if(operation.Status == AsyncOperationStatus.Succeeded)
+                    {
+                        World.DefaultGameObjectInjectionWorld.EntityManager.AddComponentObject(World.DefaultGameObjectInjectionWorld.GetExistingSystem<Applicaiton>(), appData);
+
+                        // activate 'tg.input.actions' 
+                        appData.inputActions.Enable();
+                        EventQueue.publish(new ApplicationInitializedEvent {});
+                    }
+                };
+
+                //reqeust.load(new UntypedWeakReferenceId[]
+                //{
+                //    appData.playerPrefab,
+                //    appData.enemyPrefab,
+                //    //appData.abilities,
+                //    appData.defaultEnemyBehaviour,
+                //    appData.inputActions,
+                //    appData.uiTheme,
+                //},
+                //(hadErrors) =>
+                //{
+                //    if(hadErrors) { throw new System.Exception("Failed to load application data."); }
+
+                //    // activate 'tg.input.actions' 
+                //    appData.inputActions.result.Enable();
+
+                //    EventQueue.publish(new ApplicationInitializedEvent { appData = appData });
+                //});
             }
+
+            public void OnStopRunning(ref SystemState state)
+            {
+            }
+
+            void onApplicationQuitEvent(RequestApplicationQuitEvent e)
+            {
+                EventQueue.publish(new QuitApplicationEvent {});
+            }
+
+            void onQuitApplicationEvent(QuitApplicationEvent e)
+            {
+    #if UNITY_EDITOR
+                UnityEditor.EditorApplication.ExitPlaymode();
+    #else
+                UnityEngine.Application.Quit();
+    #endif
+            }
+
+
+            /// <summary>
+            /// Application internal evnet. Application manager will self induce this event once the "request quit" event has been received.
+            /// Having this extra internal event, will give other systems listening to the "request quit" event to perform clean-up.
+            /// </summary>
+            private struct QuitApplicationEvent : IEvent {}
+
         }
-#endif
-    }
 
-    public struct ApplicationData : IComponentData
-    {
-        public WeakAssetReference<GameObject>           playerPrefab;
-        public WeakAssetReference<GameObject>           enemyPrefab;
+        public class ApplicationData : IComponentData
+        {
+            public GameObject       playerPrefab;
 
-        public WeakAssetReference<SceneAsset>           abilities;
+            public GameObject       enemyPrefab;
 
-        public WeakAssetReference<EnemyBehaviour>       defaultEnemyBehaviour;
+            public EnemyBehaviour   defaultEnemyBehaviour;
 
-        public WeakAssetReference<InputActionAsset>     inputActions;
+            public InputActionAsset inputActions;
 
-        public WeakAssetReference<ThemeStyleSheet>      uiTheme;
+            public ThemeStyleSheet  uiTheme;
+        }
     }
 }
 

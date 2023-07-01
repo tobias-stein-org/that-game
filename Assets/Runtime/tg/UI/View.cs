@@ -2,20 +2,22 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 using Unity.Entities;
-using tg.ui.view;
-using UnityEngine.InputSystem.XR;
-
 using Unity.Collections;
 
 namespace tg.ui
 {
-    public class View : MonoBehaviour
+    public class View : ScriptableObject
     {
-        public new string               name            = System.Guid.NewGuid().ToString().Split('-')[1];
-        
+        public const string             label           = "view";
+
+        [HideInInspector]
+        public new string               name            = System.Guid.NewGuid().ToString().Split('-')[0];
+
+        [HideInInspector]
         public VisualTreeAsset          view;
 
-        public Controller               controller;
+        [HideInInspector]
+        public string                   controller;
 
         public bool                     show            = true;
 
@@ -39,11 +41,11 @@ namespace tg.ui
                 IsMenu                      = 1 << 2,
             }
 
-            public string               name;
+            public FixedString64Bytes   name;
 
             public VisualTreeAsset      view;
 
-            public Controller           controller;
+            public string               controller;
 
             public ViewProperties       properties;
 
@@ -72,31 +74,18 @@ namespace tg.ui
 
             public int                  sort;
 
-        }
-
-        public class ViewAuthoring : Baker<View>
-        {
-            public override void Bake(View authoring)
+            public static implicit operator UIViewData(View view)
             {
-                DependsOn(authoring.view);
-                DependsOn(authoring.controller);
-
-                if(authoring.view == null) { return; }
-                if(authoring.controller == null) { return; }
-                if(string.IsNullOrEmpty(authoring.name)) { return; }
-
-                var viewController  = GetEntity(TransformUsageFlags.None);
-                
-                AddComponentObject<UIViewData>(viewController, new UIViewData
+                return new UIViewData
                 {
-                    name                = authoring.name,
-                    view                = authoring.view,
-                    controller          = authoring.controller,
-                    show                = authoring.show,
-                    matchViewport       = authoring.matchViewport,
-                    isMenu              = authoring.isMenu,
-                    sort                = authoring.sort
-                });
+                    name            = view.name,
+                    view            = view.view,
+                    controller      = view.controller,
+                    show            = view.show,
+                    matchViewport   = view.matchViewport,
+                    isMenu          = view.isMenu,
+                    sort            = view.sort
+                };
             }
         }
     }

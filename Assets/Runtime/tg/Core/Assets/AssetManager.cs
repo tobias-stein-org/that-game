@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 using Unity.Scenes;
 using Unity.Entities;
@@ -60,137 +61,147 @@ namespace tg.assets
         public static implicit operator TObject(WeakAssetReference<TObject> weakAssetReference)                         => RuntimeContentManager.GetObjectValue<TObject> (weakAssetReference.id);
     }
 
-
-    [CreateAfter(typeof(EventQueue))]
-    partial class AssetManager : SystemBase, IEventListener<AssetManager>
+    namespace entities
     {
-        private struct LoadingRequest
+        [CreateAfter(typeof(EventQueue))]
+        partial class AssetManager : SystemBase, IEventListener<AssetManager>
         {
-            public Func<bool>                           finsihed;
-            public Func<bool>                           hasErorr;
-
-            public NativeArray<UntypedWeakReferenceId>  assets;
-            public AssetRequestCompleteCallback         onComplete;
-        }
-
-        private List<UntypedWeakReferenceId>            loaded;
-        private List<LoadingRequest>                    pending;
-        private List<LoadingRequest>                    done;
-
-
-        //private NativeList<int>
-        protected override void OnCreate()
-        {
-            this.loaded     = new List<UntypedWeakReferenceId>(16);
-            this.pending    = new List<LoadingRequest>(16);
-            this.done       = new List<LoadingRequest>(16);
-
-            EventQueue.subscribe(this);
-        }
-
-        protected override void OnDestroy()
-        {
-            foreach(var asset in this.loaded) { RuntimeContentManager.ReleaseObjectAsync(asset); }
-            this.loaded.Clear();
-
-            foreach(var request in this.pending) { if(request.assets.IsCreated) { request.assets.Dispose(); } }
-            this.pending.Clear();
-
-            this.loaded = null;
-            this.pending = null;
-        }
-
-        protected override void OnUpdate()
-        {
-            if(this.pending.Count == 0) { return; }
-
-            lock(this.pending)
+            private interface ILoadingRequest
             {
-                this.done.Clear();
-                this.done.AddRange(this.pending.Where(req => req.finsihed()));
+                bool finsihed { get; }
+                bool hasErorr { get; }
+            }
 
-                foreach(var request in this.done)
-                {
-                    this.loaded.AddRange(request.assets);
-
-                    request.onComplete?.Invoke(request.hasErorr());
-
-                    request.assets.Dispose();
-                    this.pending.Remove(request);
-                }
-            } 
-        }
-
-        private static readonly ObjectLoadingStatus[] RequestCompleteState = new ObjectLoadingStatus[] { ObjectLoadingStatus.Completed, ObjectLoadingStatus.Error };
-        void onRequestLoadAssetsEvent(RequestLoadAssetsEvent e)
-        {
-            if(e.assets.Length > 0)
+            private struct LoadingRequest
             {
+                public Func<bool>                           finsihed;
+                public Func<bool>                           hasErorr;
+
+                public NativeArray<UntypedWeakReferenceId>  assets;
+                public AssetRequestCompleteCallback         onComplete;
+            }
+
+            private List<UntypedWeakReferenceId>            loaded;
+            private List<LoadingRequest>                    pending;
+            private List<LoadingRequest>                    complete;
+
+
+            //private NativeList<int>
+            protected override void OnCreate()
+            {
+                this.loaded     = new List<UntypedWeakReferenceId>(16);
+                this.pending    = new List<LoadingRequest>(16);
+                this.complete   = new List<LoadingRequest>(16);
+
+                EventQueue.subscribe(this);
+            }
+
+            protected override void OnDestroy()
+            {
+                foreach(var asset in this.loaded) { RuntimeContentManager.ReleaseObjectAsync(asset); }
+                this.loaded.Clear();
+
+                foreach(var request in this.pending) { if(request.assets.IsCreated) { request.assets.Dispose(); } }
+                this.pending.Clear();
+
+                this.loaded = null;
+                this.pending = null;
+            }
+
+            protected override void OnUpdate()
+            {
+                
+                if(this.pending.Count == 0) { return; }
+
                 lock(this.pending)
                 {
-                    var finsihed = new List<Func<bool>>(e.assets.Length);
-                    var hasError = new List<Func<bool>>(e.assets.Length);
+                    this.complete.Clear();
+                    this.complete.AddRange(this.pending.Where(req => req.finsihed()));
 
-                    foreach(var id in e.assets)
+                    foreach(var request in this.complete)
                     {
-                        switch(id.GenerationType)
+                        this.loaded.AddRange(request.assets);
+
+                        request.onComplete?.Invoke(request.hasErorr());
+
+                        request.assets.Dispose();
+                        this.pending.Remove(request);
+                    }
+                } 
+            }
+
+            private static readonly ObjectLoadingStatus[] RequestCompleteState = new ObjectLoadingStatus[] { ObjectLoadingStatus.Completed, ObjectLoadingStatus.Error };
+            void onRequestLoadAssetsEvent(RequestLoadAssetsEvent e)
+            {
+                if(e.assets.Length > 0)
+                {
+                    lock(this.pending)
+                    {
+                        var finsihed = new List<Func<bool>>(e.assets.Length);
+                        var hasError = new List<Func<bool>>(e.assets.Length);
+
+                        foreach(var id in e.assets)
                         {
-                            case WeakReferenceGenerationType.GameObjectScene:
+                            switch(id.GenerationType)
                             {
-                                var sceneEntity = SceneSystem.LoadSceneAsync(this.World.Unmanaged, id.GlobalId.AssetGUID, new SceneSystem.LoadParameters
+                                case WeakReferenceGenerationType.GameObjectScene:
                                 {
-                                    AutoLoad    = true,
-                                    Flags       = SceneLoadFlags.LoadAdditive
-                                });
+                                    var sceneEntity = SceneSystem.LoadSceneAsync(this.World.Unmanaged, id.GlobalId.AssetGUID, new SceneSystem.LoadParameters
+                                    {
+                                        AutoLoad    = true,
+                                        Flags       = SceneLoadFlags.LoadAdditive
+                                    });
 
                                     
-                                finsihed.Add(new Func<bool>(() => SceneSystem.IsSceneLoaded(this.World.Unmanaged, sceneEntity)));
-                                hasError.Add(new Func<bool>(() =>
-                                {
+                                    finsihed.Add(new Func<bool>(() => SceneSystem.IsSceneLoaded(this.World.Unmanaged, sceneEntity)));
+                                    hasError.Add(new Func<bool>(() =>
+                                    {
                                     
-                                    if(SceneSystem.GetSceneStreamingState(this.World.Unmanaged, sceneEntity) != SceneSystem.SceneStreamingState.LoadedSuccessfully)
-                                    {
-                                        Debug.LogError($"{sceneEntity} is invalid.");
-                                        return true;
-                                    }
+                                        if(SceneSystem.GetSceneStreamingState(this.World.Unmanaged, sceneEntity) != SceneSystem.SceneStreamingState.LoadedSuccessfully)
+                                        {
+                                            Debug.LogError($"{sceneEntity} is invalid.");
+                                            return true;
+                                        }
 
-                                    return false;
-                                }));
+                                        return false;
+                                    }));
 
-                                break;
-                            }
+                                    break;
+                                }
 
-                            default:
-                            {
-                                RuntimeContentManager.LoadObjectAsync(in id);
-                                finsihed.Add(new Func<bool>(() => RequestCompleteState.Contains(RuntimeContentManager.GetObjectLoadingStatus(id))));
-                                hasError.Add(new Func<bool>(() =>
+                                default:
                                 {
-                                    if(RuntimeContentManager.GetObjectLoadingStatus(id) == ObjectLoadingStatus.Error)
+                                    RuntimeContentManager.LoadObjectAsync(in id);
+                                    finsihed.Add(new Func<bool>(() => RequestCompleteState.Contains(RuntimeContentManager.GetObjectLoadingStatus(id))));
+                                    hasError.Add(new Func<bool>(() =>
                                     {
-                                        Debug.LogError($"Failed to load {id}.");
-                                        return true;
-                                    }
+                                        if(RuntimeContentManager.GetObjectLoadingStatus(id) == ObjectLoadingStatus.Error)
+                                        {
+                                            Debug.LogError($"Failed to load {id}.");
+                                            return true;
+                                        }
 
-                                    return false;
-                                }));
-                                break;
+                                        return false;
+                                    }));
+                                    break;
+                                }
                             }
                         }
+
+                        this.pending.Add(new LoadingRequest
+                        {
+                            finsihed    = new Func<bool>(() => finsihed.All(func => func())),
+                            hasErorr    = new Func<bool>(() => hasError.Any(func => func())),
+
+                            assets      = e.assets,
+                            onComplete  = e.onComplete
+                        });
                     }
-
-                    this.pending.Add(new LoadingRequest
-                    {
-                        finsihed    = new Func<bool>(() => finsihed.All(func => func())),
-                        hasErorr    = new Func<bool>(() => hasError.Any(func => func())),
-
-                        assets      = e.assets,
-                        onComplete  = e.onComplete
-                    });
-                }
-            } 
+                } 
+            }
         }
     }
+
 
     public static class reqeust
     {

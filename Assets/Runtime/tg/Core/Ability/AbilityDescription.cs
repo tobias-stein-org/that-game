@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEditor;
 
 namespace tg.ability
 {
@@ -7,6 +6,8 @@ namespace tg.ability
 
     public class AbilityDescription : ScriptableObject
     {
+        public const string     label   = "ability";
+
         public GameObject       abilityPrefab;
 
         public AbilityMeta      meta;

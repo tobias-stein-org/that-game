@@ -3,6 +3,7 @@ using Unity.Mathematics;
 
 namespace tg.player.events
 {
+
     using tg.events;
 
     public struct SpawnPlayerRequestEvent : IEvent
@@ -12,18 +13,18 @@ namespace tg.player.events
 
     public struct PlayerSpawnedEvent : IEvent
     {
-        public Player   player;
+        public Entity   player;
     }
 
 
     public struct KillPlayerEvent : IEvent
     {
-        public Player   player;
+        public Entity   player;
     }
 
     public struct PlayerDiedEvent : IEvent
     {
-        public Player   player;
+        public Entity   player;
     }
 
     /// <summary>
@@ -31,7 +32,7 @@ namespace tg.player.events
     /// </summary>
     public struct PlayerLevelChunkChangeEvent : IEvent
     {
-        public Player   player;
+        public Entity   player;
 
         /// <summary>
         /// Level chunk id the player entered.

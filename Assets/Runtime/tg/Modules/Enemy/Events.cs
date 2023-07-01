@@ -1,3 +1,5 @@
+using Unity.Entities;
+
 namespace tg.enemy.events
 {
     using tg.events;
@@ -10,16 +12,16 @@ namespace tg.enemy.events
 
     public struct EnemySpawnedEvent : IEvent
     {
-        public Enemy enemy;
+        public Entity enemy;
     }
 
     public struct KillEnemyEvent : IEvent
     {
-        public Enemy enemy;
+        public Entity enemy;
     }
 
     public struct EnemyDiedEvent : IEvent
     {
-        public Enemy enemy;
+        public Entity enemy;
     }
 }

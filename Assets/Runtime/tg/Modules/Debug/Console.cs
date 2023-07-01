@@ -14,10 +14,9 @@ using Unity.Entities;
 
 namespace tg.debug
 {
-    using tg.application;
+    using tg.application.entities;
     using tg.events;
     using tg.ui.events;
-    using tg.ui.view;
 
     [AttributeUsage(AttributeTargets.Method)]
     public class ConsoleCommandAttribute : Attribute
@@ -34,6 +33,7 @@ namespace tg.debug
 
     namespace entities
     {
+        [UpdateInGroup(typeof(PresentationSystemGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenPaused, false)]
         public partial class Console : SystemBase
         {
@@ -223,7 +223,7 @@ namespace tg.debug
                 }
             }
 
-            internal static CommandInvocationResult invokeCommand(string cmdStr)
+            public static CommandInvocationResult invokeCommand(string cmdStr)
             {
                 var nameAndParams = cmdStr.Split(' ', 2);
 
@@ -271,6 +271,8 @@ namespace tg.debug
             private static Dictionary<string, Command> cmds;
 
             public static bool isBusy { get; private set; } = false;
+
+            private InputAction consoleAction;
 
             static void fetchConsoleCommands()
             {
@@ -335,18 +337,17 @@ namespace tg.debug
                 this.RequireForUpdate(StateManager.state(this));
             }
 
-            protected override void OnUpdate()
+            protected override void OnStartRunning()
             {
-                var debugActions = SystemAPI.GetSingleton<ApplicationData>().inputActions.result.FindActionMap("Debug");
-
-                debugActions.FindAction("console").performed += toggleConsole;
-
-                this.Enabled = false;
+                this.consoleAction = SystemAPI.ManagedAPI.GetSingleton<ApplicationData>().inputActions.FindActionMap("Debug").FindAction("console");
             }
 
-            private void toggleConsole(InputAction.CallbackContext obj)
+            protected override void OnUpdate()
             {
-                EventQueue.publish(new ToggleViewEvent { name = "console" });
+                if(this.consoleAction.WasPerformedThisFrame())
+                {
+                    EventQueue.publish(new ToggleViewEvent { name = "console" });
+                }
             }
         }
     }

@@ -10,6 +10,7 @@ using Unity.Mathematics;
 namespace tg.enemy
 {
     using tg.application;
+    using tg.application.entities;
     using tg.ai;
     using tg.ai.behaviour;
     using tg.ability.events;
@@ -23,7 +24,7 @@ namespace tg.enemy
             readonly RefRO<Enemy>                               enemy;
             readonly RefRW<EnemyInputData>                      inputData;
 
-            public  Entity                                      entity { get { return this.enemy.ValueRO.entity; } }
+            readonly public  Entity                             entity;
 
             public BehaviourSolver.BehaviourContextDataInternal solvedContext
             {

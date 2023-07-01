@@ -3,36 +3,39 @@ using Unity.Mathematics;
 
 namespace tg.player
 {
-    using tg.application;
+    using tg.application.entities;
     using UnityEngine;
 
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    public partial class PlayerAnimationController : SystemBase
+    namespace entities
     {
-        protected override void OnCreate()
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        public partial class PlayerAnimationController : SystemBase
         {
-            this.RequireForUpdate(StateManager.state(this));
-        }
-
-        protected override void OnUpdate()
-        {
-            foreach(var (animator, playerInput) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Animator>, PlayerInputData>().WithAll<Player>())
+            protected override void OnCreate()
             {
-                animator.Value.SetFloat("moveX", playerInput.look.x);
-                animator.Value.SetFloat("moveY", playerInput.look.y);
+                this.RequireForUpdate(StateManager.state(this));
+            }
 
-                if(math.lengthsq(playerInput.move) > 1e-5f)
+            protected override void OnUpdate()
+            {
+                foreach(var (animator, playerInput) in SystemAPI.Query<SystemAPI.ManagedAPI.UnityEngineComponent<Animator>, PlayerInputData>().WithAll<Player>())
                 {
+                    animator.Value.SetFloat("moveX", playerInput.look.x);
+                    animator.Value.SetFloat("moveY", playerInput.look.y);
 
-                    animator.Value.Play("running");
-                }
-                else
-                {
-                    animator.Value.Play("idle");
-                }
+                    if(math.lengthsq(playerInput.move) > 1e-5f)
+                    {
 
-                animator.Value.SetFloat("attack", playerInput.melee);
-                animator.Value.SetFloat("cast", playerInput.cast);
+                        animator.Value.Play("running");
+                    }
+                    else
+                    {
+                        animator.Value.Play("idle");
+                    }
+
+                    animator.Value.SetFloat("attack", playerInput.melee);
+                    animator.Value.SetFloat("cast", playerInput.cast);
+                }
             }
         }
     }

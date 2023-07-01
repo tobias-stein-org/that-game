@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Editor/tg/Core/UI/View/Editor/ViewEditor.uss?fileID=7433441132597879392&amp;guid=5a8c498d81f864300aed981f9b5e57c1&amp;type=3#ViewEditor" />
+    <uie:Toolbar>
+        <uie:ToolbarButton text="Create New View" display-tooltip-when-elided="true" name="create" />
+        <uie:ToolbarSpacer style="flex-grow: 1;" />
+        <uie:ToolbarSearchField focusable="true" name="search" style="width: 50%;" />
+    </uie:Toolbar>
+    <ui:ListView focusable="true" name="views" />
+</ui:UXML>
