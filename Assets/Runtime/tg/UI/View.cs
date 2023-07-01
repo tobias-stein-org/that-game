@@ -2,11 +2,10 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 using Unity.Entities;
+using Unity.Collections;
 
 namespace tg.ui
 {
-    using tg.ui.view;
-
     public class View : ScriptableObject
     {
         public const string             label           = "view";
@@ -42,7 +41,7 @@ namespace tg.ui
                 IsMenu                      = 1 << 2,
             }
 
-            public string               name;
+            public FixedString64Bytes   name;
 
             public VisualTreeAsset      view;
 
@@ -75,32 +74,19 @@ namespace tg.ui
 
             public int                  sort;
 
+            public static implicit operator UIViewData(View view)
+            {
+                return new UIViewData
+                {
+                    name            = view.name,
+                    view            = view.view,
+                    controller      = view.controller,
+                    show            = view.show,
+                    matchViewport   = view.matchViewport,
+                    isMenu          = view.isMenu,
+                    sort            = view.sort
+                };
+            }
         }
-
-        //public class ViewAuthoring : Baker<View>
-        //{
-        //    public override void Bake(View authoring)
-        //    {
-        //        DependsOn(authoring.view);
-        //        DependsOn(authoring.controller);
-
-        //        if(authoring.view == null) { return; }
-        //        if(authoring.controller == null) { return; }
-        //        if(string.IsNullOrEmpty(authoring.name)) { return; }
-
-        //        var viewController  = GetEntity(TransformUsageFlags.None);
-                
-        //        AddComponentObject<UIViewData>(viewController, new UIViewData
-        //        {
-        //            name                = authoring.name,
-        //            view                = authoring.view,
-        //            controller          = authoring.controller,
-        //            show                = authoring.show,
-        //            matchViewport       = authoring.matchViewport,
-        //            isMenu              = authoring.isMenu,
-        //            sort                = authoring.sort
-        //        });
-        //    }
-        //}
     }
 }
