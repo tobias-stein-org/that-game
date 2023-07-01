@@ -1,6 +1,6 @@
 {
     "name": "tg.editor",
-    "rootNamespace": "",
+    "rootNamespace": "tg.editor",
     "references": [
         "GUID:922463416228d412ab0a4e2ebe318ccd",
         "GUID:e0cd26848372d4e5c891c569017e11f1",

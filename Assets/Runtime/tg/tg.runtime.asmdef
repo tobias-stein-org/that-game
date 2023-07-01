@@ -1,6 +1,6 @@
 {
     "name": "tg.runtime",
-    "rootNamespace": "",
+    "rootNamespace": "tg",
     "references": [
         "GUID:d8b63aba1907145bea998dd612889d6b",
         "GUID:a5baed0c9693541a5bd947d336ec7659",
