@@ -14,9 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: console
   view: {fileID: 9197481963319205126, guid: ad52cefc7433d4998a8b233b49cf40f0, type: 3}
-  controller: tg.ui.view.consoleController, tg.runtime, Version=0.0.0.0, Culture=neutral,
-    PublicKeyToken=null
+  controller: tg.ui.view.consoleController
   show: 1
   matchViewport: 1
-  isMenu: 0
+  isMenu: 1
   sort: 0
