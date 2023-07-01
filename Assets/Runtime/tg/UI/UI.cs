@@ -204,7 +204,7 @@ namespace tg.ui
                     UnityEngine.Debug.LogWarning($"View '{data.name}' already spawned.");
                     return;
                 }
-
+           
                 var TController             = Type.GetType(data.controller);
                 var controller              = (IViewController)Activator.CreateInstance(TController);
 
