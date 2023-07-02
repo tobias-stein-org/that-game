@@ -6,11 +6,9 @@ using Unity.Mathematics;
 
 namespace tg.player
 {
-    using tg.ai;
-    using tg.application.entities;
-
     namespace entities
     {
+        using tg.application.entities;
 
         [BurstCompile]
         [UpdateInGroup(typeof(LateSimulationSystemGroup))]

@@ -5,8 +5,8 @@ using Unity.Entities;
 
 namespace tg.debug
 {
-    using tg.ai;
-    using tg.ai.behaviour;
+    using tg.ai.entities;
+    using tg.ai.behaviour.entities;
 
     public class EnemyDebugging : MonoBehaviour
     {

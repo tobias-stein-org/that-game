@@ -1,9 +1,6 @@
 
-using System.Runtime.InteropServices;
-
 using UnityEngine;
 using Unity.Entities;
-using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Collections;
@@ -14,10 +11,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.spawn
 {
-	using tg.application.entities;
     using tg.spawn.events;
-    using static UnityEngine.EventSystems.EventTrigger;
-
 
     /// <summary>
     /// Signature for the post action callback performed on spawned GameObject instances.
@@ -27,11 +21,13 @@ namespace tg.spawn
 
 	namespace entities
 	{
-		/// <summary>
-		/// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
-		/// </summary>
-		//[BurstCompile]
-		[UpdateInGroup(typeof(InitializationSystemGroup))]
+        using tg.application.entities;
+
+        /// <summary>
+        /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
+        /// </summary>
+        //[BurstCompile]
+        [UpdateInGroup(typeof(InitializationSystemGroup))]
 		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
 		internal partial class SpawnSystem : SystemBase
 		{

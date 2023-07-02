@@ -2,12 +2,9 @@ using System;
 
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.ResourceProviders;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 using Unity.Jobs;
 using Unity.Entities;
-using Unity.Entities.Serialization;
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Burst.Intrinsics;
@@ -15,12 +12,8 @@ using Unity.Mathematics;
 
 namespace tg.ability
 {
-    using tg.application.entities;
     using tg.events;
-    using tg.assets;
-    using tg.assets.events;
     using tg.ability.events;
-    using static UnityEngine.EventSystems.EventTrigger;
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class AbilityPropertyAttribute : Attribute
@@ -42,6 +35,8 @@ namespace tg.ability
 
     namespace entities
     {
+        using tg.application.entities;
+
         [Serializable]
         public struct AbilityMeta : IComponentData
         {

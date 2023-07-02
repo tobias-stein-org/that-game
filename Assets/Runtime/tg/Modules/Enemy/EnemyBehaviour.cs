@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace tg.enemy
 {
-    using tg.ai;
-    using tg.ai.behaviour;
+    using tg.ai.entities;
+    using tg.ai.behaviour.entities;
 
     [CreateAssetMenu(menuName="tg/AI/Create Behaviour")]
     public class EnemyBehaviour : ScriptableObject

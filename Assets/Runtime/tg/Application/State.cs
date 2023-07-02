@@ -11,11 +11,10 @@ namespace tg.application
     using tg.application.events;
     using tg.game.events;
 
-    using tg.ui.entities;
-
-
     namespace entities
     {
+        using tg.ui.entities;
+
         [Flags]
         public enum ApplicationStateMask
         {

@@ -10,7 +10,6 @@ namespace tg.level
     using tg.events;
     using tg.level.generator;
     using tg.level.events;
-    using tg.application.events;
 
     /// <summary>
     /// The Level behaviour acts as a manager to generate new levels and repaint the tilemap layers.

@@ -1,42 +1,47 @@
 using System;
 using Unity.Entities;
 
+[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Flee))]
+
 namespace tg.ai.behaviour
 {
-    using tg.application.entities;
-    using tg.ai;
-
-    [Serializable]
-    public struct Flee : IBehaviourContext<Flee>
+    namespace entities
     {
-        [NonSerialized]
-        public int dummy;
+        using tg.ai.entities;
+        using tg.application.entities;
 
-        public static Flee Default
+        [Serializable]
+        public struct Flee : IBehaviourContext<Flee>
         {
-            get
+            [NonSerialized]
+            public int dummy;
+
+            public static Flee Default
             {
-                return new Flee
+                get
                 {
-                };
+                    return new Flee
+                    {
+                    };
+                }
             }
         }
-    }
 
-    [UpdateInGroup(typeof(BehaviourSystemGroup))]
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    public partial struct FleeBehaviour : IBehaviour<Flee>
-    {
-        void OnCreate(ref SystemState state)
+        [UpdateInGroup(typeof(BehaviourSystemGroup))]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        public partial struct FleeBehaviour : IBehaviour<Flee>
         {
-            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<FleeBehaviour>(state.SystemHandle)));
-        }
-
-        void OnUpdate (ref SystemState state)
-	    {
-            foreach(var (flee, entity) in SystemAPI.Query<Flee>().WithEntityAccess())
+            void OnCreate(ref SystemState state)
             {
-                ref var ctx = ref this.getBehaviourContext(entity);
+                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<FleeBehaviour>(state.SystemHandle)));
+            }
+
+            void OnUpdate (ref SystemState state)
+	        {
+                foreach(var (flee, entity) in SystemAPI.Query<Flee>().WithEntityAccess())
+                {
+                    ref var ctx = ref this.getBehaviourContext(entity);
+                }
             }
         }
     }

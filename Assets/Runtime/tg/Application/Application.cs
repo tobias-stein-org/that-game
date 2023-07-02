@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -17,7 +15,6 @@ namespace tg.application
     using tg.events;
     using tg.application.events;
     using tg.enemy;
-    using tg.game.entities;
 
     namespace entities
     {

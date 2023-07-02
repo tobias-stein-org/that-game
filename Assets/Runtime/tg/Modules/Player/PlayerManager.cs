@@ -8,14 +8,15 @@ namespace tg.player
 {
     using tg.events;
 
-    using tg.application.entities;
     using tg.level;
     using tg.player.events;
     using tg.spawn.events;
-    using tg.physics.entities;
 
     namespace entities
     {
+        using tg.application.entities;
+        using tg.physics.entities;
+
         /// <summary>
         /// Added to spawned player entities.
         /// </summary>

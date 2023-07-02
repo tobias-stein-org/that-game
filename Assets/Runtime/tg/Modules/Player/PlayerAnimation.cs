@@ -3,11 +3,12 @@ using Unity.Mathematics;
 
 namespace tg.player
 {
-    using tg.application.entities;
     using UnityEngine;
 
     namespace entities
     {
+        using tg.application.entities;
+
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
         public partial class PlayerAnimationController : SystemBase
         {

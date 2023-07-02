@@ -1,16 +1,10 @@
 using UnityEngine;
-using Unity.Entities;
-using Unity.Rendering;
-using Unity.Mathematics;
 
 using Cinemachine;
 using UnityEngine.Experimental.Rendering.Universal;
 
 namespace tg.player
 {
-    using tg.events;
-    using tg.player.events;
-
     public class PlayerAuthoring : MonoBehaviour
     {
         private void Awake()

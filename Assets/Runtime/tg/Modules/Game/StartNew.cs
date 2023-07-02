@@ -3,7 +3,6 @@ using Unity.Mathematics;
 
 namespace tg.game
 {
-	using tg.application.entities;
 	using tg.events;
 	using tg.enemy;
 	using tg.level;
@@ -16,13 +15,15 @@ namespace tg.game
 
 	namespace entities
 	{
-		/// <summary>
-		/// Start new Game does the following things:
-		/// 1. Requests a new level
-		/// 2. Spawns enemies
-		/// 3. Spawns the player
-		/// </summary>
-		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenGameOver, false)]
+        using tg.application.entities;
+
+        /// <summary>
+        /// Start new Game does the following things:
+        /// 1. Requests a new level
+        /// 2. Spawns enemies
+        /// 3. Spawns the player
+        /// </summary>
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenGameOver, false)]
 		[CreateAfter(typeof(EventQueue))]
 		public partial class StartNew : SystemBase, IEventListener<StartNew>
 		{

@@ -14,7 +14,6 @@ using Unity.Entities;
 
 namespace tg.debug
 {
-    using tg.application.entities;
     using tg.events;
     using tg.ui.events;
 
@@ -33,6 +32,8 @@ namespace tg.debug
 
     namespace entities
     {
+        using tg.application.entities;
+
         [UpdateInGroup(typeof(PresentationSystemGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenPaused, false)]
         public partial class Console : SystemBase

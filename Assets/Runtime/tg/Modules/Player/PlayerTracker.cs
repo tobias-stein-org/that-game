@@ -8,7 +8,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.player
 {
-    using tg.application.entities;
 	using tg.events;
 	using tg.level;
 	using tg.player.events;
@@ -20,6 +19,8 @@ namespace tg.player
 
     namespace entities
     {
+        using tg.application.entities;
+
         /// <summary>
         /// This system keeps track in which level chunk the player is currently located.
         /// </summary>

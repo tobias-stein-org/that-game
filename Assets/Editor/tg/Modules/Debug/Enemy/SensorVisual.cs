@@ -1,17 +1,13 @@
-using System.Linq;
 
 using UnityEditor;
 using UnityEngine;
-using Unity.Entities;
 using Unity.Mathematics;
 
 namespace tg.editor.debug
 {
     using tg.ai;
-    using tg.ai.behaviour;
+    using tg.ai.behaviour.entities;
     using tg.debug;
-    using tg.application;
-    using Codice.CM.Common;
 
     [CustomEditor(typeof(EnemyDebugging))]
     public class SensorVisual : Editor

@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Collections.Generic;
 
 using UnityEngine;
 
@@ -8,9 +7,7 @@ using Unity.Collections;
 
 namespace tg.physics
 {
-    using tg.application.entities;
     using tg.events;
-    using tg.spawn.events;
 
     /// <summary>
     /// A static class that maintains a global look up table to map Collider2D objects to their parent Entity.
@@ -28,6 +25,8 @@ namespace tg.physics
 
     namespace entities
     {
+        using tg.application.entities;
+
         /// <summary>
         /// This component should be added to entities with a companion GameObject that participates in
         /// the managed Physics realm.

@@ -4,20 +4,21 @@ using UnityEngine;
 
 using Unity.Burst;
 using Unity.Entities;
-using Unity.Collections;
 using Unity.Mathematics;
 
 namespace tg.enemy
 {
     using tg.application;
-    using tg.application.entities;
     using tg.ai;
-    using tg.ai.behaviour;
     using tg.ability.events;
     using tg.events;
 
     namespace entities
     {
+        using tg.application.entities;
+        using tg.ai.entities;
+        using tg.ai.behaviour.entities;
+
         readonly partial struct AIEnemy : IAspect
         {
             readonly DynamicBuffer<BehaviourContextData>        behaviourContext;

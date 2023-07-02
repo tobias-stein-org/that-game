@@ -4,64 +4,71 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 
+[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Pursue))]
+
 namespace tg.ai.behaviour
 {
-    using tg.application.entities;
     using tg.ai;
 
-    [Serializable]
-    public struct Pursue : IBehaviourContext<Pursue>
+    namespace entities
     {
-        [NonSerialized]
-        public float2   target;
+        using tg.ai.entities;
+        using tg.application.entities;
 
-        /// <summary>
-        /// Min. distance to target before pursue stops.
-        /// </summary>
-        public float    minDistance;
-
-        public static Pursue Default
+        [Serializable]
+        public struct Pursue : IBehaviourContext<Pursue>
         {
-            get
+            [NonSerialized]
+            public float2   target;
+
+            /// <summary>
+            /// Min. distance to target before pursue stops.
+            /// </summary>
+            public float    minDistance;
+
+            public static Pursue Default
             {
-                return new Pursue
+                get
                 {
-                    minDistance = 0.8f
-                };
+                    return new Pursue
+                    {
+                        minDistance = 0.8f
+                    };
+                }
             }
         }
-    }
 
-    [UpdateInGroup(typeof(BehaviourSystemGroup))]
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    public partial struct PursueBehaviour : IBehaviour<Pursue>
-    {
-        void OnCreate(ref SystemState state)
+        [UpdateInGroup(typeof(BehaviourSystemGroup))]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        public partial struct PursueBehaviour : IBehaviour<Pursue>
         {
-            state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<PursueBehaviour>(state.SystemHandle)));
-        }
-
-        void OnUpdate (ref SystemState state)
-	    {
-            foreach(var (pursue, transform, entity) in SystemAPI.Query<Pursue, SystemAPI.ManagedAPI.UnityEngineComponent<Transform>>().WithEntityAccess())
+            void OnCreate(ref SystemState state)
             {
-                var position            = transform.Value.position;
-                var diff                = (new Vector2(pursue.target.x, pursue.target.y) - (Vector2)position);
-                var dist                = diff.magnitude;
+                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<PursueBehaviour>(state.SystemHandle)));
+            }
 
-                if(dist > pursue.minDistance)
+            void OnUpdate (ref SystemState state)
+	        {
+                foreach(var (pursue, transform, entity) in SystemAPI.Query<Pursue, SystemAPI.ManagedAPI.UnityEngineComponent<Transform>>().WithEntityAccess())
                 {
-                    ref var behaviour   = ref this.getBehaviourContext(entity);
-                    var context         = BehaviourContext.zero;
-                    var segment         = BehaviourContext.dir2seg(diff.normalized);
+                    var position            = transform.Value.position;
+                    var diff                = (new Vector2(pursue.target.x, pursue.target.y) - (Vector2)position);
+                    var dist                = diff.magnitude;
 
-                    context[segment]    = math.min(dist, 1.0f);
-                    behaviour.context   = context;
-                }
-                // else we have arrived
-                else
-                {
-                    state.EntityManager.SetComponentEnabled<Pursue>(entity, false);
+                    if(dist > pursue.minDistance)
+                    {
+                        ref var behaviour   = ref this.getBehaviourContext(entity);
+                        var context         = BehaviourContext.zero;
+                        var segment         = BehaviourContext.dir2seg(diff.normalized);
+
+                        context[segment]    = math.min(dist, 1.0f);
+                        behaviour.context   = context;
+                    }
+                    // else we have arrived
+                    else
+                    {
+                        state.EntityManager.SetComponentEnabled<Pursue>(entity, false);
+                    }
                 }
             }
         }

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 using Unity.Transforms;
 
@@ -9,16 +8,17 @@ using Cinemachine;
 
 namespace tg.camera
 {
-    using tg.application.entities;
     using tg.events;
     using tg.level;
-    using tg.player.entities;
     using tg.level.events;
     using tg.player.events;
     using tg.spawn.events;
 
     namespace entities
     {
+        using tg.player.entities;
+        using tg.application.entities;
+
         /// <summary>
         /// This systems attepts to confine the players camera to the current level bounds.
         /// </summary>

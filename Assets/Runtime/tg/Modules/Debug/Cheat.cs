@@ -5,76 +5,79 @@ using UnityEngine.InputSystem;
 namespace tg.debug
 {
     using tg.events;
-    using tg.application.entities;
     using tg.player.entities;
 
     using tg.level.events;
     using tg.player.events;
     using tg.application.events;
 
-
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-    public partial class Cheat : SystemBase
+    namespace entities
     {
-        protected override void OnCreate()
-        {
-            this.RequireForUpdate(StateManager.state(this));
-        }
+        using tg.application.entities;
 
-        protected override void OnStartRunning()
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        public partial class Cheat : SystemBase
         {
-            if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            protected override void OnCreate()
             {
-                var debugActions = data.inputActions.FindActionMap("Debug");
-                debugActions.FindAction("quit").performed += onQuit;
-                debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
-                debugActions.FindAction("kill_player").performed += onKillPlayer;
-                debugActions.FindAction("new_level").performed += onNewLevel;
+                this.RequireForUpdate(StateManager.state(this));
             }
-        }
 
-        protected override void OnStopRunning()
-        {
-            if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+            protected override void OnStartRunning()
             {
-                var debugActions = data.inputActions.FindActionMap("Debug");
-                debugActions.FindAction("quit").performed -= onQuit;
-                debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
-                debugActions.FindAction("kill_player").performed -= onKillPlayer;
-                debugActions.FindAction("new_level").performed -= onNewLevel;
+                if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+                {
+                    var debugActions = data.inputActions.FindActionMap("Debug");
+                    debugActions.FindAction("quit").performed += onQuit;
+                    debugActions.FindAction("spawn_player").performed += onSpawnPlayer;
+                    debugActions.FindAction("kill_player").performed += onKillPlayer;
+                    debugActions.FindAction("new_level").performed += onNewLevel;
+                }
             }
-        }
 
-        private void onNewLevel(InputAction.CallbackContext obj)
-        {
-            EventQueue.publish(new RequestNewLevelEvent {});
-        }
-
-        private void onSpawnPlayer(InputAction.CallbackContext obj)
-        {
-            // only allow to spawn a single player entity
-            if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Player) } }).CalculateEntityCount() == 0)
+            protected override void OnStopRunning()
             {
-                EventQueue.publish(new SpawnPlayerRequestEvent {});   
+                if(SystemAPI.ManagedAPI.TryGetSingleton<ApplicationData>(out ApplicationData data))
+                {
+                    var debugActions = data.inputActions.FindActionMap("Debug");
+                    debugActions.FindAction("quit").performed -= onQuit;
+                    debugActions.FindAction("spawn_player").performed -= onSpawnPlayer;
+                    debugActions.FindAction("kill_player").performed -= onKillPlayer;
+                    debugActions.FindAction("new_level").performed -= onNewLevel;
+                }
             }
-        }
 
-        private void onKillPlayer(InputAction.CallbackContext obj)
-        {
-            foreach(var (player, entity) in SystemAPI.Query<Player>().WithEntityAccess())
+            private void onNewLevel(InputAction.CallbackContext obj)
             {
-                EventQueue.publish(new KillPlayerEvent { player = entity });   
+                EventQueue.publish(new RequestNewLevelEvent {});
             }
-        }
 
-        [ConsoleCommand(name: "quit", help: "Terminates current application instance.")]
-        private static void onQuit(InputAction.CallbackContext obj)
-        {
-            EventQueue.publish(new RequestApplicationQuitEvent {});
-        }
+            private void onSpawnPlayer(InputAction.CallbackContext obj)
+            {
+                // only allow to spawn a single player entity
+                if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Player) } }).CalculateEntityCount() == 0)
+                {
+                    EventQueue.publish(new SpawnPlayerRequestEvent {});   
+                }
+            }
 
-        protected override void OnUpdate()
-        {
+            private void onKillPlayer(InputAction.CallbackContext obj)
+            {
+                foreach(var (player, entity) in SystemAPI.Query<Player>().WithEntityAccess())
+                {
+                    EventQueue.publish(new KillPlayerEvent { player = entity });   
+                }
+            }
+
+            [ConsoleCommand(name: "quit", help: "Terminates current application instance.")]
+            private static void onQuit(InputAction.CallbackContext obj)
+            {
+                EventQueue.publish(new RequestApplicationQuitEvent {});
+            }
+
+            protected override void OnUpdate()
+            {
+            }
         }
     }
 }

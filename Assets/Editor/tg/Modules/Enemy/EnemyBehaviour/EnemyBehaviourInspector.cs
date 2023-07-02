@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using UnityEditor;
 using UnityEngine;
@@ -8,8 +7,7 @@ using UnityEditor.UIElements;
 
 namespace tg.editor.enemy
 {
-    using tg.ai;
-    using tg.ai.behaviour;
+    using tg.ai.entities;
     using tg.enemy;
 
     [CustomEditor(typeof(EnemyBehaviour))]

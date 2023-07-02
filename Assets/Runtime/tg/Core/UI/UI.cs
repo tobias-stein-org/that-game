@@ -3,7 +3,6 @@ using System.Linq;
 
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.ResourceLocations;
 using UnityEngine.UIElements;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -14,7 +13,6 @@ using Unity.Collections;
 
 namespace tg.ui
 {
-    using tg.application.entities;
     using tg.events;
     using tg.application.events;
     using tg.ui.view;
@@ -22,6 +20,8 @@ namespace tg.ui
 
     namespace entities
     {
+        using tg.application.entities;
+
         public class UIDocumentData : IComponentData
         {
             public UIDocument           ui;
