@@ -349,7 +349,7 @@ namespace tg.ability
                         // stop right here, if ability is not ready yet
                         if(!this.abilityReadyLookup.IsComponentEnabled(ability))
                         {
-                            Debug.Log($"{used.entity}: ability '{meta.name}' is not ready yet. [{this.abilityCoolLookup.GetRefRO(ability).ValueRO.cooldown}]");
+                            //Debug.Log($"{used.entity}: ability '{meta.name}' is not ready yet. [{this.abilityCoolLookup.GetRefRO(ability).ValueRO.cooldown}]");
                             continue;
                         }
 
@@ -373,7 +373,7 @@ namespace tg.ability
                             buffer.SetComponentEnabled<AbilityReady>(ability, false);
                         }
 
-                        Debug.Log($"{used.entity}: used ability '{meta.name}'.");
+                        //Debug.Log($"{used.entity}: used ability '{meta.name}'.");
                     }
                     this.usedAbilities.Clear();
                 }
