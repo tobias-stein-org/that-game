@@ -377,7 +377,6 @@ namespace tg.ability
                     }
                     this.usedAbilities.Clear();
                 }
-
             }
 
             void onUseAbilityEvent(UseAbilityEvent<Entity> e) { this.usedAbilities.Add(e); }
@@ -435,6 +434,18 @@ namespace tg.ability
                 entityManager.SetComponentEnabled<AbilityCooldown>(entityAbility, false);
 
                 this.learnedEntityAbilities.Add(new EntityAbilityBinding(e.entity, e.ability), entityAbility);
+            }
+
+            void onEntityDiedEvent(EntityDiedEvent e)
+            {
+                foreach(var binding in this.learnedEntityAbilities.GetKeyArray(Allocator.Temp))
+                {
+                    if(binding.entity == e.entity)
+                    {
+                        this.EntityManager.DestroyEntity(this.learnedEntityAbilities[binding]);
+                        this.learnedEntityAbilities.Remove(binding);
+                    }
+                }
             }
         }
     }
