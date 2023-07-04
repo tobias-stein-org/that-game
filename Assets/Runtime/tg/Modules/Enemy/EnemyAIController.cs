@@ -22,7 +22,6 @@ namespace tg.enemy
         readonly partial struct AIEnemy : IAspect
         {
             readonly DynamicBuffer<BehaviourContextData>        behaviourContext;
-            readonly RefRO<Enemy>                               enemy;
             readonly RefRW<EnemyInputData>                      inputData;
 
             readonly public  Entity                             entity;

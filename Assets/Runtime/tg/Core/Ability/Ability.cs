@@ -13,7 +13,10 @@ using Unity.Mathematics;
 namespace tg.ability
 {
     using tg.events;
+    using tg.combat;
+
     using tg.ability.events;
+    using tg.combat.events;
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class AbilityPropertyAttribute : Attribute
@@ -30,6 +33,18 @@ namespace tg.ability
         protected virtual void Awake()
         {
             // Do not put any ability logic inside the awake method! Use Start instead.
+        }
+
+        protected void dealDamage(in Entity target, ref Damage damage)
+        {
+            damage.source   = this.caster;
+
+            EventQueue.publish(new DealDamageEvent
+            {
+                source      = this.caster,
+                target      = target,
+                damage      = damage
+            });
         }
     }
 
@@ -362,7 +377,6 @@ namespace tg.ability
                     }
                     this.usedAbilities.Clear();
                 }
-
             }
 
             void onUseAbilityEvent(UseAbilityEvent<Entity> e) { this.usedAbilities.Add(e); }
@@ -420,6 +434,18 @@ namespace tg.ability
                 entityManager.SetComponentEnabled<AbilityCooldown>(entityAbility, false);
 
                 this.learnedEntityAbilities.Add(new EntityAbilityBinding(e.entity, e.ability), entityAbility);
+            }
+
+            void onEntityDiedEvent(EntityDiedEvent e)
+            {
+                foreach(var binding in this.learnedEntityAbilities.GetKeyArray(Allocator.Temp))
+                {
+                    if(binding.entity == e.entity)
+                    {
+                        this.EntityManager.DestroyEntity(this.learnedEntityAbilities[binding]);
+                        this.learnedEntityAbilities.Remove(binding);
+                    }
+                }
             }
         }
     }

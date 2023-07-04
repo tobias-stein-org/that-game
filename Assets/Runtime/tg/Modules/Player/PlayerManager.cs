@@ -11,11 +11,13 @@ namespace tg.player
     using tg.level;
     using tg.player.events;
     using tg.spawn.events;
+    using tg.combat.events;
 
     namespace entities
     {
         using tg.application.entities;
         using tg.physics.entities;
+        using tg.combat.entities;
 
         /// <summary>
         /// Added to spawned player entities.
@@ -57,6 +59,18 @@ namespace tg.player
                 }
             }
 
+            void onEntityDiedEvent(EntityDiedEvent e)
+            {
+                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
+                if(entityManager.HasComponent<Player>(e.entity))
+                {
+                    var gameObject  = entityManager.GetComponentObject<Transform>(e.entity).gameObject;
+
+                    GameObject.Destroy(gameObject);
+                    entityManager.DestroyEntity(e.entity);
+                }
+            }
+
             void onKillPlayerEvent(KillPlayerEvent e)
             {
                 if(!World.DefaultGameObjectInjectionWorld.IsCreated) { return; }
@@ -67,8 +81,6 @@ namespace tg.player
 
                 GameObject.Destroy(playerGO);
                 entityManager.DestroyEntity(e.player);
-
-                EventQueue.publish(new PlayerDiedEvent { player = e.player });
             }
 
             public void OnStartRunning(ref SystemState state)
@@ -88,11 +100,20 @@ namespace tg.player
     #if UNITY_EDITOR
                     ECB.SetName(playerEntity, instance.name);
     #endif
-                    ECB.AddComponent(playerEntity, new ComponentTypeSet(
+                    ECB.AddComponent(playerEntity, new ComponentTypeSet(new ComponentType[]
+                    {
                        typeof(Player),
                        typeof(PlayerInputData),
+                       typeof(Health),
+                       typeof(Damagaeble),
                        typeof(WithManagedCollider)
-                    ));
+                    }));
+
+                    ECB.SetComponent<Health>(playerEntity, new Health
+                    {
+                        maxHealth   = 100f,
+                        health      = 100f
+                    });
 
                     ECB.SetComponent<PlayerInputData>(playerEntity, new PlayerInputData
                     {

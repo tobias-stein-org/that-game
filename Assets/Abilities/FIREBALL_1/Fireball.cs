@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace tg.ability
@@ -24,7 +22,12 @@ namespace tg.ability
             // no self-damage
             if(entity == this.caster) { return; }
 
-            Debug.Log($"{this.caster}'s Fireball dealt damage to {entity}");
+            var damage = new combat.Damage
+            {
+                name    = "Fireball",
+                value   = 30f
+            };
+            this.dealDamage(entity, ref damage);
 
             // destroy the fire ball
             Destroy(this.gameObject, Time.deltaTime);
