@@ -22,11 +22,6 @@ namespace tg.player.events
         public Entity   player;
     }
 
-    public struct PlayerDiedEvent : IEvent
-    {
-        public Entity   player;
-    }
-
     /// <summary>
     /// Fired by the PlayerTracker system, when player walked from on level chunk into another.
     /// </summary>

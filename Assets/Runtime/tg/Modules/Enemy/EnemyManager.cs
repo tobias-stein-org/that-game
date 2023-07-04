@@ -7,6 +7,7 @@ namespace tg.enemy {
     using tg.debug;
     using tg.events;
     using tg.enemy.events;
+    using tg.combat.events;
     using tg.spawn.events;
     using tg.ai.entities;
     using tg.ability.events;
@@ -16,6 +17,7 @@ namespace tg.enemy {
         using tg.application.entities;
         using tg.ai.behaviour.entities;
         using tg.physics.entities;
+        using tg.combat.entities;
 
         /// <summary>
         /// Added to spawned enemy entities.
@@ -66,13 +68,22 @@ namespace tg.enemy {
             {
                 var enemyEntity = tg.spawn.request.create(out EntityCommandBuffer ECB, default, 0f, EnemyManager.learnAbilities);
                 {
-                    ECB.AddComponent(enemyEntity, new ComponentTypeSet(
+                    ECB.AddComponent(enemyEntity, new ComponentTypeSet(new ComponentType[]
+                    {
                        typeof(Enemy),
                        typeof(EnemyInputData),
                        typeof(BehaviourContextData),
                        typeof(Sensor),
+                       typeof(Health),
+                       typeof(Damagaeble),
                        typeof(WithManagedCollider)
-                    ));
+                    }));
+
+                    ECB.SetComponent<Health>(enemyEntity, new Health
+                    {
+                        maxHealth       = 100f,
+                        health          = 100f
+                    });
 
                     ECB.SetComponent<EnemyInputData>(enemyEntity, new EnemyInputData
                     {
@@ -166,6 +177,18 @@ namespace tg.enemy {
                 }
             }
 
+            void onEntityDiedEvent(EntityDiedEvent e)
+            {
+                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
+                if(entityManager.HasComponent<Enemy>(e.entity))
+                {
+                    var gameObject  = entityManager.GetComponentObject<Transform>(e.entity).gameObject;
+
+                    GameObject.Destroy(gameObject);
+                    entityManager.DestroyEntity(e.entity);
+                }
+            }
+
             void onKillEnemyEvent(KillEnemyEvent e)
             {
                 var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -173,8 +196,6 @@ namespace tg.enemy {
 
                 GameObject.Destroy(playerGO);
                 entityManager.DestroyEntity(e.enemy);
-
-                EventQueue.publish(new EnemyDiedEvent { enemy = e.enemy });
             }
 
         

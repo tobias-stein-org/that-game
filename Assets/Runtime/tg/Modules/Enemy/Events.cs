@@ -19,9 +19,4 @@ namespace tg.enemy.events
     {
         public Entity enemy;
     }
-
-    public struct EnemyDiedEvent : IEvent
-    {
-        public Entity enemy;
-    }
 }
