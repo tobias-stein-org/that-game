@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace tg.ability
 {
@@ -54,7 +53,13 @@ namespace tg.ability
 
             collision.attachedRigidbody?.AddForce(this.initialDirection * this.knowbackForce, ForceMode2D.Force);
 
-            Debug.Log($"{this.caster}'s melee attack dealt damage to {entity}");
+            var damage = new combat.Damage
+            {
+                name    = "Melee attack",
+                value   = 20f
+            };
+
+            this.dealDamage(entity, ref damage);
         }
     }
 }

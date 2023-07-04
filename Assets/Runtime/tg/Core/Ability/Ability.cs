@@ -13,7 +13,10 @@ using Unity.Mathematics;
 namespace tg.ability
 {
     using tg.events;
+    using tg.combat;
+
     using tg.ability.events;
+    using tg.combat.events;
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class AbilityPropertyAttribute : Attribute
@@ -30,6 +33,18 @@ namespace tg.ability
         protected virtual void Awake()
         {
             // Do not put any ability logic inside the awake method! Use Start instead.
+        }
+
+        protected void dealDamage(in Entity target, ref Damage damage)
+        {
+            damage.source   = this.caster;
+
+            EventQueue.publish(new DealDamageEvent
+            {
+                source      = this.caster,
+                target      = target,
+                damage      = damage
+            });
         }
     }
 
