@@ -4,6 +4,7 @@ using Unity.Burst.Intrinsics;
 
 using Unity.Entities;
 using Unity.Collections;
+using Unity.Mathematics;
 
 using FrameDamageBuffer = Unity.Collections.FixedList512Bytes<tg.combat.Damage>;
 
@@ -15,7 +16,88 @@ namespace tg.combat
     namespace entities
     {
         using tg.application.entities;
-        using static UnityEngine.EventSystems.EventTrigger;
+
+        public static class CombatDamage
+        {
+            private static Random rng           = new Random((uint)System.DateTime.UnixEpoch.Ticks.GetHashCode());
+
+            private const float CRIT_MULTIPLIER = 2.0f;
+
+            public struct Result
+            {
+                public bool    missed;
+                public bool    critical;
+                public float   value;
+
+                public static Result Empty = new Result
+                {
+                    missed      = false,
+                    critical    = false,
+                    value       = 0.0f
+                };
+            }
+
+            public static Result roll(this Damage damage, in Stats? attacker, in Stats? defender)
+            {
+                Result result = Result.Empty;
+
+                if(!attacker.HasValue || !defender.HasValue)
+                {
+                    damage.type = Damage.Type.Raw;
+                }
+
+                var att = attacker.HasValue ? attacker.Value : Stats.one;
+                var def = defender.HasValue ? defender.Value : Stats.one;
+
+                switch(damage.type)
+                {
+                    case Damage.Type.Raw:
+                    {
+                        result.value = damage.value;
+                        break;
+                    }
+
+                    case Damage.Type.Weapon_Melee:
+                    case Damage.Type.Weapon_Range:
+                    {
+                        if((damage.type == Damage.Type.Weapon_Melee ? def.evasion(in att) : att.accuracy(in def)) > CombatDamage.rng.NextFloat())
+                        {
+                            result.missed = true;
+                        }
+                        else // hit
+                        {
+                            result.value = att.physicalAttackRate(in def) * (float)att.ATT;
+
+                            // roll on crit
+                            if(att.physicalCriticalHitRate(in def) > CombatDamage.rng.NextFloat())
+                            {
+                                result.critical = true;
+                                result.value *= CombatDamage.CRIT_MULTIPLIER;
+                            }
+                        }
+                        break;
+                    }
+
+                    case Damage.Type.Ability_Physical:
+                    case Damage.Type.Ability_Magical:
+                    {
+                        result.value = damage.type == Damage.Type.Ability_Physical
+                                ? att.physicalAttackRate(in def) * damage.value
+                                : att.magicalAttackRate(in def) * damage.value;
+
+                        // roll on crit
+                        if((damage.type == Damage.Type.Ability_Physical ? att.physicalCriticalHitRate(in def) : att.magicalCriticalHitRate(in def)) > CombatDamage.rng.NextFloat())
+                        {
+                            result.critical = true;
+                            result.value *= CombatDamage.CRIT_MULTIPLIER;
+                        }
+                        break;
+                    }
+                }
+
+                return result;
+            }
+        }
 
         [UpdateInGroup(typeof(LateSimulationSystemGroup))]
         public partial class CombatSystemGroup : ComponentSystemGroup
@@ -136,16 +218,25 @@ namespace tg.combat
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
         public partial struct DamageSolver : ISystem
         {
+            private ComponentLookup<Stats>  entityStatsLookup;
+
             public void OnCreate(ref SystemState state)
             {
                 state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<DamageSolver>(state.SystemHandle)));
+
+                this.entityStatsLookup  = state.GetComponentLookup<Stats>(true);
             }
 
             [BurstCompile]
             public void OnUpdate(ref SystemState state)
             {
+                this.entityStatsLookup.Update(ref state);
+
                 foreach(var (data, entity) in SystemAPI.Query<RefRW<Damagaeble>>().WithEntityAccess())
                 {
+                    Stats? defenderStats = null;
+                    if(this.entityStatsLookup.TryGetComponent(entity, out Stats statsAtt)) { defenderStats = statsAtt; }
+
                     data.ValueRW.resolvedDamage = 0f;
 
                     float resolvedDamage = 0f;
@@ -154,8 +245,13 @@ namespace tg.combat
                     {
                         var damage = data.ValueRO.frameDamage[i];
 
-                        UnityEngine.Debug.Log($"{damage.source} '{damage.name}' deals '{damage.value}' to {entity}");
-                        resolvedDamage += damage.value;
+                        Stats? attackerStats = null;
+                        if(this.entityStatsLookup.TryGetComponent(damage.source, out Stats statsDef)) { attackerStats = statsDef; }
+
+                        var result = damage.roll(attackerStats, defenderStats);
+                        resolvedDamage += result.value;
+
+                        UnityEngine.Debug.Log($"{damage.source} '{damage.name}' deals '{result.value}' {damage.type} damage to {entity}");
                     }
 
                     data.ValueRW.resolvedDamage = resolvedDamage;
@@ -236,7 +332,6 @@ namespace tg.combat
                 updateHealth.ScheduleParallel(this.updateHealth, state.Dependency).Complete();
             }
         }
-
 
         [BurstCompile]
         [UpdateInGroup(typeof(CombatSystemGroup), OrderLast = true)]
