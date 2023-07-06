@@ -67,25 +67,20 @@ namespace tg.stats
 
     public static class Mechanics
     {
-        private const float EVASION_MULTIPLIER    = 0.1f;
 
-        private static float sigmoid01_max099(float x) { return 1.0f / (1.0f + math.pow(math.E, -4.59511985013f * x)); }
-        private static float sigmoid01_max095(float x) { return 1.0f / (1.0f + math.pow(math.E, -2.94443897917f * x)); }
-        private static float sigmoid01_max090(float x) { return 1.0f / (1.0f + math.pow(math.E, -2.19722457734f * x)); }
-
-        private static float sigmoidRate(float x) { return 2.0f / (1.0f + math.exp(-3f * (x - 1f))); }
+        private static float sigmoidRate(float x, float scale = 1.0f, float steepness = 1.0f, float shift = 0.0f) { return scale / (1.0f + math.exp(steepness * (x + shift))); }
 
         private static float a_ab(uint stat0, uint stat1) { return (float)stat0 / (float)(stat0 + stat1); }
-        private static float a_ab(float stat0, float stat1) { return stat0 / (stat0 + stat1); }
+        private static float aa_ab(float stat0, float stat1) { return (stat0 * stat0) / (stat0 + stat1); }
 
-        public static float physicalHitAccuracy(this Stats attacker, in Stats defender)
+        public static float accuracy(this Stats attacker, in Stats defender)
         {
             return a_ab(attacker.AGI, defender.AGI);
         }
 
-        public static float physicalHitEvasion(this Stats defender, in Stats attacker)
+        public static float evasion(this Stats defender, in Stats attacker)
         {
-            return a_ab(defender.AGI, attacker.AGI);
+            return sigmoidRate(a_ab(defender.AGI, attacker.AGI) - a_ab(attacker.AGI, defender.AGI), 2.0f, -3.0f, -1.0f);
         }
 
         public static float physicalCriticalHitChance(this Stats attacker, in Stats defender)
@@ -95,27 +90,45 @@ namespace tg.stats
 
         public static float magicalCriticalHitChance(this Stats attacker, in Stats defender)
         {
-            return a_ab(attacker.INT, defender.INT); ;
+            return a_ab(attacker.INT, defender.INT);
         }
 
-        public static float physicalCriticalHitResistance(this Stats defender, in Stats attacker)
+        public static float physicalResistance(this Stats defender, in Stats attacker)
         {
-            return a_ab(defender.STR, attacker.STR); ;
+            return a_ab(defender.STR, attacker.STR);
         }
 
-        public static float magicalCriticalHitResistance(this Stats defender, in Stats attacker)
+        public static float magicalResistance(this Stats defender, in Stats attacker)
         {
-            return a_ab(defender.INT, attacker.INT); ;
+            return a_ab(defender.INT, attacker.INT);
         }
 
         public static float physicalCriticalHitRate(this Stats attacker, in Stats defender)
         {
-            return sigmoidRate(attacker.physicalCriticalHitChance(in defender) - defender.physicalCriticalHitResistance(in attacker));
+            return sigmoidRate(attacker.physicalCriticalHitChance(in defender) - defender.physicalResistance(in attacker), 2.0f, -3.0f, -1.0f);
         }
 
         public static float magicalCriticalHitRate(this Stats attacker, in Stats defender)
         {
-            return sigmoidRate(attacker.magicalCriticalHitChance(in defender) - defender.magicalCriticalHitResistance(in attacker));
+            return sigmoidRate(attacker.magicalCriticalHitChance(in defender) - defender.magicalResistance(in attacker), 2.0f, -3.0f, -1.0f);
+        }
+
+        public static float advantage(this Stats attacker, in Stats defender)
+        {
+            float advA = (a_ab(attacker.STR, defender.STR) + a_ab(attacker.AGI, defender.AGI) + a_ab(attacker.INT, defender.INT) + a_ab(attacker.ATT, defender.ATT) + a_ab(attacker.DEF, defender.DEF)) / 5f;
+            float advD = 1.0f - advA;
+
+            return sigmoidRate(advA - advD);
+        }
+
+        public static float physicalAttackRate(this Stats attacker, in Stats defender)
+        {
+            return sigmoidRate((defender.physicalResistance(in attacker) * 0.25f) - a_ab(attacker.ATT, defender.DEF), steepness: 3.0f);
+        }
+
+        public static float magicalAttackRate(this Stats attacker, in Stats defender)
+        {
+            return sigmoidRate((defender.magicalResistance(in attacker) * 0.25f) - a_ab(attacker.ATT, defender.DEF), steepness: 3.0f);
         }
     }
 }

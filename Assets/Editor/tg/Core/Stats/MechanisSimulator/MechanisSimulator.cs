@@ -14,14 +14,30 @@ namespace tg.editor.stats
         [System.Serializable]
         public class Chances : ScriptableObject
         {
-            public float phyHitAcc              = float.NaN;
+            [Range(0,1)]
+            public float accuracy               = float.NaN;
+            [Range(0, 1)]
+            public float evasion                = float.NaN;
+            [Range(0, 1)]
+            public float advantage              = float.NaN;
+
+            [Range(0, 1)]
             public float phyCritCh              = float.NaN;
+            [Range(0,1)]
             public float magCritCh              = float.NaN;
+            [Range(0,1)]
+            public float phyRes                 = float.NaN;
+            [Range(0,1)]
+            public float magRes                 = float.NaN;
+            [Range(0,1)]
             public float phyCritRate            = float.NaN;
+            [Range(0,1)]
             public float magCritRate            = float.NaN;
-            public float phyHitEva              = float.NaN;
-            public float phyCritRes             = float.NaN;
-            public float magCritRes             = float.NaN;
+
+            [Range(0,1)]
+            public float phyDamRate             = float.NaN;
+            [Range(0,1)]
+            public float magDamRate             = float.NaN;
         }
 
         [System.Serializable]
@@ -38,6 +54,16 @@ namespace tg.editor.stats
             public float phyCritRatio           = 0f;
             public float magCritRatio           = 0f;
 
+            public float phyDamageDealt         = 0f;
+            public float magDamageDealt         = 0f;
+            public float phyDamageTaken         = 0f;
+            public float magDamageTaken         = 0f;
+
+            public float phyDamageDealtAvg      = 0f;
+            public float magDamageDealtAvg      = 0f;
+            public float phyDamageTakenAvg      = 0f;
+            public float magDamageTakenAvg      = 0f;
+
             public void clear()
             {
                 this.numHits                    = 0;
@@ -50,6 +76,16 @@ namespace tg.editor.stats
                 this.evasionRatio               = 0f;
                 this.phyCritRatio               = 0f;
                 this.magCritRatio               = 0f;
+
+                this.phyDamageDealt             = 0f;
+                this.magDamageDealt             = 0f;
+                this.phyDamageTaken             = 0f;
+                this.magDamageTaken             = 0f;
+
+                this.phyDamageDealtAvg          = 0f;
+                this.magDamageDealtAvg          = 0f;
+                this.phyDamageTakenAvg          = 0f;
+                this.magDamageTakenAvg          = 0f;
             }
         }
 
@@ -104,12 +140,40 @@ namespace tg.editor.stats
 
             var actions         = root.Q<Toolbar>("actions");
             {
+                var reset       = actions.Q<ToolbarButton>("reset");
                 var run         = actions.Q<ToolbarButton>("run");
                 var iterations  = actions.Q<IntegerField>("iterations");
                 var progress    = actions.Q<ProgressBar>("progress");
                 var abort       = actions.Q<ToolbarButton>("abort");
 
                 iterations.SetValueWithoutNotify(this.iterations);
+
+                reset.clicked += () =>
+                {
+                    this.attacker = this.defender = Stats.one;
+
+                    var stats = root.Q<Foldout>("stats");
+                    {
+                        var att = stats.Q<VisualElement>("attacker");
+                        {
+                            att.Q<SliderInt>("str").SetValueWithoutNotify((int)this.attacker.STR);
+                            att.Q<SliderInt>("agi").SetValueWithoutNotify((int)this.attacker.AGI);
+                            att.Q<SliderInt>("int").SetValueWithoutNotify((int)this.attacker.INT);
+                            att.Q<SliderInt>("att").SetValueWithoutNotify((int)this.attacker.ATT);
+                            att.Q<SliderInt>("def").SetValueWithoutNotify((int)this.attacker.DEF);
+                        }
+
+                        var def = stats.Q<VisualElement>("defender");
+                        {
+                            def.Q<SliderInt>("str").SetValueWithoutNotify((int)this.defender.STR);
+                            def.Q<SliderInt>("agi").SetValueWithoutNotify((int)this.defender.AGI);
+                            def.Q<SliderInt>("int").SetValueWithoutNotify((int)this.defender.INT);
+                            def.Q<SliderInt>("att").SetValueWithoutNotify((int)this.defender.ATT);
+                            def.Q<SliderInt>("def").SetValueWithoutNotify((int)this.defender.DEF);
+                        }
+                    }
+                    this.updateChances();
+                };
 
                 run.clicked    += () =>
                 {
@@ -122,6 +186,7 @@ namespace tg.editor.stats
                     progress.style.visibility   = Visibility.Visible;
                     abort.style.visibility      = Visibility.Visible;
 
+                    reset.SetEnabled(false);
                     run.SetEnabled(false);
                     iterations.SetEnabled(false);
 
@@ -172,13 +237,13 @@ namespace tg.editor.stats
             }
 
             this.attackerChances = CreateInstance<Chances>();
-            this.defenderChances = CreateInstance<Chances>();
             this.attackerResults = CreateInstance<Results>();
+            this.defenderChances = CreateInstance<Chances>();
             this.defenderResults = CreateInstance<Results>();
 
             this.add(this.attackerChances, chances.Q<VisualElement>("att"));
-            this.add(this.defenderChances, chances.Q<VisualElement>("def"));
             this.add(this.attackerResults, results.Q<VisualElement>("att"));
+            this.add(this.defenderChances, chances.Q<VisualElement>("def"));
             this.add(this.defenderResults, results.Q<VisualElement>("def"));
 
             results.style.display = DisplayStyle.None;
@@ -188,20 +253,26 @@ namespace tg.editor.stats
 
         private void updateChances()
         {
-            void update(Chances chances, in Stats stats)
+            void update(Chances chances, in Stats stats0, in Stats stats1)
             {
-                chances.phyHitAcc   = this.attacker.physicalHitAccuracy(in stats);
-                chances.phyCritCh   = this.attacker.physicalCriticalHitChance(in stats);
-                chances.magCritCh   = this.attacker.magicalCriticalHitChance(in stats);
-                chances.phyCritRate = this.attacker.physicalCriticalHitRate(in stats);
-                chances.magCritRate = this.attacker.magicalCriticalHitRate(in stats);
-                chances.phyHitEva   = this.defender.physicalHitEvasion(in stats);
-                chances.phyCritRes  = this.defender.physicalCriticalHitResistance(in stats);
-                chances.magCritRes  = this.defender.magicalCriticalHitResistance(in stats);
+                chances.accuracy    = stats0.accuracy(in stats1);
+                chances.evasion     = stats0.evasion(in stats1);
+
+                chances.advantage   = stats0.advantage(in stats1);
+
+                chances.phyCritCh   = stats0.physicalCriticalHitChance(in stats1);
+                chances.magCritCh   = stats0.magicalCriticalHitChance(in stats1);
+                chances.phyCritRate = stats0.physicalCriticalHitRate(in stats1);
+                chances.magCritRate = stats0.magicalCriticalHitRate(in stats1);
+                chances.phyRes      = stats0.physicalResistance(in stats1);
+                chances.magRes      = stats0.magicalResistance(in stats1);
+
+                chances.phyDamRate  = stats0.physicalAttackRate(in stats1);
+                chances.magDamRate  = stats0.magicalAttackRate(in stats1);
             }
 
-            update(this.attackerChances, in this.defender);
-            update(this.defenderChances, in this.attacker);
+            update(this.attackerChances, in this.attacker, in this.defender);
+            update(this.defenderChances, in this.defender, in this.attacker);
         }
 
         private void runSimulation()
@@ -213,7 +284,7 @@ namespace tg.editor.stats
             }
 
             // roll on evasion ...
-            if(this.defenderChances.phyHitEva > this.rng.NextDouble())
+            if(this.defenderChances.evasion > this.rng.NextDouble())
             {
                 this.defenderResults.numDodges++;
             }
@@ -221,27 +292,49 @@ namespace tg.editor.stats
             {
                 this.attackerResults.numHits++;
 
+                var phyDmg = this.attacker.physicalAttackRate(in this.defender) * (float)this.attacker.ATT;
+
                 // roll on crit ...
                 if(this.attackerChances.phyCritRate > this.rng.NextDouble())
                 {
                     this.attackerResults.numPhyCrit++;
+                    phyDmg *= 2.0f;
                 }
+
+                this.attackerResults.phyDamageDealt += phyDmg;
+                this.defenderResults.phyDamageTaken += phyDmg;
             }
 
             // magic attacks can't miss
             this.attackerResults.numCasts++;
+
+            var magDmg = this.attacker.magicalAttackRate(in this.defender) * (float)this.attacker.ATT;
+
             // roll on mag. crit ...
             if(this.attackerChances.magCritRate > this.rng.NextDouble())
             {
                 this.attackerResults.numMagCrit++;
+                magDmg *= 2.0f;
             }
+
+            this.attackerResults.magDamageDealt += magDmg;
+            this.defenderResults.magDamageTaken += magDmg;
 
             // udpate ratios
 
-            this.attackerResults.missRatio      = (float)this.attackerResults.numHits      / (float)Mathf.Max(1, this.currentIteration);
-            this.attackerResults.phyCritRatio   = (float)this.attackerResults.numPhyCrit   / (float)Mathf.Max(1, this.attackerResults.numHits);
-            this.attackerResults.magCritRatio   = (float)this.attackerResults.numMagCrit   / (float)Mathf.Max(1, this.attackerResults.numCasts);
-            this.defenderResults.evasionRatio   = (float)this.defenderResults.numDodges    / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.missRatio          = (float)this.attackerResults.numHits      / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.phyCritRatio       = (float)this.attackerResults.numPhyCrit   / (float)Mathf.Max(1, this.attackerResults.numHits);
+            this.attackerResults.magCritRatio       = (float)this.attackerResults.numMagCrit   / (float)Mathf.Max(1, this.attackerResults.numCasts);
+            this.defenderResults.evasionRatio       = (float)this.defenderResults.numDodges    / (float)Mathf.Max(1, this.currentIteration);
+
+            this.attackerResults.phyDamageDealtAvg  = this.attackerResults.phyDamageDealt / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.magDamageDealtAvg  = this.attackerResults.magDamageDealt / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.phyDamageTakenAvg  = this.attackerResults.phyDamageTaken / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.magDamageTakenAvg  = this.attackerResults.magDamageTaken / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.phyDamageDealtAvg  = this.defenderResults.phyDamageDealt / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.magDamageDealtAvg  = this.defenderResults.magDamageDealt / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.phyDamageTakenAvg  = this.defenderResults.phyDamageTaken / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.magDamageTakenAvg  = this.defenderResults.magDamageTaken / (float)Mathf.Max(1, this.currentIteration);
 
             this.rootVisualElement.Q<Toolbar>("actions").Q<ProgressBar>("progress").value = (float)this.currentIteration / (float)this.iterations;
             this.currentIteration++;
@@ -262,6 +355,7 @@ namespace tg.editor.stats
                 actions.Q<ProgressBar>("progress").style.visibility = Visibility.Hidden;
                 actions.Q<ToolbarButton>("abort").style.visibility  = Visibility.Hidden;
 
+                actions.Q<ToolbarButton>("reset").SetEnabled(true);
                 actions.Q<ToolbarButton>("run").SetEnabled(true);
                 actions.Q<IntegerField>("iterations").SetEnabled(true);
             }
