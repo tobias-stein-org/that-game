@@ -7,9 +7,22 @@ namespace tg.combat
 {
     public struct Damage
     {
+        public enum Type
+        {
+            Raw,
+
+            Weapon_Melee,
+            Weapon_Range,
+
+            Ability_Physical,
+            Ability_Magical
+        }
+
         public Entity               source;
 
         public FixedString64Bytes   name;
+
+        public Type                 type;
 
         public float                value;
     }
