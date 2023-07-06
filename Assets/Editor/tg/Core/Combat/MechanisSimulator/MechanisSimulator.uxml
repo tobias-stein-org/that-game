@@ -2,6 +2,7 @@
     <uie:Toolbar name="actions">
         <uie:ToolbarButton text="Run Simulation" display-tooltip-when-elided="true" name="run" style="padding-left: 4px; padding-right: 4px; padding-top: 4px; padding-bottom: 4px;" />
         <ui:IntegerField label="Iterations" value="1000" name="iterations" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; font-size: 12px; color: rgba(255, 255, 255, 0.67); -unity-text-align: middle-left; -unity-font-style: normal; width: 220px;" />
+        <ui:EnumField type="tg.combat.Damage+Type, tg.runtime" value="Weapon_Melee" name="damageType" />
         <ui:ProgressBar value="0" name="progress" low-value="0" high-value="1" style="flex-grow: 1; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; visibility: hidden; display: flex; font-size: 12px; -unity-text-align: middle-left; padding-left: 2px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; width: auto; height: 20px;" />
         <uie:ToolbarButton text="Abort" display-tooltip-when-elided="true" name="abort" style="visibility: hidden;" />
         <uie:ToolbarButton text="Reset" display-tooltip-when-elided="true" name="reset" style="padding-left: 4px; padding-right: 4px; padding-top: 4px; padding-bottom: 4px;" />

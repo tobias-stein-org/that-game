@@ -7,6 +7,7 @@ using Random = System.Random;
 
 namespace tg.editor.combat
 {
+    using tg.combat;
     using tg.combat.entities;
 
     public class MechanisSimulator : EditorWindow
@@ -44,48 +45,34 @@ namespace tg.editor.combat
         public class Results : ScriptableObject
         {
             public int numHits                  = 0;
-            public int numCasts                 = 0;
             public int numDodges                = 0;
-            public int numPhyCrit               = 0;
-            public int numMagCrit               = 0;
+            public int numCrits                 = 0;
 
             public float missRatio              = 0f;
             public float evasionRatio           = 0f;
-            public float phyCritRatio           = 0f;
-            public float magCritRatio           = 0f;
+            public float critRatio              = 0f;
 
-            public float phyDamageDealt         = 0f;
-            public float magDamageDealt         = 0f;
-            public float phyDamageTaken         = 0f;
-            public float magDamageTaken         = 0f;
+            public float damageDealt            = 0f;
+            public float damageTaken            = 0f;
 
-            public float phyDamageDealtAvg      = 0f;
-            public float magDamageDealtAvg      = 0f;
-            public float phyDamageTakenAvg      = 0f;
-            public float magDamageTakenAvg      = 0f;
+            public float damageDealtAvg         = 0f;
+            public float damageTakenAvg         = 0f;
 
             public void clear()
             {
                 this.numHits                    = 0;
-                this.numCasts                   = 0;
                 this.numDodges                  = 0;
-                this.numPhyCrit                 = 0;
-                this.numMagCrit                 = 0;
+                this.numCrits                   = 0;
 
                 this.missRatio                  = 0f;
                 this.evasionRatio               = 0f;
-                this.phyCritRatio               = 0f;
-                this.magCritRatio               = 0f;
+                this.critRatio                  = 0f;
 
-                this.phyDamageDealt             = 0f;
-                this.magDamageDealt             = 0f;
-                this.phyDamageTaken             = 0f;
-                this.magDamageTaken             = 0f;
+                this.damageDealt                = 0f;
+                this.damageTaken                = 0f;
 
-                this.phyDamageDealtAvg          = 0f;
-                this.magDamageDealtAvg          = 0f;
-                this.phyDamageTakenAvg          = 0f;
-                this.magDamageTakenAvg          = 0f;
+                this.damageDealtAvg             = 0f;
+                this.damageTakenAvg             = 0f;
             }
         }
 
@@ -95,23 +82,23 @@ namespace tg.editor.combat
         [MenuItem("tg/Stats/Mechanis Simulator")]
         public static void ShowExample()
         {
-            MechanisSimulator wnd               = GetWindow<MechanisSimulator>();
-            wnd.titleContent                    = new GUIContent("Mechanis Simulator");
-            wnd.minSize                         =
-            wnd.maxSize                         = new Vector2(800, 600);
+            MechanisSimulator wnd                   = GetWindow<MechanisSimulator>();
+            wnd.titleContent                        = new GUIContent("Mechanis Simulator");
+            wnd.minSize                             =
+            wnd.maxSize                             = new Vector2(800, 600);
         }
 
-        private int     iterations              = 300;
-        private int     currentIteration        = 0;
+        private int         iterations              = 300;
+        private int         currentIteration        = 0;
 
         // attacker
-        private Stats   attacker                = Stats.one;
+        private Stats       attacker                = Stats.one;
         
         // defender
-        private Stats   defender                = Stats.one;
+        private Stats       defender                = Stats.one;
 
-        private Random  rng                     = new Random();
-        
+        private Damage.Type damageType              = Damage.Type.Weapon_Melee;
+
         private Chances attackerChances, defenderChances;
         private Results attackerResults, defenderResults;
 
@@ -143,10 +130,12 @@ namespace tg.editor.combat
                 var reset       = actions.Q<ToolbarButton>("reset");
                 var run         = actions.Q<ToolbarButton>("run");
                 var iterations  = actions.Q<IntegerField>("iterations");
+                var damageType  = actions.Q<EnumField>("damageType");
                 var progress    = actions.Q<ProgressBar>("progress");
                 var abort       = actions.Q<ToolbarButton>("abort");
 
                 iterations.SetValueWithoutNotify(this.iterations);
+                damageType.SetValueWithoutNotify(this.damageType);
 
                 reset.clicked += () =>
                 {
@@ -189,6 +178,7 @@ namespace tg.editor.combat
                     reset.SetEnabled(false);
                     run.SetEnabled(false);
                     iterations.SetEnabled(false);
+                    damageType.SetEnabled(false);
 
                     this.currentIteration       = 0;
                     this.attackerResults.clear();
@@ -205,13 +195,16 @@ namespace tg.editor.combat
                     progress.style.visibility   = Visibility.Hidden;
                     abort.style.visibility      = Visibility.Hidden;
 
+                    reset.SetEnabled(true);
                     run.SetEnabled(true);
                     iterations.SetEnabled(true);
+                    damageType.SetEnabled(true);
 
                     EditorApplication.update   -= this.runSimulation;
                 };
 
                 iterations.RegisterValueChangedCallback((ChangeEvent<int> e) => { this.iterations = e.newValue; });
+                damageType.RegisterValueChangedCallback((ChangeEvent<System.Enum> e) => { this.damageType = (Damage.Type)e.newValue; });
             }
 
             var chances         = root.Q<Foldout>("chances");
@@ -283,58 +276,29 @@ namespace tg.editor.combat
                 return;
             }
 
-            // roll on evasion ...
-            if(this.defenderChances.evasion > this.rng.NextDouble())
+            var result                          = new Damage
             {
-                this.defenderResults.numDodges++;
-            }
-            else // attack hit.
-            {
-                this.attackerResults.numHits++;
+                type                            = this.damageType,
+                value                           = this.attacker.ATT
+            }.roll(this.attacker, this.defender);
 
-                var phyDmg = this.attacker.physicalAttackRate(in this.defender) * (float)this.attacker.ATT;
+            this.defenderResults.numDodges      += result.missed    ? 1 : 0;
+            this.attackerResults.numHits        += result.missed    ? 0 : 1;
+            this.attackerResults.numCrits       += result.critical  ? 1 : 0;
 
-                // roll on crit ...
-                if(this.attackerChances.phyCritRate > this.rng.NextDouble())
-                {
-                    this.attackerResults.numPhyCrit++;
-                    phyDmg *= 2.0f;
-                }
-
-                this.attackerResults.phyDamageDealt += phyDmg;
-                this.defenderResults.phyDamageTaken += phyDmg;
-            }
-
-            // magic attacks can't miss
-            this.attackerResults.numCasts++;
-
-            var magDmg = this.attacker.magicalAttackRate(in this.defender) * (float)this.attacker.ATT;
-
-            // roll on mag. crit ...
-            if(this.attackerChances.magCritRate > this.rng.NextDouble())
-            {
-                this.attackerResults.numMagCrit++;
-                magDmg *= 2.0f;
-            }
-
-            this.attackerResults.magDamageDealt += magDmg;
-            this.defenderResults.magDamageTaken += magDmg;
+            this.attackerResults.damageDealt    += result.value;
+            this.defenderResults.damageTaken    += result.value;
 
             // udpate ratios
 
-            this.attackerResults.missRatio          = (float)this.attackerResults.numHits      / (float)Mathf.Max(1, this.currentIteration);
-            this.attackerResults.phyCritRatio       = (float)this.attackerResults.numPhyCrit   / (float)Mathf.Max(1, this.attackerResults.numHits);
-            this.attackerResults.magCritRatio       = (float)this.attackerResults.numMagCrit   / (float)Mathf.Max(1, this.attackerResults.numCasts);
-            this.defenderResults.evasionRatio       = (float)this.defenderResults.numDodges    / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.missRatio       = Mathf.Clamp01(1.0f - ((float)this.attackerResults.numHits    / (float)Mathf.Max(1, this.currentIteration)));
+            this.attackerResults.critRatio       = Mathf.Clamp01((float)this.attackerResults.numCrits   / (float)Mathf.Max(1, this.attackerResults.numHits));
+            this.defenderResults.evasionRatio    = Mathf.Clamp01((float)this.defenderResults.numDodges  / (float)Mathf.Max(1, this.currentIteration));
 
-            this.attackerResults.phyDamageDealtAvg  = this.attackerResults.phyDamageDealt / (float)Mathf.Max(1, this.currentIteration);
-            this.attackerResults.magDamageDealtAvg  = this.attackerResults.magDamageDealt / (float)Mathf.Max(1, this.currentIteration);
-            this.attackerResults.phyDamageTakenAvg  = this.attackerResults.phyDamageTaken / (float)Mathf.Max(1, this.currentIteration);
-            this.attackerResults.magDamageTakenAvg  = this.attackerResults.magDamageTaken / (float)Mathf.Max(1, this.currentIteration);
-            this.defenderResults.phyDamageDealtAvg  = this.defenderResults.phyDamageDealt / (float)Mathf.Max(1, this.currentIteration);
-            this.defenderResults.magDamageDealtAvg  = this.defenderResults.magDamageDealt / (float)Mathf.Max(1, this.currentIteration);
-            this.defenderResults.phyDamageTakenAvg  = this.defenderResults.phyDamageTaken / (float)Mathf.Max(1, this.currentIteration);
-            this.defenderResults.magDamageTakenAvg  = this.defenderResults.magDamageTaken / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.damageDealtAvg  = this.attackerResults.damageDealt       / (float)Mathf.Max(1, this.currentIteration);
+            this.attackerResults.damageTakenAvg  = this.attackerResults.damageTaken       / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.damageDealtAvg  = this.defenderResults.damageDealt       / (float)Mathf.Max(1, this.currentIteration);
+            this.defenderResults.damageTakenAvg  = this.defenderResults.damageTaken       / (float)Mathf.Max(1, this.currentIteration);
 
             this.rootVisualElement.Q<Toolbar>("actions").Q<ProgressBar>("progress").value = (float)this.currentIteration / (float)this.iterations;
             this.currentIteration++;
@@ -358,6 +322,7 @@ namespace tg.editor.combat
                 actions.Q<ToolbarButton>("reset").SetEnabled(true);
                 actions.Q<ToolbarButton>("run").SetEnabled(true);
                 actions.Q<IntegerField>("iterations").SetEnabled(true);
+                actions.Q<EnumField>("damageType").SetEnabled(true);
             }
 
             var output                  = root.Q<Foldout>("output");
