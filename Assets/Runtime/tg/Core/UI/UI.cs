@@ -20,6 +20,7 @@ namespace tg.ui
 
     namespace entities
     {
+        using tg.ai.entities;
         using tg.application.entities;
 
         public class UIDocumentData : IComponentData
@@ -55,7 +56,13 @@ namespace tg.ui
         [UpdateInGroup(typeof(PresentationSystemGroup))]
         public partial class UISystemGroup : ComponentSystemGroup
         {
+            internal const uint UPDATE_RATE_MS = (uint)(15.0f / 60.0f * 1000.0f);
 
+            protected override void OnCreate()
+            {
+                base.OnCreate();
+                this.RateManager = new RateUtils.VariableRateManager(BehaviourSystemGroup.UPDATE_RATE_MS, true);
+            }
         }
 
         [CreateAfter(typeof(EventQueue))]
