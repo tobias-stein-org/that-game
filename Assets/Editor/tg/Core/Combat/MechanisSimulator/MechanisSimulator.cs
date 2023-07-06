@@ -5,9 +5,9 @@ using UnityEditor.UIElements;
 
 using Random = System.Random;
 
-namespace tg.editor.stats
+namespace tg.editor.combat
 {
-    using tg.stats;
+    using tg.combat.entities;
 
     public class MechanisSimulator : EditorWindow
     {
