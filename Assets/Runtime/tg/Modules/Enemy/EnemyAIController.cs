@@ -62,6 +62,8 @@ namespace tg.enemy
                 {
                     var behaviour           = behaviourBuffer.Reinterpret<BehaviourSolver.BehaviourContextDataInternal>()[IBehaviourContext<Solved>.ID];
 
+                    if(!behaviour.context.isValid) { continue; }
+
                     var context             = behaviour.context.normalize();
                     var csum                = context.csum();
 
