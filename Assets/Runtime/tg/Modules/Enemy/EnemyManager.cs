@@ -76,8 +76,18 @@ namespace tg.enemy {
                        typeof(Sensor),
                        typeof(Health),
                        typeof(Damagaeble),
+                       typeof(Stats),
                        typeof(WithManagedCollider)
                     }));
+
+                    ECB.SetComponent<Stats>(enemyEntity, new Stats
+                    {
+                        STR = 1,
+                        AGI = 1,
+                        INT = 1,
+                        ATT = 1,
+                        DEF = 1
+                    });
 
                     ECB.SetComponent<Health>(enemyEntity, new Health
                     {
