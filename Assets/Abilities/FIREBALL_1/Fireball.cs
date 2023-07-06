@@ -24,6 +24,7 @@ namespace tg.ability
 
             var damage = new combat.Damage
             {
+                type    = combat.Damage.Type.Ability_Magical,
                 name    = "Fireball",
                 value   = 30f
             };

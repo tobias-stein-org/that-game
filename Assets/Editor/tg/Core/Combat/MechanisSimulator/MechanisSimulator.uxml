@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <uie:Toolbar name="actions">
+        <uie:ToolbarButton text="Run Simulation" display-tooltip-when-elided="true" name="run" style="padding-left: 4px; padding-right: 4px; padding-top: 4px; padding-bottom: 4px;" />
+        <ui:IntegerField label="Iterations" value="1000" name="iterations" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; font-size: 12px; color: rgba(255, 255, 255, 0.67); -unity-text-align: middle-left; -unity-font-style: normal; width: 220px;" />
+        <ui:EnumField type="tg.combat.Damage+Type, tg.runtime" value="Weapon_Melee" name="damageType" />
+        <ui:ProgressBar value="0" name="progress" low-value="0" high-value="1" style="flex-grow: 1; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; visibility: hidden; display: flex; font-size: 12px; -unity-text-align: middle-left; padding-left: 2px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; width: auto; height: 20px;" />
+        <uie:ToolbarButton text="Abort" display-tooltip-when-elided="true" name="abort" style="visibility: hidden;" />
+        <uie:ToolbarButton text="Reset" display-tooltip-when-elided="true" name="reset" style="padding-left: 4px; padding-right: 4px; padding-top: 4px; padding-bottom: 4px;" />
+    </uie:Toolbar>
+    <ui:ScrollView name="ScrollView" horizontal-scroller-visibility="Hidden" style="flex-grow: 1;">
+        <ui:VisualElement name="header" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-direction: row; justify-content: space-around;">
+            <ui:Label tabindex="-1" text="Attacker" display-tooltip-when-elided="true" style="-unity-font-style: bold; font-size: 16px;" />
+            <ui:Label tabindex="-1" text="Defener" display-tooltip-when-elided="true" style="-unity-font-style: bold; font-size: 16px;" />
+        </ui:VisualElement>
+        <ui:Foldout text="Stats" name="stats">
+            <ui:VisualElement name="container" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-direction: row; justify-content: space-between;">
+                <ui:VisualElement name="attacker" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+                    <ui:SliderInt picking-mode="Ignore" label="STR" value="1" high-value="100" name="str" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="AGI" value="1" high-value="100" name="agi" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="INT" value="1" high-value="100" name="int" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="ATT" value="1" high-value="100" name="att" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="DEF" value="1" high-value="100" name="def" low-value="1" show-input-field="true" />
+                </ui:VisualElement>
+                <ui:VisualElement name="spacer" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 32px;" />
+                <ui:VisualElement name="defender" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+                    <ui:SliderInt picking-mode="Ignore" label="STR" value="1" high-value="100" name="str" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="AGI" value="1" high-value="100" name="agi" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="INT" value="1" high-value="100" name="int" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="ATT" value="1" high-value="100" name="att" low-value="1" show-input-field="true" />
+                    <ui:SliderInt picking-mode="Ignore" label="DEF" value="1" high-value="100" name="def" low-value="1" show-input-field="true" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Foldout>
+        <ui:Foldout text="Chances" name="chances">
+            <ui:VisualElement name="chances" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); flex-direction: row;">
+                <ui:VisualElement name="att" picking-mode="Ignore" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
+                <ui:VisualElement name="spacer" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 32px;" />
+                <ui:VisualElement name="def" picking-mode="Ignore" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
+            </ui:VisualElement>
+        </ui:Foldout>
+        <ui:Foldout text="Results" name="output" style="-unity-font-style: normal;">
+            <ui:Label tabindex="-1" text="No simulation data available. Click &apos;Run Simulation&apos; button." display-tooltip-when-elided="true" name="no_output" style="-unity-font-style: bold; font-size: 16px; display: flex;" />
+            <ui:VisualElement name="results" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); flex-direction: row; visibility: visible; display: flex;">
+                <ui:VisualElement name="att" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
+                <ui:VisualElement name="spacer" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); width: 32px;" />
+                <ui:VisualElement name="def" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
+            </ui:VisualElement>
+        </ui:Foldout>
+    </ui:ScrollView>
+</ui:UXML>

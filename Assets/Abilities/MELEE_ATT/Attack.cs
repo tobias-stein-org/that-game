@@ -52,6 +52,7 @@ namespace tg.ability
 
             var damage = new combat.Damage
             {
+                type    = combat.Damage.Type.Weapon_Melee,
                 name    = "Melee attack",
                 value   = 20f
             };

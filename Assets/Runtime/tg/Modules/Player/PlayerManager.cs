@@ -106,8 +106,18 @@ namespace tg.player
                        typeof(PlayerInputData),
                        typeof(Health),
                        typeof(Damagaeble),
+                       typeof(Stats),
                        typeof(WithManagedCollider)
                     }));
+
+                    ECB.SetComponent<Stats>(playerEntity, new Stats
+                    {
+                        STR = 1,
+                        AGI = 1,
+                        INT = 1,
+                        ATT = 1,
+                        DEF = 1
+                    });
 
                     ECB.SetComponent<Health>(playerEntity, new Health
                     {
