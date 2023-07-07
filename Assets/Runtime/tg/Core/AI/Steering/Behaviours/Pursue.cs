@@ -38,7 +38,7 @@ namespace tg.ai.steering.behaviour
             }
         }
 
-        [UpdateInGroup(typeof(BehaviourSystemGroup))]
+        [UpdateInGroup(typeof(SteeringBehaviourGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
         public partial struct PursueBehaviour : IBehaviour<Pursue>
         {

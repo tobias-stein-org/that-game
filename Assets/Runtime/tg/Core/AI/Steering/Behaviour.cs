@@ -24,14 +24,14 @@ namespace tg.ai.steering
         /// </summary>
         [UpdateAfter(typeof(TransformSystemGroup))]
         [UpdateBefore(typeof(LateSimulationSystemGroup))]
-        public partial class BehaviourSystemGroup : ComponentSystemGroup
+        public partial class SteeringBehaviourGroup : ComponentSystemGroup
         {
             internal const uint UPDATE_RATE_MS = (uint)(15.0f / 60.0f * 1000.0f);
 
             protected override void OnCreate()
             {
                 base.OnCreate();
-                this.RateManager = new RateUtils.VariableRateManager(BehaviourSystemGroup.UPDATE_RATE_MS, true);
+                this.RateManager = new RateUtils.VariableRateManager(SteeringBehaviourGroup.UPDATE_RATE_MS, true);
             }
         }
     }
