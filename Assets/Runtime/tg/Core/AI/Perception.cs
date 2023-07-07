@@ -5,6 +5,8 @@ using Unity.Transforms;
 
 namespace tg.ai
 {
+    using tg.ai.steering;
+
     namespace entities
     {
         using tg.application.entities;

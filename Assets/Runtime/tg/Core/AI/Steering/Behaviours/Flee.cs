@@ -1,13 +1,13 @@
 using System;
 using Unity.Entities;
 
-[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Flee))]
+[assembly: RegisterGenericComponentType(typeof(tg.ai.steering.behaviour.entities.Flee))]
 
-namespace tg.ai.behaviour
+namespace tg.ai.steering.behaviour
 {
     namespace entities
     {
-        using tg.ai.entities;
+        using tg.ai.steering.entities;
         using tg.application.entities;
 
         [Serializable]

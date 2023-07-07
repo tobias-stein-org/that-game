@@ -9,13 +9,14 @@ namespace tg.enemy {
     using tg.enemy.events;
     using tg.combat.events;
     using tg.spawn.events;
-    using tg.ai.entities;
+    using tg.ai.steering.entities;
     using tg.ability.events;
 
     namespace entities
     {
+        using tg.ai.entities;
+        using tg.ai.steering.behaviour.entities;
         using tg.application.entities;
-        using tg.ai.behaviour.entities;
         using tg.physics.entities;
         using tg.combat.entities;
 

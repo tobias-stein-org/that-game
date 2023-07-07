@@ -4,15 +4,15 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 
-[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Pursue))]
+[assembly: RegisterGenericComponentType(typeof(tg.ai.steering.behaviour.entities.Pursue))]
 
-namespace tg.ai.behaviour
+namespace tg.ai.steering.behaviour
 {
-    using tg.ai;
+    using tg.ai.steering;
 
     namespace entities
     {
-        using tg.ai.entities;
+        using tg.ai.steering.entities;
         using tg.application.entities;
 
         [Serializable]

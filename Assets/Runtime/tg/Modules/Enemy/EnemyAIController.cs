@@ -9,15 +9,16 @@ using Unity.Mathematics;
 namespace tg.enemy
 {
     using tg.application;
-    using tg.ai;
     using tg.ability.events;
     using tg.events;
+    using tg.ai.steering;
 
     namespace entities
     {
         using tg.application.entities;
         using tg.ai.entities;
-        using tg.ai.behaviour.entities;
+        using tg.ai.steering.entities;
+        using tg.ai.steering.behaviour.entities;
 
         readonly partial struct AIEnemy : IAspect
         {
@@ -127,13 +128,9 @@ namespace tg.enemy
         [RequireMatchingQueriesForUpdate]
         public partial struct EnemyAIController : ISystem
         {
-            private Unity.Mathematics.Random  random;
-
             public void OnCreate(ref SystemState state)
             {
                 state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<EnemyAIController>(state.SystemHandle)));
-
-                this.random = Unity.Mathematics.Random.CreateFromIndex((uint)state.SystemHandle.GetHashCode());
             }
 
             public void OnUpdate(ref SystemState state)

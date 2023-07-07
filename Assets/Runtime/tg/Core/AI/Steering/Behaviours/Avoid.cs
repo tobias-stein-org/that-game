@@ -2,16 +2,17 @@ using System;
 
 using Unity.Entities;
 
-[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Avoid))]
+[assembly: RegisterGenericComponentType(typeof(tg.ai.steering.behaviour.entities.Avoid))]
 
-namespace tg.ai.behaviour
+namespace tg.ai.steering.behaviour
 {
+    using tg.ai.entities;
+    using tg.ai.steering;
     using tg.application;
-    using tg.ai;
 
     namespace entities
     {
-        using tg.ai.entities;
+        using tg.ai.steering.entities;
         using tg.application.entities;
 
         [Serializable]

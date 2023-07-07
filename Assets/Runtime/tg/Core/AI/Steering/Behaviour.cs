@@ -1,8 +1,7 @@
 using Unity.Entities;
 using Unity.Transforms;
-using UnityEngine.Scripting;
 
-namespace tg.ai
+namespace tg.ai.steering
 {
     namespace entities
     {

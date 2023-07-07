@@ -2,7 +2,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 
-namespace tg.ai
+namespace tg.ai.steering
 {
     namespace entities
     {

@@ -9,7 +9,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace tg.ai
+namespace tg.ai.steering
 {
     [Serializable]
     public struct BehaviourContext : IEnumerable<float>
