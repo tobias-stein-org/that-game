@@ -137,13 +137,10 @@ namespace tg.ai.behaviour.tree
         public  readonly GameObject     gameObject;
         public  readonly Sensor         perception;
 
-        private readonly Blackboard     blackboard;
-
-        public Context(in Entity entity, in EntityManager entityManager, Blackboard blackboard)
+        public Context(in Entity entity, in EntityManager entityManager)
         {
             this.entity         = entity;
             this.entityManager  = entityManager;
-            this.blackboard     = blackboard;
             this.gameObject     = entityManager.GetComponentObject<Transform>(entity)?.gameObject;
 
             this.perception     = entityManager.HasComponent<Sensor>(entity)
@@ -198,7 +195,7 @@ namespace tg.ai.behaviour.tree
         {
             this.blackboard.clear();
 
-            var context     = new Context(in entity, in entityManager, this.blackboard);
+            var context     = new Context(in entity, in entityManager);
             this.root.state = this.root.evaluate(ref context);
 
             context.Dispose();
