@@ -1,16 +1,13 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
     [CreateAssetMenu(menuName = "SE")]
-    public sealed class Sequence : Node
+    public sealed class Sequence : Composite
     {
-        public List<Node>   sequence;
-
         public override State evaluate(ref Context context)
         {
-            foreach(var node in this.sequence)
+            foreach(var node in this.nodes)
             {
                 // skip, until we reach a last running node in the sequence
                 if(this.state == State.running && node.state != State.running) { continue; }
@@ -25,11 +22,6 @@ namespace tg.ai.behaviour.tree.node
             }
 
             return State.success;
-        }
-
-        public override void visit(VisitNodeAction action)
-        {
-            foreach(var node in this.sequence) { node.visit(action); }
         }
     }
 }

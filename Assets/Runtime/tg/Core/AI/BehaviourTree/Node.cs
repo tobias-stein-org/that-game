@@ -15,5 +15,10 @@ namespace tg.ai.behaviour.tree
         }
 
         public abstract State evaluate(ref Context context);
+
+        public virtual Node clone()
+        {
+            return Instantiate(this);
+        }
     }
 }

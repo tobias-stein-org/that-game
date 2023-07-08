@@ -172,9 +172,9 @@ namespace tg.ai.behaviour.tree
         [NonSerialized]
         private Blackboard   blackboard;
 
-        public BehaviourTree Instanciate()
+        public BehaviourTree clone()
         {
-            var instance        = ScriptableObject.Instantiate<BehaviourTree>(this);
+            var instance        = Instantiate(this);
             instance.blackboard = new Blackboard();
             instance.bindBlackboardValues();
 

@@ -10,5 +10,15 @@ namespace tg.ai.behaviour.tree.node
         {
            this.node.visit(action);
         }
+
+        public override Node clone()
+        {
+            var instance = Instantiate(this);
+            {
+                instance.node = this.node.clone();
+            }
+
+            return instance;
+        }
     }
 }

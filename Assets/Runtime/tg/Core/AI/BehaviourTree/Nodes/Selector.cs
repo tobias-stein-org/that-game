@@ -1,15 +1,11 @@
-using System.Collections.Generic;
-
 namespace tg.ai.behaviour.tree.node
 {
     [UnityEngine.CreateAssetMenu(menuName = "bt/sel")]
-    public sealed class Selector : Node
+    public sealed class Selector : Composite
     {
-        public List<Node> options;
-
         public override State evaluate(ref Context context)
         {
-            foreach(var node in this.options)
+            foreach(var node in this.nodes)
             {
                 // skip, until we reach a last running node in the sequence
                 if(this.state == State.running && node.state != State.running) { continue; }
@@ -25,11 +21,6 @@ namespace tg.ai.behaviour.tree.node
 
             // no option selected
             return State.failure;
-        }
-
-        public override void visit(VisitNodeAction action)
-        {
-            foreach(var node in this.options) { node.visit(action); }
         }
     }
 }
