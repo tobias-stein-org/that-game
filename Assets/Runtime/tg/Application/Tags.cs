@@ -44,6 +44,8 @@ namespace tg.application
         public override int GetHashCode() { return hash; }
         public override bool Equals(object obj) { return obj is Tag tag && hash == tag.hash; }
 
+        public static implicit operator Tag(string tag) { return new Tag(tag); }
+
         public static bool operator ==(in Tag tag, TagHash hash) { return tag.hash  == hash; }
         public static bool operator !=(in Tag tag, TagHash hash) { return tag.hash  != hash; }
         public static bool operator ==(in Tag tag0, in Tag tag1) { return tag0.hash == tag1.hash; }
