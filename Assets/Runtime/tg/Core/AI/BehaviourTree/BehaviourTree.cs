@@ -164,10 +164,12 @@ namespace tg.ai.behaviour.tree
         }
     }
 
-    [CreateAssetMenu(menuName ="BT")]
     public class BehaviourTree : ScriptableObject, IComponentData, IDisposable
-    {   
-        public  Node            root;
+    {
+        public const string     label = "behaviour_tree";
+
+        [HideInInspector]
+        public  Node            root = null;
 
         #region Behaviour Tree Editor
 
@@ -176,7 +178,8 @@ namespace tg.ai.behaviour.tree
         /// need necessarly need to be attached to the tree itself, that is, are child
         /// of the root. We still want to keep these nodes in our final asset.
         /// </summary>
-        public List<Node>      nodes;
+        [HideInInspector]
+        public List<Node>      nodes = new List<Node>();
 
         #endregion
 
