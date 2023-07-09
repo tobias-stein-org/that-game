@@ -1,6 +1,11 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
     <Style src="project://database/Assets/Editor/tg/Core/AI/BehaviourTreeEditor/BehaviourTreeStyles.uss?fileID=7433441132597879392&amp;guid=3ada2a3e7710644a8b1824273589f4e9&amp;type=3#BehaviourTreeStyles" />
-    <uie:Toolbar name="Toolbar" style="height: 21px;" />
+    <uie:Toolbar name="Toolbar" style="height: 21px;">
+        <uie:ToolbarMenu tabindex="-1" display-tooltip-when-elided="true" text="Assets" name="menu" />
+        <uie:ToolbarBreadcrumbs name="breadcrumbs" />
+        <uie:ToolbarSpacer style="flex-grow: 1;" />
+        <uie:ToolbarSearchField focusable="true" name="search" style="width: 120px;" />
+    </uie:Toolbar>
     <tg.editor.ai.behaviour.tree.SplitView fixed-pane-initial-dimension="300" orientation="Horizontal" style="flex-shrink: 0; overflow: hidden; left: 0; top: 0; right: 0; bottom: 0; height: 2048px;">
         <ui:VisualElement name="left">
             <ui:Label tabindex="-1" text="Inspector" display-tooltip-when-elided="true" class="panel-header" />

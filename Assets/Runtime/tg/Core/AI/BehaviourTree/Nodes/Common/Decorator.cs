@@ -1,10 +1,11 @@
-using System;
+using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
     public abstract class Decorator : Node
     {
-        public Node node;
+        [HideInInspector]
+        public Node node = null;
 
         public override void visit(VisitNodeAction action)
         {

@@ -164,16 +164,21 @@ namespace tg.ai.behaviour.tree
         }
     }
 
+    [CreateAssetMenu(menuName ="BT")]
     public class BehaviourTree : ScriptableObject, IComponentData, IDisposable
     {   
         public  Node            root;
+
+        #region Behaviour Tree Editor
 
         /// <summary>
         /// Contains all currently created nodes in the BT asset. These nodes do not
         /// need necessarly need to be attached to the tree itself, that is, are child
         /// of the root. We still want to keep these nodes in our final asset.
         /// </summary>
-        public  List<Node>      nodes;
+        public List<Node>      nodes;
+
+        #endregion
 
         #region RUNTIME
 

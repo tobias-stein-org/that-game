@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace tg.ai.behaviour.tree
@@ -7,8 +6,18 @@ namespace tg.ai.behaviour.tree
 
     public abstract class Node : ScriptableObject
     {
-        public Guid     id;
+        #region Behaviour Tree Editor
+
+        [HideInInspector]
+        public string   id;
+
+        [HideInInspector]
         public Vector2  position;
+
+        [HideInInspector]
+        public bool     isRoot;
+
+        #endregion
 
         public State    state;
 

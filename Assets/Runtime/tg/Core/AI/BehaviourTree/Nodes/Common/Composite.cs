@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 
+using UnityEngine;
+
 namespace tg.ai.behaviour.tree.node
 {
     public abstract class Composite : Node
     {
-        public List<Node> nodes;
+        [HideInInspector]
+        public List<Node> nodes = new List<Node>();
 
         public override void visit(VisitNodeAction action)
         {

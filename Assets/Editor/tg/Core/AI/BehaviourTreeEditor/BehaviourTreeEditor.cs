@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using UnityEditor;
 using UnityEngine;
@@ -44,38 +45,44 @@ namespace tg.editor.ai.behaviour.tree
         public void OnSelectionChange()
         {
             var tree = Selection.activeObject as BehaviourTree;
-            if(tree)
+            if(tree && AssetDatabase.CanOpenAssetInEditor(tree.GetInstanceID()))
             {
                 this.treeView.build(tree);
             }
         }
 
-
         public void CreateGUI()
         {
             // Each editor window contains a root VisualElement object
-            VisualElement root = rootVisualElement;
+            VisualElement root              = rootVisualElement;
 
             root.Add(visualTreeAsset.Instantiate());
 
-            this.inspectorView  = root.Q<InspectorView>();
-            this.treeView       = root.Q<BehaviourTreeView>();
+            this.inspectorView              = root.Q<InspectorView>();
+            this.treeView                   = root.Q<BehaviourTreeView>();
+            this.treeView.onNodeSelected    += onNodeSelected;
 
             // intentionally here to update views after a recompile
             this.OnSelectionChange();
         }
-    }
 
+        private void onNodeSelected(Node node)
+        {
+            this.inspectorView.update(node);
+        }
+    }
 
 
     public static class BehaviourTreeEditorEx
     {
-        public static Node createNode(this BehaviourTree bt, Type nodeType, Vector2 position)
+        public static Node createNode(this BehaviourTree bt, Type nodeType, Vector2 position, bool isRoot = false, string name = null)
         {
             var node            = ScriptableObject.CreateInstance(nodeType) as Node;
             {
-                node.id         = Guid.NewGuid();
+                node.id         = Guid.NewGuid().ToString();
+                node.name       = name ?? nodeType.Name;
                 node.position   = position;
+                node.isRoot     = isRoot;
             }
 
             bt.nodes.Add(node);
@@ -92,6 +99,31 @@ namespace tg.editor.ai.behaviour.tree
 
             AssetDatabase.RemoveObjectFromAsset(node);
             AssetDatabase.SaveAssets();
+        }
+
+        public static void addNode(this BehaviourTree bt, Node parent, Node node)
+        {
+            if(parent as Decorator != null) { (parent as Decorator).node = node; }
+            if(parent as Composite != null) { (parent as Composite).nodes.Add(node); }
+        }
+
+        public static void removeNode(this BehaviourTree bt, Node parent, Node node)
+        {
+            if(parent as Decorator != null) { (parent as Decorator).node = null; }
+            if(parent as Composite != null) { (parent as Composite).nodes.Remove(node); }
+        }
+
+        public static List<Node> getChildren(this BehaviourTree bt, Node parent)
+        {
+            if(parent as Decorator != null)
+            {
+                var decorator = parent as Decorator;
+                return decorator.node != null ? new List<Node>() { decorator.node } : new List<Node>(); 
+            }
+
+            if(parent as Composite != null) { return (parent as Composite).nodes; }
+
+            return new List<Node>();
         }
     }
 }
