@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
 
@@ -153,7 +154,6 @@ namespace tg.ai.behaviour.tree
         }
     }
 
-    [CreateAssetMenu(menuName = "N")]
     public class dummy : Node
     {
         public BlackboardValue<Vector2> position;
@@ -164,26 +164,35 @@ namespace tg.ai.behaviour.tree
         }
     }
 
-    [CreateAssetMenu(menuName = "BB")]
     public class BehaviourTree : ScriptableObject, IComponentData, IDisposable
     {   
-        public  Node         root;
+        public  Node            root;
+
+        /// <summary>
+        /// Contains all currently created nodes in the BT asset. These nodes do not
+        /// need necessarly need to be attached to the tree itself, that is, are child
+        /// of the root. We still want to keep these nodes in our final asset.
+        /// </summary>
+        public  List<Node>      nodes;
+
+        #region RUNTIME
 
         [NonSerialized]
-        private Blackboard   blackboard;
-
-        public BehaviourTree clone()
-        {
-            var instance        = Instantiate(this);
-            instance.blackboard = new Blackboard();
-            instance.bindBlackboardValues();
-
-            return instance;
-        }
+        private Blackboard      blackboard;
 
         public void OnDestroy()
         {
             this.Dispose();    
+        }
+
+        
+        public BehaviourTree clone()
+        {
+            var instance = Instantiate(this);
+            instance.blackboard = new Blackboard();
+            instance.bindBlackboardValues();
+
+            return instance;
         }
 
         public void Dispose()
@@ -240,6 +249,8 @@ namespace tg.ai.behaviour.tree
                 });
             }
         }
+
+        #endregion
     }
 
     namespace entities

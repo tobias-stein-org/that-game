@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace tg.ai.behaviour.tree
@@ -6,8 +7,10 @@ namespace tg.ai.behaviour.tree
 
     public abstract class Node : ScriptableObject
     {
+        public Guid     id;
+        public Vector2  position;
 
-        public State state;
+        public State    state;
 
         public virtual void visit(VisitNodeAction action)
         {
