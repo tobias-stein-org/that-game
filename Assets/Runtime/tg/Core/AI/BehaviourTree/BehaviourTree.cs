@@ -196,7 +196,11 @@ namespace tg.ai.behaviour.tree
         
         public BehaviourTree clone()
         {
-            var instance = Instantiate(this);
+            var instance        = Instantiate(this);
+
+            instance.root       = instance.root.clone();
+            instance.root.visit(clone => instance.nodes.Add(clone));
+
             instance.blackboard = new Blackboard();
             instance.bindBlackboardValues();
 
