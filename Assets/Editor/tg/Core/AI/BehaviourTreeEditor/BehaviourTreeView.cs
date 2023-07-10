@@ -24,6 +24,12 @@ namespace tg.editor.ai.behaviour.tree
 
             public   NodeSelected   onSelected;
 
+            public void setPriority(int priority)
+            {
+                var label                       = this.Q<Label>("priority");
+                label.text                      = priority > 0 ? $"{priority}" : "";
+            }
+
             public NodeView(Node node) : base("Assets/Editor/tg/Core/AI/BehaviourTreeEditor/NodeView.uxml")
             {
                 this.node                       = node;
@@ -86,6 +92,35 @@ namespace tg.editor.ai.behaviour.tree
                 this.onSelected?.Invoke(this.node);
             }
 
+            public void updatePriorities()
+            {
+                var composite = this.node as Composite;
+                if(composite != null)
+                {
+                    composite.nodes.Sort((Node node0, Node node1) => node0.position.x.CompareTo(node1.position.x));
+                }
+            }
+
+            private static readonly Dictionary<int, string> state2class = new Dictionary<int, string>()
+            {
+                { State.initial, null },
+                { State.success, "success" },
+                { State.failure, "failure" },
+                { State.running, "running" }
+            };
+
+            public void clearState()
+            {
+                this.RemoveFromClassList(state2class[State.success]);
+                this.RemoveFromClassList(state2class[State.failure]);
+                this.RemoveFromClassList(state2class[State.running]);
+            }
+
+            public void updateState()
+            {
+                this.AddToClassList(state2class[this.node.state]);
+            }
+
             public static implicit operator Node(NodeView view) { return view.node; }
         }
 
@@ -115,6 +150,7 @@ namespace tg.editor.ai.behaviour.tree
             this.AddManipulator(new ContentZoomer());
 
             Undo.undoRedoPerformed += () => { this.build(this.tree); AssetDatabase.SaveAssets(); };
+            this.RegisterCallback<PointerMoveEvent>(e => { this.localMousePosition = e.localPosition; });
         }
 
         internal void build(BehaviourTree tree)
@@ -123,24 +159,27 @@ namespace tg.editor.ai.behaviour.tree
 
             this.DeleteElements(this.graphElements);
 
-            this.tree = tree;
-
-            // create root
-            if(this.tree.root == null)
+            if(tree && (Application.isPlaying || AssetDatabase.CanOpenAssetInEditor(tree.GetInstanceID())))
             {
-                this.tree.root = this.tree.createNode(rootNodeType, Vector2.zero, true, this.tree.name);
-                EditorUtility.SetDirty(this.tree);
-                AssetDatabase.SaveAssets();
+                this.tree = tree;
+
+                // create root
+                if(this.tree.root == null)
+                {
+                    this.tree.root = this.tree.createNode(rootNodeType, Vector2.zero, true, this.tree.name);
+                    EditorUtility.SetDirty(this.tree);
+                    AssetDatabase.SaveAssets();
+                }
+
+                // create nodes 
+                this.tree.nodes.ForEach(node => this.createNodeView(node));
+                // create edges
+                this.tree.nodes.ForEach(node => this.createEdges(node));
+
+                this.updateNodePriorities();
             }
 
-            // create nodes 
-            this.tree.nodes.ForEach(node => this.createNodeView(node));
-            // create edges
-            this.tree.nodes.ForEach(node => this.createEdges(node));
-
             this.graphViewChanged += this.onGraphViewChanged;
-
-            this.RegisterCallback<PointerMoveEvent>(e => { this.localMousePosition = e.localPosition; });
         }
 
    
@@ -183,7 +222,44 @@ namespace tg.editor.ai.behaviour.tree
                 });
             }
 
+            if(changes.movedElements != null)
+            {
+                this.nodes.ForEach(node =>
+                {
+                    var _node = node as NodeView;
+                    if(_node != null)
+                    {
+                        _node.updatePriorities();
+                    }
+                });
+            }
+
+            
+            this.updateNodePriorities();
+            
             return changes;
+        }
+
+        private void updateNodePriorities()
+        {
+            this.nodes.ForEach(node =>
+            {
+                var _node = node as NodeView;
+                if(_node != null)
+                {
+                    _node.setPriority(0);
+                }
+            });
+
+            int priority = 0;
+            this.tree.root.visit(node =>
+            {
+                var _node = this.GetNodeByGuid(node.id) as NodeView;
+                if(_node != null)
+                {
+                    _node.setPriority(priority++);
+                }
+            });
         }
 
         private void createNodeView(Node node)
@@ -227,6 +303,21 @@ namespace tg.editor.ai.behaviour.tree
                     var s = 1.0f / this.viewTransform.scale.x;
                     
                     this.createNodeView(this.tree.createNode(nodeType, t * s));
+                });
+            }
+        }
+
+        public void updateNodeStates()
+        {
+            if(Application.isPlaying)
+            {
+                this.nodes.ForEach(node =>
+                {
+                    var _node = node as NodeView;
+                    if(_node != null)
+                    {
+                        _node.updateState();
+                    }
                 });
             }
         }

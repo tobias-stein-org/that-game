@@ -6,18 +6,13 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using UnityEditor.Callbacks;
+using UnityEditor.AddressableAssets;
 
 namespace tg.editor.ai.behaviour.tree
 {
     using System.Text.RegularExpressions;
-    using GluonGui.WorkspaceWindow.Views.WorkspaceExplorer;
-    using tg.ability;
     using tg.ai.behaviour.tree;
     using tg.ai.behaviour.tree.node;
-    using tg.editor.ability;
-    using Unity.Collections;
-    using UnityEditor.AddressableAssets;
-    using static tg.ai.entities.Sensor;
 
     public class BehaviourTreeEditor : EditorWindow
     {
@@ -194,10 +189,7 @@ namespace tg.editor.ai.behaviour.tree
 
         internal void openTree(BehaviourTree tree)
         {
-            if(tree && (Application.isPlaying || AssetDatabase.CanOpenAssetInEditor(tree.GetInstanceID())))
-            {
-                this.treeView.build(tree);
-            }
+            this.treeView.build(tree);
         }
         
         public void CreateGUI()
@@ -224,6 +216,38 @@ namespace tg.editor.ai.behaviour.tree
                 var search = e.newValue.ToLower();
                 this.treeView.nodes.ForEach(node => node.style.opacity = node.name.ToLower().Contains(search) ? 1.0f : 0.25f);
             });
+        }
+
+        private void OnInspectorUpdate()
+        {
+            this.treeView.updateNodeStates();
+        }
+
+        private void OnEnable()
+        {
+            EditorApplication.playModeStateChanged -= this.onPlaymodeChange;
+            EditorApplication.playModeStateChanged += this.onPlaymodeChange;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.playModeStateChanged -= this.onPlaymodeChange;
+        }
+
+        private void onPlaymodeChange(PlayModeStateChange state)
+        {
+            switch (state)
+            {
+                case PlayModeStateChange.EnteredEditMode:
+                    break;
+                case PlayModeStateChange.ExitingEditMode:
+                    break;
+                case PlayModeStateChange.EnteredPlayMode:
+                    break;
+                case PlayModeStateChange.ExitingPlayMode:
+                    this.OnSelectionChange();
+                    break;
+            }
         }
 
         private void buildMenu(ToolbarMenu menu)
@@ -266,7 +290,6 @@ namespace tg.editor.ai.behaviour.tree
         }
     }
 
-
     public static class BehaviourTreeEditorEx
     {
         public static Node createNode(this BehaviourTree bt, Type nodeType, Vector2 position, bool isRoot = false, string name = null)
@@ -282,7 +305,8 @@ namespace tg.editor.ai.behaviour.tree
             Undo.RecordObject(bt, $"BehaviourTreeEditor.createNode({node.id})");
             bt.nodes.Add(node);
 
-            AssetDatabase.AddObjectToAsset(node, bt);
+            if(!Application.isPlaying) { AssetDatabase.AddObjectToAsset(node, bt); }
+
             Undo.RegisterCreatedObjectUndo(node, $"BehaviourTreeEditor.createNode({node.id})");
             AssetDatabase.SaveAssets();
 
