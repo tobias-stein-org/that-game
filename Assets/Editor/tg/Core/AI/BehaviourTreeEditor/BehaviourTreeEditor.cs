@@ -178,7 +178,7 @@ namespace tg.editor.ai.behaviour.tree
         {
             if(Selection.activeObject is BehaviourTree)
             {
-                BehaviourTreeEditor.open();
+                BehaviourTreeEditor.open(Selection.activeObject as BehaviourTree);
                 return true;
             }
 
