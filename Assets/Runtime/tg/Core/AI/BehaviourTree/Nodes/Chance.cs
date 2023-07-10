@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
-    [CreateAssetMenu(menuName = "bt/chance")]
     public class Chance : Decorator
     {
         [Range(0.0f, 1.0f)]

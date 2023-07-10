@@ -5,7 +5,6 @@ namespace tg.ai.behaviour.tree.node
 {
     using tg.ai.entities;
 
-    [CreateAssetMenu(menuName = "bt/purs")]
     public class Pursue : Action
     {
         private BlackboardValue<Sensor.Output> target;

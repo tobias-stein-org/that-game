@@ -11,6 +11,7 @@ namespace tg.ai.behaviour.tree.node
 
         public override void visit(VisitNodeAction action)
         {
+            action(this);
             foreach(var node in this.nodes) { node.visit(action); }
         }
 

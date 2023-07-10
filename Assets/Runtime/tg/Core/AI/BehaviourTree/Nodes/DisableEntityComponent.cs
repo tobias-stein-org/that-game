@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
-    [CreateAssetMenu(menuName = "bt/dis")]
     public class DisableEntityComponent : Action
     {
         public ComponentType    compotent;

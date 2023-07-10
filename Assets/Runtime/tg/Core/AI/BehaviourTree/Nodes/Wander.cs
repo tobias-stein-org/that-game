@@ -1,6 +1,5 @@
 namespace tg.ai.behaviour.tree.node
 {
-    [UnityEngine.CreateAssetMenu(menuName = "bt/wand")]
     public class Wander : Action
     {
         public override State evaluate(ref Context context)

@@ -2,7 +2,6 @@ namespace tg.ai.behaviour.tree.node
 {
     using tg.ai.entities;
 
-    [UnityEngine.CreateAssetMenu(menuName ="bt/rang")]
     public class InRange : Action
     {
         private BlackboardValue<Sensor.Output> target;

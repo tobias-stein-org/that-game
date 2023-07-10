@@ -1,6 +1,5 @@
 namespace tg.ai.behaviour.tree.node
 {
-    [UnityEngine.CreateAssetMenu(menuName ="bt/neg")]
     public sealed class Negator : Decorator
     {
         public override State evaluate(ref Context context)

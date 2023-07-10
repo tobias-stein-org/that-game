@@ -1,6 +1,5 @@
 namespace tg.ai.behaviour.tree.node
 {
-    [UnityEngine.CreateAssetMenu(menuName = "bt/sel")]
     public sealed class Selector : Composite
     {
         public override State evaluate(ref Context context)

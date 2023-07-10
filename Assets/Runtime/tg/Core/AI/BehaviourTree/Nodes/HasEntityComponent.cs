@@ -2,7 +2,6 @@ using Unity.Entities;
 
 namespace tg.ai.behaviour.tree.node
 {
-    [UnityEngine.CreateAssetMenu(menuName = "bt/has")]
     public class HasEntityComponent : Action
     {
         public ComponentType    compotent;

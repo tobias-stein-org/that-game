@@ -4,7 +4,6 @@ namespace tg.ai.behaviour.tree.node
 {
     using tg.ai.entities;
 
-    [UnityEngine.CreateAssetMenu(menuName = "bt/can see")]
     public class CanSee : Action
     {
         private BlackboardValue<Sensor.Output> target;

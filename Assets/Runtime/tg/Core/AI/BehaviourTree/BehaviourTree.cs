@@ -31,7 +31,10 @@ namespace tg.ai.behaviour.tree
         public static implicit operator int(State state) { return state.value; }
 
         #region STATES
-     
+
+#if UNITY_EDITOR
+        public const int initial = 0;
+#endif
         public const int success = 1;
         public const int failure = 2;
         public const int running = 3;
@@ -154,16 +157,6 @@ namespace tg.ai.behaviour.tree
         }
     }
 
-    public class dummy : Node
-    {
-        public BlackboardValue<Vector2> position;
-
-        public override State evaluate(ref Context context)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     public class BehaviourTree : ScriptableObject, IComponentData, IDisposable
     {
         public const string     label = "behaviour_tree";
@@ -188,18 +181,24 @@ namespace tg.ai.behaviour.tree
         [NonSerialized]
         private Blackboard      blackboard;
 
+        public bool isCloned    { get { return this.blackboard != null; } }
+
         public void OnDestroy()
         {
             this.Dispose();    
         }
 
-        
         public BehaviourTree clone()
         {
             var instance        = Instantiate(this);
 
             instance.root       = instance.root.clone();
-            instance.root.visit(clone => instance.nodes.Add(clone));
+
+            instance.nodes.Clear();
+            instance.root.visit(clone =>
+            {
+                instance.nodes.Add(clone);
+            });
 
             instance.blackboard = new Blackboard();
             instance.bindBlackboardValues();

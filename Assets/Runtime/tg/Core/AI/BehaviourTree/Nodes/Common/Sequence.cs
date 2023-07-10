@@ -2,7 +2,6 @@ using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
-    [CreateAssetMenu(menuName = "SE")]
     public sealed class Sequence : Composite
     {
         public override State evaluate(ref Context context)

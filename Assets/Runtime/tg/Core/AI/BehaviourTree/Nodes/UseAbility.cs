@@ -9,7 +9,6 @@ namespace tg.ai.behaviour.tree.node
     using tg.events;
     using Unity.Mathematics;
 
-    [CreateAssetMenu(menuName = "bt/abi")]
     public class UseAbility : Action
     {
         public string ability;

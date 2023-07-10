@@ -9,7 +9,8 @@ namespace tg.ai.behaviour.tree.node
 
         public override void visit(VisitNodeAction action)
         {
-           this.node.visit(action);
+            action(this);
+            this.node.visit(action);
         }
 
         public override Node clone()
