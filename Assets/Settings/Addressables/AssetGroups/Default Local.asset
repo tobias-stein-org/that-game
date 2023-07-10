@@ -48,6 +48,11 @@ MonoBehaviour:
     - ui
     - application
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43bc42d65c28242a4b2bdbdd48d37d9e
+    m_Address: dummy
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:
