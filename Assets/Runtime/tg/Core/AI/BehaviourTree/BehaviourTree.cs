@@ -279,6 +279,7 @@ namespace tg.ai.behaviour.tree
         }
 
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [UpdateInGroup(typeof(BehaviourTreeGroup))]
         public partial class UpdateBehviourTrees : SystemBase
         {
             protected override void OnCreate()
