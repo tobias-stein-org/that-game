@@ -212,11 +212,22 @@ namespace tg.editor.ai.behaviour.tree
             this.treeView.onNodeSelected    += onNodeSelected;
 
             this.buildMenu(root.Q<ToolbarMenu>("menu"));
+
+            root.Q<ToolbarSearchField>("search").RegisterValueChangedCallback((ChangeEvent<string> e) =>
+            {
+                if(string.IsNullOrEmpty(e.newValue))
+                {
+                    this.treeView.nodes.ForEach(node => node.style.opacity = 1.0f);
+                    return;
+                }
+
+                var search = e.newValue.ToLower();
+                this.treeView.nodes.ForEach(node => node.style.opacity = node.name.ToLower().Contains(search) ? 1.0f : 0.25f);
+            });
         }
 
         private void buildMenu(ToolbarMenu menu)
         {
-            
             menu.menu.AppendAction("Open Behaviour Tree", action =>
             {
                 var path = EditorUtility.OpenFilePanel("Open Behaviour Tree", BehaviourTreeEditor.BEHAVIOURTREE_DIR, "asset");

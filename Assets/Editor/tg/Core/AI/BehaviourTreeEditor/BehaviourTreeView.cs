@@ -32,7 +32,7 @@ namespace tg.editor.ai.behaviour.tree
                 this.style.left                 = node.position.x;
                 this.style.top                  = node.position.y;
 
-                this.Q<Label>("title").text     = node.name;
+                this.Q<Label>("title").text     = this.name = node.name;
                 this.Q<Label>("subtitle").text  = node.GetType().Name;
 
                 this.createInputs(node);
