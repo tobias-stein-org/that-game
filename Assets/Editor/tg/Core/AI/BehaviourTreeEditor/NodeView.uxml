@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Editor/tg/Core/AI/BehaviourTreeEditor/NodeViewStyle.uss?fileID=7433441132597879392&amp;guid=c628065882a764faba780919880ca87f&amp;type=3#NodeViewStyle" />
+    <ui:VisualElement name="node-border">
+        <ui:VisualElement name="contents">
+            <ui:VisualElement name="top">
+                <ui:VisualElement name="input" />
+                <ui:VisualElement name="divider" class="vertical" />
+                <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); margin-left: 4px; margin-right: 4px; margin-top: 4px; margin-bottom: 4px;">
+                    <ui:Label tabindex="-1" text="Title" display-tooltip-when-elided="true" name="title" />
+                    <ui:Label tabindex="-1" text="Subtitle" display-tooltip-when-elided="true" name="subtitle" />
+                </ui:VisualElement>
+                <ui:VisualElement name="divider" class="vertical" />
+                <ui:VisualElement name="output" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="selection-border" picking-mode="Ignore" />
+</ui:UXML>

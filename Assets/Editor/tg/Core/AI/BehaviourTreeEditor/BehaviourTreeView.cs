@@ -24,14 +24,16 @@ namespace tg.editor.ai.behaviour.tree
 
             public   NodeSelected   onSelected;
 
-            public NodeView(Node node)
+            public NodeView(Node node) : base("Assets/Editor/tg/Core/AI/BehaviourTreeEditor/NodeView.uxml")
             {
-                this.node           = node;
-                this.viewDataKey    = node.id;
-                this.title          = node.name;
+                this.node                       = node;
+                this.viewDataKey                = node.id;
 
-                this.style.left     = node.position.x;
-                this.style.top      = node.position.y;
+                this.style.left                 = node.position.x;
+                this.style.top                  = node.position.y;
+
+                this.Q<Label>("title").text     = node.name;
+                this.Q<Label>("subtitle").text  = node.GetType().Name;
 
                 this.createInputs(node);
                 this.createOutputs(node);
@@ -41,9 +43,10 @@ namespace tg.editor.ai.behaviour.tree
             {
                 if(this.node.isRoot) { return; }
 
-                this.input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
+                this.input = InstantiatePort(Orientation.Vertical, Direction.Input, Port.Capacity.Single, typeof(bool));
 
                 this.input.portName = "";
+                this.input.style.flexDirection = FlexDirection.Column;
                 this.inputContainer.Add(this.input);
             }
 
@@ -51,26 +54,30 @@ namespace tg.editor.ai.behaviour.tree
             {
                 if(node is Composite)
                 {
-                    this.output = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
+                    this.output = InstantiatePort(Orientation.Vertical, Direction.Output, Port.Capacity.Multi, typeof(bool));
                 }
                 else if(node is Decorator)
                 {
-                    this.output = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(bool));
+                    this.output = InstantiatePort(Orientation.Vertical, Direction.Output, Port.Capacity.Single, typeof(bool));
                 }
 
                 if(this.output != null)
                 {
                     this.output.portName = "";
-                    this.inputContainer.Add(this.output);
+                    this.output.style.flexDirection = FlexDirection.ColumnReverse;
+                    this.outputContainer.Add(this.output);
                 }
             }
 
             public override void SetPosition(Rect newPos)
             {
                 base.SetPosition(newPos);
+                Undo.RecordObject(this, "NodeView.SetPosition()");
 
                 this.node.position.x = newPos.x;
                 this.node.position.y = newPos.y;
+
+                EditorUtility.SetDirty(this);
             }
 
             public override void OnSelected()
@@ -106,6 +113,8 @@ namespace tg.editor.ai.behaviour.tree
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
             this.AddManipulator(new ContentZoomer());
+
+            Undo.undoRedoPerformed += () => { this.build(this.tree); AssetDatabase.SaveAssets(); };
         }
 
         internal void build(BehaviourTree tree)

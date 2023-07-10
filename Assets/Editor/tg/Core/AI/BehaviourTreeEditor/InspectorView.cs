@@ -20,7 +20,10 @@ namespace tg.editor.ai.behaviour.tree
 
             // re-create a new one
             this.editor = Editor.CreateEditor(node);
-            this.Add(new IMGUIContainer(this.editor.OnInspectorGUI));
+            this.Add(new IMGUIContainer(() =>
+            {
+                if(this.editor.target) { this.editor.OnInspectorGUI(); }
+            }));
         }
     }
 }

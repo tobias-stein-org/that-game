@@ -164,11 +164,12 @@ namespace tg.editor.ai.behaviour.tree
         private InspectorView       inspectorView;
 
         [MenuItem("tg/ai/Behaviour Tree Editor")]
-        public static void open()
+        public static void open(BehaviourTree tree = null)
         {
             var wnd = GetWindow<BehaviourTreeEditor>();
             {
                 wnd.titleContent = new GUIContent("Behaviour Tree Editor");
+                wnd.openTree(tree);
             }
         }
 
@@ -188,12 +189,17 @@ namespace tg.editor.ai.behaviour.tree
         public void OnSelectionChange()
         {
             var tree = Selection.activeObject as BehaviourTree;
-            if(tree && AssetDatabase.CanOpenAssetInEditor(tree.GetInstanceID()))
+            this.openTree(tree);
+        }
+
+        internal void openTree(BehaviourTree tree)
+        {
+            if(tree && (Application.isPlaying || AssetDatabase.CanOpenAssetInEditor(tree.GetInstanceID())))
             {
                 this.treeView.build(tree);
             }
         }
-
+        
         public void CreateGUI()
         {
             // Each editor window contains a root VisualElement object
@@ -206,9 +212,6 @@ namespace tg.editor.ai.behaviour.tree
             this.treeView.onNodeSelected    += onNodeSelected;
 
             this.buildMenu(root.Q<ToolbarMenu>("menu"));
-
-            // intentionally here to update views after a recompile
-            this.OnSelectionChange();
         }
 
         private void buildMenu(ToolbarMenu menu)
@@ -228,7 +231,7 @@ namespace tg.editor.ai.behaviour.tree
                             this.treeView.build(tree);
                         }
                     }
-                    catch(Exception ex)
+                    catch
                     {
                         UnityEngine.Debug.LogError($"'{path}' is not a Unity asset path.");
                     }
@@ -265,9 +268,11 @@ namespace tg.editor.ai.behaviour.tree
                 node.isRoot     = isRoot;
             }
 
+            Undo.RecordObject(bt, $"BehaviourTreeEditor.createNode({node.id})");
             bt.nodes.Add(node);
 
             AssetDatabase.AddObjectToAsset(node, bt);
+            Undo.RegisterCreatedObjectUndo(node, $"BehaviourTreeEditor.createNode({node.id})");
             AssetDatabase.SaveAssets();
 
             return node;
@@ -275,22 +280,45 @@ namespace tg.editor.ai.behaviour.tree
 
         public static void deleteNode(this BehaviourTree bt, Node node)
         {
+            Undo.RecordObject(bt, $"BehaviourTreeEditor.deleteNode({node.id})");
             bt.nodes.Remove(node);
 
-            AssetDatabase.RemoveObjectFromAsset(node);
+            //AssetDatabase.RemoveObjectFromAsset(node);
+            Undo.DestroyObjectImmediate(node);
+
             AssetDatabase.SaveAssets();
         }
 
         public static void addNode(this BehaviourTree bt, Node parent, Node node)
         {
-            if(parent as Decorator != null) { (parent as Decorator).node = node; }
-            if(parent as Composite != null) { (parent as Composite).nodes.Add(node); }
+            if(parent as Decorator != null)
+            {
+                Undo.RecordObject(parent, "BehaviourTreeEditor.addNode()");
+                (parent as Decorator).node = node;
+                EditorUtility.SetDirty(parent);
+            }
+            if(parent as Composite != null)
+            {
+                Undo.RecordObject(parent, "BehaviourTreeEditor.addNode()");
+                (parent as Composite).nodes.Add(node);
+                EditorUtility.SetDirty(parent);
+            }
         }
 
         public static void removeNode(this BehaviourTree bt, Node parent, Node node)
         {
-            if(parent as Decorator != null) { (parent as Decorator).node = null; }
-            if(parent as Composite != null) { (parent as Composite).nodes.Remove(node); }
+            if(parent as Decorator != null)
+            {
+                Undo.RecordObject(parent, "BehaviourTreeEditor.removeNode()");
+                (parent as Decorator).node = null;
+                EditorUtility.SetDirty(parent);
+            }
+            if(parent as Composite != null)
+            {
+                Undo.RecordObject(parent, "BehaviourTreeEditor.removeNode()");
+                (parent as Composite).nodes.Remove(node);
+                EditorUtility.SetDirty(parent);
+            }
         }
 
         public static List<Node> getChildren(this BehaviourTree bt, Node parent)
