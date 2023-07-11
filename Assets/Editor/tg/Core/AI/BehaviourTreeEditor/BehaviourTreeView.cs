@@ -43,6 +43,17 @@ namespace tg.editor.ai.behaviour.tree
                 this.style.top                  = node.position.y;
 
                 var title                       = this.Q<TextField>("title");
+                title.focusable  = false;
+
+                title.RegisterCallback((ClickEvent e) =>
+                {
+                    if(e.clickCount > 1)
+                    {
+                        title.focusable = true;
+                        title.Focus();
+                    }
+                });
+                title.RegisterCallback((FocusOutEvent e) => { title.focusable = false; });
                 title.isReadOnly                = Application.isPlaying;
                 title.value                     = this.name = node.name;
                 title.RegisterValueChangedCallback((ChangeEvent<string> e) => this.onRenamed?.Invoke(e));

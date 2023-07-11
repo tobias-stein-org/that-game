@@ -82,7 +82,7 @@ MonoBehaviour:
   m_Name: Selector
   m_EditorClassIdentifier: 
   id: e936e93f-e085-4ce7-821c-f782f2320ff4
-  position: {x: 238, y: 307}
+  position: {x: 306, y: 301}
   isRoot: 0
   nodes:
   - {fileID: 5083936981202339160}
@@ -253,7 +253,7 @@ MonoBehaviour:
   m_Name: Attack_Player
   m_EditorClassIdentifier: 
   id: 872f65b5-36c6-439d-b6e1-5df034937481
-  position: {x: 72, y: 108}
+  position: {x: 80, y: 126}
   isRoot: 0
   nodes:
   - {fileID: 7141234677784906558}

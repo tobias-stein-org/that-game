@@ -8,7 +8,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement name="divider" class="vertical" />
                 <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); margin-left: 4px; margin-right: 4px; margin-top: 4px; margin-bottom: 4px;">
-                    <ui:TextField picking-mode="Ignore" value="Title" name="title" />
+                    <ui:TextField picking-mode="Ignore" value="Title" name="title" focusable="false" readonly="false" />
                     <ui:Label tabindex="-1" text="Subtitle" display-tooltip-when-elided="true" name="subtitle" />
                 </ui:VisualElement>
                 <ui:VisualElement name="divider" class="vertical" />
