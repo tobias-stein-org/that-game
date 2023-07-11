@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Pursue
   m_EditorClassIdentifier: 
   id: 622fe6ff-b5fe-4d8b-8bad-b53fca41ea8c
-  position: {x: -78.00021, y: 306.99997}
+  position: {x: -111.5, y: 307}
   isRoot: 0
 --- !u!114 &-8981633900032142850
 MonoBehaviour:
@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Name: UseAbility
   m_EditorClassIdentifier: 
   id: 31e231a9-2b85-43ae-9cab-9a1f17e06637
-  position: {x: 231.00003, y: 856.79266}
+  position: {x: 231, y: 857}
   isRoot: 0
   ability: FIREBALL_1
 --- !u!114 &11400000
@@ -221,12 +221,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2abaae0c13c0f4507a1603daa9ffdbdd, type: 3}
-  m_Name: CanSee
+  m_Name: CanSee_Player
   m_EditorClassIdentifier: 
   id: d2a13de2-8238-4fd0-a7c7-7e71db637b8a
-  position: {x: -283.43466, y: 306.99997}
+  position: {x: -336, y: 307}
   isRoot: 0
-  targetTag: Player
 --- !u!114 &8337205951647324031
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -237,7 +236,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2c83ed04739554975b0b87cb1cb88eb0, type: 3}
-  m_Name: Sequence
+  m_Name: Attack_Player
   m_EditorClassIdentifier: 
   id: 872f65b5-36c6-439d-b6e1-5df034937481
   position: {x: 72, y: 108}
