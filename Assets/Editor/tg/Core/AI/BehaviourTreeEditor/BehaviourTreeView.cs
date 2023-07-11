@@ -1,5 +1,6 @@
 using System.Linq;
 
+using UnityEngine;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental.GraphView;
@@ -9,11 +10,13 @@ namespace tg.editor.ai.behaviour.tree
     using System.Collections.Generic;
     using tg.ai.behaviour.tree;
     using tg.ai.behaviour.tree.node;
-    using UnityEngine;
 
     public class BehaviourTreeView : GraphView
     {
         public delegate void NodeSelected(Node view);
+        public delegate void NodeAdded(Node view);
+        public delegate void NodeDeleted(Node view);
+        public delegate void NodeRenamed(ChangeEvent<string> e);
 
         public class NodeView : UnityEditor.Experimental.GraphView.Node
         {
@@ -23,6 +26,7 @@ namespace tg.editor.ai.behaviour.tree
             internal Port           output;
 
             public   NodeSelected   onSelected;
+            public   NodeRenamed    onRenamed;
 
             public void setPriority(int priority)
             {
@@ -38,7 +42,11 @@ namespace tg.editor.ai.behaviour.tree
                 this.style.left                 = node.position.x;
                 this.style.top                  = node.position.y;
 
-                this.Q<Label>("title").text     = this.name = node.name;
+                var title                       = this.Q<TextField>("title");
+                title.isReadOnly                = Application.isPlaying;
+                title.value                     = this.name = node.name;
+                title.RegisterValueChangedCallback((ChangeEvent<string> e) => this.onRenamed?.Invoke(e));
+
                 this.Q<Label>("subtitle").text  = node.GetType().Name;
 
                 this.createInputs(node);
@@ -128,6 +136,9 @@ namespace tg.editor.ai.behaviour.tree
         { }
 
         public  NodeSelected                onNodeSelected;
+        public  NodeAdded                   onNodeAdded;
+        public  NodeDeleted                 onNodeDeleted;
+        public  NodeRenamed                 onNodeRenamed;
 
         private BehaviourTree               tree;
 
@@ -172,7 +183,7 @@ namespace tg.editor.ai.behaviour.tree
                 }
 
                 // create nodes 
-                this.tree.nodes.ForEach(node => this.createNodeView(node));
+                this.tree.nodes.ForEach(node => this.createNodeView(node, false));
                 // create edges
                 this.tree.nodes.ForEach(node => this.createEdges(node));
 
@@ -198,6 +209,7 @@ namespace tg.editor.ai.behaviour.tree
                     if(node != null)
                     {
                         this.tree.deleteNode(node);
+                        this.onNodeDeleted?.Invoke(node);
                     }
 
                     var edge = elem as Edge;
@@ -262,12 +274,20 @@ namespace tg.editor.ai.behaviour.tree
             });
         }
 
-        private void createNodeView(Node node)
+        private void createNodeView(Node node, bool notify = true)
         {
             var view        = new NodeView(node);
             view.onSelected = this.onNodeSelected;
+            view.onRenamed  = (ChangeEvent<string> e) =>
+            {
+                node.name   = e.newValue;
+                AssetDatabase.SaveAssets();
+                this.onNodeRenamed?.Invoke(e);
+            };
 
             this.AddElement(view);
+            if(notify) { this.onNodeAdded?.Invoke(node); }
+
         }
 
         private void createEdges(Node parent)
@@ -295,7 +315,8 @@ namespace tg.editor.ai.behaviour.tree
 
             foreach(var nodeType in TypeCache.GetTypesDerivedFrom<Node>().Where(node => !rootNodeTypes.Contains(node)))
             {
-                var menuPAth = nodeType.FullName.Remove(0, "tg.ai.behaviour.tree.node.".Length).Replace('.', '/');
+                var nodeContextPath = System.Attribute.GetCustomAttribute(nodeType, typeof(NodeContextMenuPathAttribute)) as NodeContextMenuPathAttribute;
+                var menuPAth = nodeContextPath != null ? nodeContextPath.path : nodeType.Name;
 
                 evt.menu.AppendAction(menuPAth, (menuAction) =>
                 {

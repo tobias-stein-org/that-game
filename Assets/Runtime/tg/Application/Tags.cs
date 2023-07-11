@@ -30,6 +30,7 @@ namespace tg.application
     /// <summary>
     /// Simple Tag
     /// </summary>
+    [Serializable]
     public struct Tag
     {
         public readonly string  name;
@@ -63,7 +64,7 @@ namespace tg.application
         public  static readonly Tag Level        = new Tag("Level");
         // add more tags here ...
 
-        private static readonly Dictionary<TagHash, string> tagLookup;
+        public  static readonly Dictionary<TagHash, string> tagLookup;
 
         public  static string hash2Name(int hash)
         {
@@ -74,6 +75,7 @@ namespace tg.application
 
             return "INVALID_TAG";
         }
+
         static tags()
         {
             var TTag        = typeof(Tag);

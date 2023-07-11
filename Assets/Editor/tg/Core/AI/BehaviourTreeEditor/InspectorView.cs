@@ -1,5 +1,7 @@
-using UnityEngine.UIElements;
+using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace tg.editor.ai.behaviour.tree
 {
@@ -10,20 +12,29 @@ namespace tg.editor.ai.behaviour.tree
         public new class UxmlFactory : UxmlFactory<InspectorView, VisualElement.UxmlTraits>
         { }
 
-        private Editor editor;
-
         public void update(Node node)
         {
             // clear old inspector view 
             this.Clear();
-            UnityEngine.Object.DestroyImmediate(this.editor);
 
-            // re-create a new one
-            this.editor = Editor.CreateEditor(node);
-            this.Add(new IMGUIContainer(() =>
+            if(node == null) { return; }
+
+            var so = new SerializedObject(node);
+            foreach(var field in node.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance))
             {
-                if(this.editor.target) { this.editor.OnInspectorGUI(); }
-            }));
+                if(System.Attribute.GetCustomAttribute(field, typeof(HideInInspector)) as HideInInspector != null) { continue; }
+
+                var property            = so.FindProperty(field.Name);
+                if(property != null)
+                {
+                    var propertyField       = new PropertyField();
+                    {
+                        propertyField.label = property.displayName;
+                        propertyField.BindProperty(property);
+                    }
+                    this.Add(propertyField);
+                }
+            }
         }
     }
 }

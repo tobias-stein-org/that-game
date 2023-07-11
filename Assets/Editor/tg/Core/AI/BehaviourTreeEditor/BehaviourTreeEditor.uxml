@@ -6,10 +6,24 @@
         <uie:ToolbarSpacer style="flex-grow: 1;" />
         <uie:ToolbarSearchField focusable="true" name="search" style="width: 120px;" />
     </uie:Toolbar>
-    <tg.editor.ai.behaviour.tree.SplitView fixed-pane-initial-dimension="300" orientation="Horizontal" style="flex-shrink: 0; overflow: hidden; left: 0; top: 0; right: 0; bottom: 0; height: 2048px;">
+    <tg.editor.ai.behaviour.tree.SplitView fixed-pane-initial-dimension="300" orientation="Horizontal" name="SplitView" style="flex-shrink: 0; overflow: hidden; left: 0; top: 0; right: 0; bottom: 0; height: auto;">
         <ui:VisualElement name="left">
-            <ui:Label tabindex="-1" text="Inspector" display-tooltip-when-elided="true" class="panel-header" />
-            <tg.editor.ai.behaviour.tree.InspectorView name="inspector" style="flex-grow: 1; background-color: rgb(53, 53, 53); flex-shrink: 0;" />
+            <tg.editor.ai.behaviour.tree.SplitView orientation="Vertical" fixed-pane-initial-dimension="300">
+                <ui:VisualElement name="top" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+                    <ui:Label tabindex="-1" text="Inspector" display-tooltip-when-elided="true" class="panel-header" />
+                    <tg.editor.ai.behaviour.tree.InspectorView name="inspector" style="flex-grow: 1; background-color: rgb(53, 53, 53); flex-shrink: 0;" />
+                </ui:VisualElement>
+                <ui:VisualElement name="bottom" style="flex-grow: 1; background-color: rgb(53, 53, 53);">
+                    <ui:Label tabindex="-1" text="Blackboard" display-tooltip-when-elided="true" class="panel-header" />
+                    <ui:MultiColumnListView fixed-item-height="20" name="blackboard" selection-type="None">
+                        <ui:Columns>
+                            <ui:Column name="key" title="Key" width="100" />
+                            <ui:Column name="type" title="Type" width="100" />
+                            <ui:Column name="used_by" title="Used By" width="100" />
+                        </ui:Columns>
+                    </ui:MultiColumnListView>
+                </ui:VisualElement>
+            </tg.editor.ai.behaviour.tree.SplitView>
         </ui:VisualElement>
         <ui:VisualElement name="right" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
             <ui:Label tabindex="-1" text="Tree View" display-tooltip-when-elided="true" class="panel-header" />

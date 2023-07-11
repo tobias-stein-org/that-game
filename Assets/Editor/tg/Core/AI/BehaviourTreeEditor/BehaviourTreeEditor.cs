@@ -153,10 +153,14 @@ namespace tg.editor.ai.behaviour.tree
         }
 
         [SerializeField]
-        private VisualTreeAsset visualTreeAsset = default;
+        private VisualTreeAsset             visualTreeAsset = default;
 
-        private BehaviourTreeView   treeView;
-        private InspectorView       inspectorView;
+        private BehaviourTreeView           treeView;
+        private InspectorView               inspectorView;
+        private MultiColumnListView         blackboardView;
+
+        private BlackboardViewController    blackboardController;
+
 
         [MenuItem("tg/ai/Behaviour Tree Editor")]
         public static void open(BehaviourTree tree = null)
@@ -189,7 +193,9 @@ namespace tg.editor.ai.behaviour.tree
 
         internal void openTree(BehaviourTree tree)
         {
+            this.inspectorView.update(null);
             this.treeView.build(tree);
+            this.blackboardController.build(tree);
         }
         
         public void CreateGUI()
@@ -201,7 +207,8 @@ namespace tg.editor.ai.behaviour.tree
 
             this.inspectorView              = root.Q<InspectorView>();
             this.treeView                   = root.Q<BehaviourTreeView>();
-            this.treeView.onNodeSelected    += onNodeSelected;
+            this.blackboardView             = root.Q<MultiColumnListView>("blackboard");
+            this.blackboardController       = new BlackboardViewController(this.blackboardView);
 
             this.buildMenu(root.Q<ToolbarMenu>("menu"));
 
@@ -216,10 +223,35 @@ namespace tg.editor.ai.behaviour.tree
                 var search = e.newValue.ToLower();
                 this.treeView.nodes.ForEach(node => node.style.opacity = node.name.ToLower().Contains(search) ? 1.0f : 0.25f);
             });
+
+            this.treeView.onNodeSelected    += onNodeSelected;
+            this.treeView.onNodeDeleted     += (Node node) =>
+            {
+                this.inspectorView.update(null);
+                this.blackboardController.refresh();
+            };
+
+            this.treeView.onNodeAdded += (Node node) =>
+            {
+                this.inspectorView.update(node);
+                this.blackboardController.refresh();
+            };
+
+            this.treeView.onNodeRenamed += (ChangeEvent<string> e) => this.blackboardController.refresh();
+
+            this.inspectorView.RegisterCallback((ChangeEvent<string> e) =>
+            {
+                var textField = e.target as TextField;
+                if(textField != null && textField.userData == typeof(tg.ai.behaviour.tree.BlackboardValue<>))
+                {
+                    this.blackboardController.refresh();
+                }
+            });
         }
 
         private void OnInspectorUpdate()
         {
+            this.rootVisualElement.Q<SplitView>().style.height = this.position.height;
             this.treeView.updateNodeStates();
         }
 
