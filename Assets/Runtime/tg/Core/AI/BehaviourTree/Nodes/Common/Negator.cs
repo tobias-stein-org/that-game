@@ -1,6 +1,7 @@
 namespace tg.ai.behaviour.tree.node
 {
-    public sealed class Negator : Decorator
+    [NodeContextMenuPath("Logic/Invert")]
+    public sealed class Invert : Decorator
     {
         public override State evaluate(ref Context context)
         {

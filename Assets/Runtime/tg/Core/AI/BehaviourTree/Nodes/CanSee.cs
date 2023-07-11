@@ -2,13 +2,14 @@ using System.Linq;
 
 namespace tg.ai.behaviour.tree.node
 {
+    using tg.application;
     using tg.ai.entities;
 
     public class CanSee : Action
     {
-        private BlackboardValue<Sensor.Output> target;
+        public BlackboardValue<Sensor.Output> target;
 
-        public string  targetTag;
+        public Tag targetTag;
 
         public override State evaluate(ref Context context)
         {

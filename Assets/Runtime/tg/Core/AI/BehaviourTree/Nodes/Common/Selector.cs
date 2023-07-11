@@ -1,5 +1,6 @@
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Logic/Selector")]
     public sealed class Selector : Composite
     {
         public override State evaluate(ref Context context)

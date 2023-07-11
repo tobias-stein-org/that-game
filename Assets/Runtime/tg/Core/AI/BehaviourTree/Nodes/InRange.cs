@@ -4,7 +4,7 @@ namespace tg.ai.behaviour.tree.node
 
     public class InRange : Action
     {
-        private BlackboardValue<Sensor.Output> target;
+        public BlackboardValue<Sensor.Output> target;
 
         public float range = 1.0f;
 

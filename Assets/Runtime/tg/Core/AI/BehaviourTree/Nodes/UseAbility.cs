@@ -1,7 +1,5 @@
 using UnityEngine;
 
-using Unity.Entities;
-
 namespace tg.ai.behaviour.tree.node
 {
     using tg.ability.events;
@@ -9,11 +7,12 @@ namespace tg.ai.behaviour.tree.node
     using tg.events;
     using Unity.Mathematics;
 
+
     public class UseAbility : Action
     {
         public string ability;
 
-        private BlackboardValue<Sensor.Output> target;
+        public BlackboardValue<Sensor.Output> target;
 
         public override State evaluate(ref Context context)
         {

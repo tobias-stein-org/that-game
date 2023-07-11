@@ -4,6 +4,16 @@ namespace tg.ai.behaviour.tree
 {
     public delegate void VisitNodeAction(Node node);
 
+    public class NodeContextMenuPathAttribute : System.Attribute
+    {
+        public string path;
+
+        public NodeContextMenuPathAttribute(string path)
+        {
+            this.path = path;
+        }
+    }
+
     public abstract class Node : ScriptableObject
     {
         #region Behaviour Tree Editor
@@ -19,6 +29,7 @@ namespace tg.ai.behaviour.tree
 
         #endregion
 
+        [System.NonSerialized]
         public State    state;
 
         public virtual void visit(VisitNodeAction action)

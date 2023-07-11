@@ -7,7 +7,7 @@ namespace tg.ai.behaviour.tree.node
 
     public class Pursue : Action
     {
-        private BlackboardValue<Sensor.Output> target;
+        public BlackboardValue<Sensor.Output> target;
 
         public override State evaluate(ref Context context)
         {

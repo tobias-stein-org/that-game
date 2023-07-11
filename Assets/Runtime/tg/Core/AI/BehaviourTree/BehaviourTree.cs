@@ -113,7 +113,7 @@ namespace tg.ai.behaviour.tree
     }
 
     [Serializable]
-    public struct BlackboardValue<T>
+    public class BlackboardValue<T>
         where T : unmanaged
     {
         [NonSerialized]
@@ -192,16 +192,15 @@ namespace tg.ai.behaviour.tree
         {
             var instance        = Instantiate(this);
 
+            instance.nodes.Clear();
+            instance.blackboard = new Blackboard();
             instance.root       = instance.root.clone();
 
-            instance.nodes.Clear();
             instance.root.visit(clone =>
             {
+                BehaviourTree.bindBlackboardValues(clone, this.nodes.Find(node => node.id == clone.id), instance.blackboard);
                 instance.nodes.Add(clone);
             });
-
-            instance.blackboard = new Blackboard();
-            instance.bindBlackboardValues();
 
             return instance;
         }
@@ -223,41 +222,40 @@ namespace tg.ai.behaviour.tree
 
         private static readonly Type TBlackboardValue = typeof(BlackboardValue<>);
 
-        private void bindBlackboardValues()
+        private static void bindBlackboardValues(Node node, Node template, Blackboard blackboard)
         {
-            if(this.root != null)
+            var blackboardValueFields = node
+                .GetType()
+                .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(field => field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == TBlackboardValue);
+
+            foreach(var field in blackboardValueFields)
             {
-                this.root.visit((Node node) =>
+                if(!field.IsPublic)
                 {
-                    var blackboardValueFields = node
-                        .GetType()
-                        .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                        .Where(field => field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == TBlackboardValue);
+                    Debug.LogWarning($"Blackboard field must be declared public in order to work. Please check: '{field.DeclaringType.FullName}.{field.Name}'");
+                }
 
-                    foreach(var field in blackboardValueFields)
-                    {
-                        var bbValue     = field.GetValue(node);
+                var bbValue     = field.GetValue(node);
 
-                        // make sure blackboard value key is valid
-                        var keyField    = bbValue.GetType().GetField("key", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                        if(string.IsNullOrWhiteSpace(keyField.GetValue(bbValue) as string))
-                        {
-                            // if key not set yet, use key specified by BlackboardValueAttribute or fallback to field name
-                            var attribute = field.GetCustomAttribute<BlackboardValueAttribute>();
-                            var key = attribute != null ? attribute.name : field.Name;
-                            keyField.SetValue(bbValue, key);
-                        }
+                // make sure blackboard value key is valid
+                var keyField    = bbValue.GetType().GetField("key", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-                        // set blackboard runtime instance
-                        if(this.blackboard != null)
-                        {
-                            var blackbaord = bbValue.GetType().GetField("blackboard", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            blackbaord.SetValue(bbValue, this.blackboard);
-                        }
+                var keyValue    = keyField.GetValue(field.GetValue(template)) as string;
+                if(string.IsNullOrWhiteSpace(keyValue))
+                {
+                    // if key not set yet, use key specified by BlackboardValueAttribute or fallback to field name
+                    var attr    = field.GetCustomAttribute<BlackboardValueAttribute>();
+                    keyValue    = attr != null ? attr.name : field.Name;
+                }
 
-                        field.SetValue(node, bbValue);
-                    }
-                });
+                keyField.SetValue(bbValue, keyValue);
+
+                // set blackboard runtime instance
+                var blackbaord = bbValue.GetType().GetField("blackboard", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                blackbaord.SetValue(bbValue, blackboard);
+
+                field.SetValue(node, bbValue);
             }
         }
 

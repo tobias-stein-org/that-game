@@ -1,7 +1,6 @@
-using UnityEngine;
-
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Logic/Sequence")]
     public sealed class Sequence : Composite
     {
         public override State evaluate(ref Context context)
