@@ -97,7 +97,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2bc8932b485434426881383f8b4f0df8, type: 3}
-  m_Name: UseAbility
+  m_Name: Fireball
   m_EditorClassIdentifier: 
   id: 31e231a9-2b85-43ae-9cab-9a1f17e06637
   position: {x: 231, y: 857}
@@ -175,7 +175,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2bc8932b485434426881383f8b4f0df8, type: 3}
-  m_Name: UseAbility
+  m_Name: Melee
   m_EditorClassIdentifier: 
   id: a9c46475-46bf-4350-b443-2b08141a0cf6
   position: {x: 414, y: 657}
@@ -235,7 +235,7 @@ MonoBehaviour:
   position: {x: -336, y: 307}
   isRoot: 0
   target:
-    key: target1
+    key: target
   targetTag:
     name: Player
     hash:

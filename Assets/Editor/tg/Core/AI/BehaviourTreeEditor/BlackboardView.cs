@@ -58,7 +58,7 @@ namespace tg.editor.ai.behaviour.tree
                 var bbvKey                          = this.view.itemsSource[i] as string;
                 var nodes                           = this.blackboardValueFields.Keys.Where(key => key.Item1 == bbvKey).SelectMany(key => this.blackboardValueFields[key].Select(value => value.Item1) );
 
-                dropdown.choices                    = nodes.Select(node => $"{node.name} ({node.id})").ToList();
+                dropdown.choices                    = nodes.Select(node => node.name).ToList();
                 dropdown.index                      = 0;
             };
         }
