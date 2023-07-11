@@ -18,7 +18,12 @@ namespace tg.editor.application
 
                 input.choices   = tags.tagLookup.Values.ToList();
                 input.index     = input.choices.IndexOf(tag.name);
-                input.RegisterValueChangedCallback((ChangeEvent<string> e) => this.fieldInfo.SetValue(property.serializedObject.targetObject, new Tag(e.newValue)));
+                input.RegisterValueChangedCallback((ChangeEvent<string> e) =>
+                {
+                    tag         = new Tag(e.newValue);
+                    this.fieldInfo.SetValue(property.serializedObject.targetObject, tag);
+                    property.serializedObject.ApplyModifiedProperties();
+                });
                 container.Add(input);
             }
 

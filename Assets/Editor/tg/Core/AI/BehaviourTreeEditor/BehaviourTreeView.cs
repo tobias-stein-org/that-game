@@ -127,6 +127,7 @@ namespace tg.editor.ai.behaviour.tree
             public void updateState()
             {
                 this.AddToClassList(state2class[this.node.state]);
+                this.node.state = State.initial;
             }
 
             public static implicit operator Node(NodeView view) { return view.node; }
@@ -337,6 +338,7 @@ namespace tg.editor.ai.behaviour.tree
                     var _node = node as NodeView;
                     if(_node != null)
                     {
+                        _node.clearState();
                         _node.updateState();
                     }
                 });

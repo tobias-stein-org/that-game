@@ -13,7 +13,7 @@ namespace tg.application
     [StructLayout(LayoutKind.Sequential, Pack=1)]
     public struct TagHash
     {
-        private int value;
+        public int value;
 
         public override int GetHashCode() { return this.value; }
         public override bool Equals(object obj) { return obj is TagHash tag && this.value == tag.value; }
@@ -33,8 +33,8 @@ namespace tg.application
     [Serializable]
     public struct Tag
     {
-        public readonly string  name;
-        public readonly TagHash hash;
+        public string  name;
+        public TagHash hash;
 
         public Tag(string name)
         {

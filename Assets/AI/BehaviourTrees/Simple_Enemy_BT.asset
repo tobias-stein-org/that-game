@@ -15,6 +15,8 @@ MonoBehaviour:
   id: 622fe6ff-b5fe-4d8b-8bad-b53fca41ea8c
   position: {x: -111.5, y: 307}
   isRoot: 0
+  target:
+    key: 
 --- !u!114 &-8981633900032142850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,6 +103,8 @@ MonoBehaviour:
   position: {x: 231, y: 857}
   isRoot: 0
   ability: FIREBALL_1
+  target:
+    key: 
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,6 +147,8 @@ MonoBehaviour:
   id: 46cd4159-6795-4916-831f-427c1a875255
   position: {x: 38.5, y: 857}
   isRoot: 0
+  target:
+    key: 
   range: 1.5
 --- !u!114 &3219918524570877863
 MonoBehaviour:
@@ -175,6 +181,8 @@ MonoBehaviour:
   position: {x: 414, y: 657}
   isRoot: 0
   ability: MELEE_ATT
+  target:
+    key: 
 --- !u!114 &5083936981202339160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -226,6 +234,12 @@ MonoBehaviour:
   id: d2a13de2-8238-4fd0-a7c7-7e71db637b8a
   position: {x: -336, y: 307}
   isRoot: 0
+  target:
+    key: target1
+  targetTag:
+    name: Player
+    hash:
+      value: 1875862075
 --- !u!114 &8337205951647324031
 MonoBehaviour:
   m_ObjectHideFlags: 0

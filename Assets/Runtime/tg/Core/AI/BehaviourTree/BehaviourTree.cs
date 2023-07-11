@@ -117,9 +117,10 @@ namespace tg.ai.behaviour.tree
         where T : unmanaged
     {
         [NonSerialized]
-        private Blackboard         blackboard;
+        private Blackboard          blackboard;
 
-        private string             key;
+        [SerializeField]
+        private string               key;
 
         public bool hasValue
         {
@@ -198,7 +199,7 @@ namespace tg.ai.behaviour.tree
 
             instance.root.visit(clone =>
             {
-                BehaviourTree.bindBlackboardValues(clone, this.nodes.Find(node => node.id == clone.id), instance.blackboard);
+                BehaviourTree.bindBlackboardValues(clone, instance.blackboard);
                 instance.nodes.Add(clone);
             });
 
@@ -222,7 +223,7 @@ namespace tg.ai.behaviour.tree
 
         private static readonly Type TBlackboardValue = typeof(BlackboardValue<>);
 
-        private static void bindBlackboardValues(Node node, Node template, Blackboard blackboard)
+        private static void bindBlackboardValues(Node node, Blackboard blackboard)
         {
             var blackboardValueFields = node
                 .GetType()
@@ -241,7 +242,7 @@ namespace tg.ai.behaviour.tree
                 // make sure blackboard value key is valid
                 var keyField    = bbValue.GetType().GetField("key", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-                var keyValue    = keyField.GetValue(field.GetValue(template)) as string;
+                var keyValue    = keyField.GetValue(bbValue) as string;
                 if(string.IsNullOrWhiteSpace(keyValue))
                 {
                     // if key not set yet, use key specified by BlackboardValueAttribute or fallback to field name
