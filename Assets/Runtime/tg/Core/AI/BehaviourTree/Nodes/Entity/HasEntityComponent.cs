@@ -2,9 +2,10 @@ using Unity.Entities;
 
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Entity/Has Component")]
     public class HasEntityComponent : Action
     {
-        public ComponentType    compotent;
+        public EntityComponentType    compotent;
 
         public override State evaluate(ref Context context)
         {

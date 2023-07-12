@@ -5,6 +5,7 @@ namespace tg.ai.behaviour.tree.node
     using tg.application;
     using tg.ai.entities;
 
+    [NodeContextMenuPath("Perception/Can See")]
     public class CanSee : Action
     {
         public BlackboardValue<Sensor.Output> target;

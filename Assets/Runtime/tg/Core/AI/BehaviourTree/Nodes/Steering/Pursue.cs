@@ -5,6 +5,7 @@ namespace tg.ai.behaviour.tree.node
 {
     using tg.ai.entities;
 
+    [NodeContextMenuPath("Steering/Pursue")]
     public class Pursue : Action
     {
         public BlackboardValue<Sensor.Output> target;
@@ -20,7 +21,6 @@ namespace tg.ai.behaviour.tree.node
             }
 
             context.entityManager.SetComponentData<tg.ai.steering.behaviour.entities.Pursue>(context.entity, pursue);
-            context.entityManager.SetComponentEnabled<tg.ai.steering.behaviour.entities.Wander>(context.entity, false);
             context.entityManager.SetComponentEnabled<tg.ai.steering.behaviour.entities.Pursue>(context.entity, true);
 
             return State.success;

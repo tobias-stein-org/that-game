@@ -2,6 +2,7 @@ namespace tg.ai.behaviour.tree.node
 {
     using tg.ai.entities;
 
+    [NodeContextMenuPath("Perception/In Range")]
     public class InRange : Action
     {
         public BlackboardValue<Sensor.Output> target;

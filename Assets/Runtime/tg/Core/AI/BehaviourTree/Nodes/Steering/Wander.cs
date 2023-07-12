@@ -1,5 +1,6 @@
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Steering/Wander")]
     public class Wander : Action
     {
         public override State evaluate(ref Context context)

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Random/Boolean Chance")]
     public class Chance : Decorator
     {
         [Range(0.0f, 1.0f)]

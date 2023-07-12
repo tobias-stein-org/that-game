@@ -1,11 +1,10 @@
-using Unity.Entities;
-using UnityEngine;
 
 namespace tg.ai.behaviour.tree.node
 {
+    [NodeContextMenuPath("Entity/Disable Component")]
     public class DisableEntityComponent : Action
     {
-        public ComponentType    compotent;
+        public EntityComponentType compotent;
 
         public override State evaluate(ref Context context)
         {
