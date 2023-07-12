@@ -118,10 +118,11 @@ MonoBehaviour:
   m_Name: Stop Pursue
   m_EditorClassIdentifier: 
   id: 32175b76-3e2e-4d9b-bb97-896b55fd8ea9
-  position: {x: 628, y: 354.5}
+  position: {x: 599.5, y: 301}
   isRoot: 0
   compotent:
-    type: 
+    type: tg.ai.steering.behaviour.entities.Pursue, tg.runtime, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
 --- !u!114 &-371372593846356318
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -201,7 +202,7 @@ MonoBehaviour:
   m_Name: Wander
   m_EditorClassIdentifier: 
   id: cdd30db7-6faf-4dcd-8baf-40859872d2ec
-  position: {x: 742, y: 365.75}
+  position: {x: 827, y: 301}
   isRoot: 0
 --- !u!114 &4544590529814782092
 MonoBehaviour:
@@ -252,9 +253,11 @@ MonoBehaviour:
   m_Name: Wander Around
   m_EditorClassIdentifier: 
   id: c372b26b-8b21-4bbc-91e5-9ac708b402b5
-  position: {x: 657, y: 137}
+  position: {x: 705, y: 137}
   isRoot: 0
-  nodes: []
+  nodes:
+  - {fileID: -2946421911310954058}
+  - {fileID: 3219918524570877863}
 --- !u!114 &5148885303478540731
 MonoBehaviour:
   m_ObjectHideFlags: 0
