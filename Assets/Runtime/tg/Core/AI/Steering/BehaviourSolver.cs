@@ -2,7 +2,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 
-namespace tg.ai
+namespace tg.ai.steering
 {
     namespace entities
     {
@@ -12,7 +12,7 @@ namespace tg.ai
         /// This system will ensure all AI behaviour context are invalidated before next update.
         /// </summary>
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-        [UpdateInGroup(typeof(BehaviourSystemGroup), OrderFirst = true)]
+        [UpdateInGroup(typeof(SteeringBehaviourGroup), OrderFirst = true)]
         public partial struct BehaviourReset : ISystem
         {
             private EntityQuery                             aiEntitiesQuery;
@@ -61,7 +61,7 @@ namespace tg.ai
         /// This system will run after all ai behaviour systems are have completed. It will produce the final solved (combined) context.
         /// </summary>
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-        [UpdateInGroup(typeof(BehaviourSystemGroup), OrderLast = true)]
+        [UpdateInGroup(typeof(SteeringBehaviourGroup), OrderLast = true)]
         public partial struct BehaviourSolver : IBehaviour<Solved>
         {
             /// <summary>

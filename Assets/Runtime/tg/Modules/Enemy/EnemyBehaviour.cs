@@ -4,7 +4,7 @@ using UnityEngine;
 namespace tg.enemy
 {
     using tg.ai.entities;
-    using tg.ai.behaviour.entities;
+    using tg.ai.steering.behaviour.entities;
 
     [CreateAssetMenu(menuName="tg/AI/Create Behaviour")]
     public class EnemyBehaviour : ScriptableObject

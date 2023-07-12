@@ -6,7 +6,9 @@ using Unity.Entities;
 namespace tg.debug
 {
     using tg.ai.entities;
-    using tg.ai.behaviour.entities;
+    using tg.ai.steering.entities;
+    using tg.ai.steering.behaviour.entities;
+    using tg.ai.behaviour.tree;
 
     public class EnemyDebugging : MonoBehaviour
     {
@@ -17,6 +19,8 @@ namespace tg.debug
         public Sensor                   sensor { get; private set; } = Sensor.Default;
 
         public bool                     followEntity = true;
+
+        public BehaviourTree            behaviourTree = null;
 
         public bool                     fetchData
         {

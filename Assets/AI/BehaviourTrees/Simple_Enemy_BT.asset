@@ -1,0 +1,319 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9113473472469287620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4025a303d0824726b9e6707250e4cfb, type: 3}
+  m_Name: Start Pursue
+  m_EditorClassIdentifier: 
+  id: 622fe6ff-b5fe-4d8b-8bad-b53fca41ea8c
+  position: {x: 5, y: 307}
+  isRoot: 0
+  target:
+    key: 
+--- !u!114 &-8981633900032142850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d50c39404a1194aeb8997d3f66a77595, type: 3}
+  m_Name: Simple_Enemy_BT
+  m_EditorClassIdentifier: 
+  id: ebabb3dc-2d8b-4904-9e92-d6d58497e883
+  position: {x: 306, y: -88.56003}
+  isRoot: 1
+  nodes:
+  - {fileID: 8337205951647324031}
+  - {fileID: 5121571942706740556}
+--- !u!114 &-8361736459073513106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b35082a299f34bfa92ec534ace5e873, type: 3}
+  m_Name: Chance
+  m_EditorClassIdentifier: 
+  id: ba198424-17f1-4dd2-92c6-ce7b0f6b77f0
+  position: {x: 231.00003, y: 707.7927}
+  isRoot: 0
+  node: {fileID: -371372593846356318}
+  chance: 0.05
+  successIfNot: 1
+--- !u!114 &-4752968991262975048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47883c7a66f80483cac5e665bd72f88c, type: 3}
+  m_Name: Stop Wander
+  m_EditorClassIdentifier: 
+  id: 4bfd9648-b1f9-4f58-9506-ffd2a96cca5f
+  position: {x: -179.5, y: 307}
+  isRoot: 0
+  compotent:
+    type: tg.ai.steering.behaviour.entities.Wander, tg.runtime, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+--- !u!114 &-4469440430308733182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e99cb47f9881458b953b1d417d08b30, type: 3}
+  m_Name: Not
+  m_EditorClassIdentifier: 
+  id: 4d3213d9-be60-4b87-9cd0-cacbda04c4d7
+  position: {x: 38.500046, y: 707.7927}
+  isRoot: 0
+  node: {fileID: 616062830312621591}
+--- !u!114 &-3995582757958629860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d50c39404a1194aeb8997d3f66a77595, type: 3}
+  m_Name: Attack
+  m_EditorClassIdentifier: 
+  id: e936e93f-e085-4ce7-821c-f782f2320ff4
+  position: {x: 306, y: 301}
+  isRoot: 0
+  nodes:
+  - {fileID: 5083936981202339160}
+  - {fileID: 5148885303478540731}
+--- !u!114 &-2946421911310954058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47883c7a66f80483cac5e665bd72f88c, type: 3}
+  m_Name: Stop Pursue
+  m_EditorClassIdentifier: 
+  id: 32175b76-3e2e-4d9b-bb97-896b55fd8ea9
+  position: {x: 599.5, y: 301}
+  isRoot: 0
+  compotent:
+    type: tg.ai.steering.behaviour.entities.Pursue, tg.runtime, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+--- !u!114 &-371372593846356318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc8932b485434426881383f8b4f0df8, type: 3}
+  m_Name: Fireball
+  m_EditorClassIdentifier: 
+  id: 31e231a9-2b85-43ae-9cab-9a1f17e06637
+  position: {x: 231, y: 857}
+  isRoot: 0
+  ability: FIREBALL_1
+  target:
+    key: 
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95e0aa500bc4d42eb9b959341576c67e, type: 3}
+  m_Name: Simple_Enemy_BT
+  m_EditorClassIdentifier: 
+  root: {fileID: -8981633900032142850}
+  nodes:
+  - {fileID: -8981633900032142850}
+  - {fileID: 3219918524570877863}
+  - {fileID: 8337205951647324031}
+  - {fileID: 7141234677784906558}
+  - {fileID: -9113473472469287620}
+  - {fileID: -3995582757958629860}
+  - {fileID: 4544590529814782092}
+  - {fileID: -371372593846356318}
+  - {fileID: 5148885303478540731}
+  - {fileID: -8361736459073513106}
+  - {fileID: -4469440430308733182}
+  - {fileID: 616062830312621591}
+  - {fileID: 5083936981202339160}
+  - {fileID: -4752968991262975048}
+  - {fileID: 5121571942706740556}
+  - {fileID: -2946421911310954058}
+--- !u!114 &616062830312621591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1c708d4199b462d981da29083dccbd, type: 3}
+  m_Name: InRange
+  m_EditorClassIdentifier: 
+  id: 46cd4159-6795-4916-831f-427c1a875255
+  position: {x: 38.5, y: 857}
+  isRoot: 0
+  target:
+    key: 
+  range: 1.5
+--- !u!114 &3219918524570877863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9f5f9c23811c40d884a05bcc81aa03d, type: 3}
+  m_Name: Wander
+  m_EditorClassIdentifier: 
+  id: cdd30db7-6faf-4dcd-8baf-40859872d2ec
+  position: {x: 827, y: 301}
+  isRoot: 0
+--- !u!114 &4544590529814782092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bc8932b485434426881383f8b4f0df8, type: 3}
+  m_Name: Melee
+  m_EditorClassIdentifier: 
+  id: a9c46475-46bf-4350-b443-2b08141a0cf6
+  position: {x: 446, y: 857}
+  isRoot: 0
+  ability: MELEE_ATT
+  target:
+    key: 
+--- !u!114 &5083936981202339160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c83ed04739554975b0b87cb1cb88eb0, type: 3}
+  m_Name: Sequence
+  m_EditorClassIdentifier: 
+  id: b4245273-9551-4d6f-8c28-e97f89f28e79
+  position: {x: 143.5, y: 519}
+  isRoot: 0
+  nodes:
+  - {fileID: -4469440430308733182}
+  - {fileID: -8361736459073513106}
+--- !u!114 &5121571942706740556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c83ed04739554975b0b87cb1cb88eb0, type: 3}
+  m_Name: Wander Around
+  m_EditorClassIdentifier: 
+  id: c372b26b-8b21-4bbc-91e5-9ac708b402b5
+  position: {x: 705, y: 137}
+  isRoot: 0
+  nodes:
+  - {fileID: -2946421911310954058}
+  - {fileID: 3219918524570877863}
+--- !u!114 &5148885303478540731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b35082a299f34bfa92ec534ace5e873, type: 3}
+  m_Name: Chance
+  m_EditorClassIdentifier: 
+  id: d7d0e70b-2989-481e-afa8-722e5a26e3b9
+  position: {x: 446, y: 708}
+  isRoot: 0
+  node: {fileID: 4544590529814782092}
+  chance: 0.05
+  successIfNot: 1
+--- !u!114 &7141234677784906558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2abaae0c13c0f4507a1603daa9ffdbdd, type: 3}
+  m_Name: CanSee Player
+  m_EditorClassIdentifier: 
+  id: d2a13de2-8238-4fd0-a7c7-7e71db637b8a
+  position: {x: -375.67496, y: 307}
+  isRoot: 0
+  target:
+    key: target
+  targetTag:
+    name: Player
+    hash:
+      value: 1875862075
+--- !u!114 &8337205951647324031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c83ed04739554975b0b87cb1cb88eb0, type: 3}
+  m_Name: Attack_Player
+  m_EditorClassIdentifier: 
+  id: 872f65b5-36c6-439d-b6e1-5df034937481
+  position: {x: 80, y: 136.75}
+  isRoot: 0
+  nodes:
+  - {fileID: 7141234677784906558}
+  - {fileID: -4752968991262975048}
+  - {fileID: -9113473472469287620}
+  - {fileID: -3995582757958629860}

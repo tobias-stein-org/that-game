@@ -20,7 +20,6 @@ namespace tg.ui
 
     namespace entities
     {
-        using tg.ai.entities;
         using tg.application.entities;
 
         public class UIDocumentData : IComponentData
@@ -61,7 +60,7 @@ namespace tg.ui
             protected override void OnCreate()
             {
                 base.OnCreate();
-                this.RateManager = new RateUtils.VariableRateManager(BehaviourSystemGroup.UPDATE_RATE_MS, true);
+                this.RateManager = new RateUtils.VariableRateManager(UISystemGroup.UPDATE_RATE_MS, true);
             }
         }
 

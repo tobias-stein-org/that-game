@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: BehaviourTrees
+  m_EditorClassIdentifier: 
+  m_GroupName: BehaviourTrees
+  m_Data:
+    m_SerializedData: []
+  m_GUID: 517de564fc16443feba0a31401e4a69b
+  m_SerializeEntries:
+  - m_GUID: d30a325caba9b4d11ad5ffa0324a80ef
+    m_Address: tg.ai.behaviour.tree.Simple_Enemy_BT
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - behaviour_tree
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1c828edb621af43fbb140cd44117b9c1
+    m_Address: tg.ai.behaviour.tree.NEW_BEHAVIOUR_TREE
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - behaviour_tree
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 1c374815ba7c74fa0a838ae4b85f6f3b, type: 2}

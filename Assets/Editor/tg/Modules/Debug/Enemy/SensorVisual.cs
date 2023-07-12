@@ -5,8 +5,8 @@ using Unity.Mathematics;
 
 namespace tg.editor.debug
 {
-    using tg.ai;
-    using tg.ai.behaviour.entities;
+    using tg.ai.steering;
+    using tg.ai.steering.behaviour.entities;
     using tg.debug;
 
     [CustomEditor(typeof(EnemyDebugging))]

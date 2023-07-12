@@ -9,13 +9,16 @@ namespace tg.enemy {
     using tg.enemy.events;
     using tg.combat.events;
     using tg.spawn.events;
-    using tg.ai.entities;
+    using tg.ai.steering.entities;
     using tg.ability.events;
 
     namespace entities
     {
+        using tg.ai.entities;
+        using tg.ai.steering.behaviour.entities;
+        using tg.ai.behaviour.tree;
+
         using tg.application.entities;
-        using tg.ai.behaviour.entities;
         using tg.physics.entities;
         using tg.combat.entities;
 
@@ -162,8 +165,16 @@ namespace tg.enemy {
                     ECB.AddComponent(enemyEntity, instance.transform);
                     ECB.AddComponent(enemyEntity, instance.GetComponent<Rigidbody2D>());
                     ECB.AddComponent(enemyEntity, instance.GetComponentInChildren<Animator>());
+
+                    var bt = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<BehaviourTree>("tg.ai.behaviour.tree.Simple_Enemy_BT").WaitForCompletion().clone();
+                    ECB.AddComponent<BehaviourTree>(enemyEntity, bt);
                 }
             }
+
+            //private static BehaviourTree createBehaviourTree()
+            //{
+
+            //}
 
             private static void learnAbilities(Entity entity)
             {
@@ -180,6 +191,7 @@ namespace tg.enemy {
                     var enemyDebugging      = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<Transform>(e.entity).gameObject.AddComponent<EnemyDebugging>();
                     {
                         enemyDebugging.self = e.entity;
+                        enemyDebugging.behaviourTree = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<BehaviourTree>(e.entity);
                     }
     #endif
 

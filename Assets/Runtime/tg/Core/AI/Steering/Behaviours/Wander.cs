@@ -4,15 +4,13 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 
-[assembly: RegisterGenericComponentType(typeof(tg.ai.behaviour.entities.Wander))]
+[assembly: RegisterGenericComponentType(typeof(tg.ai.steering.behaviour.entities.Wander))]
 
-namespace tg.ai.behaviour
+namespace tg.ai.steering.behaviour
 {
-    using tg.ai;
-
     namespace entities
     {
-        using tg.ai.entities;
+        using tg.ai.steering.entities;
         using tg.application.entities;
 
         [Serializable]
@@ -45,7 +43,7 @@ namespace tg.ai.behaviour
             }
         }
 
-        [UpdateInGroup(typeof(BehaviourSystemGroup))]
+        [UpdateInGroup(typeof(SteeringBehaviourGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
         public partial struct WanderBehaviour : IBehaviour<Wander>
         {
