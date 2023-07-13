@@ -74,18 +74,21 @@ namespace tg.ui.view
                             }
 
                             history.RefreshItems();
-                            defer(() => history.ScrollToItem(-1));
-                        }
 
-                        input.SetValueWithoutNotify("|");
-                        defer(input.Focus);
+                            view.schedule.Execute(() =>
+                            {
+                                history.ScrollToItem(-1);
+                                input.SetValueWithoutNotify("|");
+                                input.Focus();
+                            }).ExecuteLater(50);
+                        }
                     }
                 });
 
                 this.initialized = true;
             }
 
-            defer(input.Focus);
+            view.schedule.Execute(() => input.Focus()).ExecuteLater(50);
         }
 
         private void append(ListView history, Tuple<string, Color> elem)
@@ -95,17 +98,6 @@ namespace tg.ui.view
             {
                 history.itemsSource.RemoveAt(0);
             }
-        }
-
-        private void defer(System.Action action)
-        {
-            IEnumerator defer()
-            {
-                yield return new UnityEngine.WaitForEndOfFrame();
-                action();
-            }
-
-            GameObject.Find("UI").GetComponent<UIDocument>().StartCoroutine(defer());
         }
 
         public void deactivated()
