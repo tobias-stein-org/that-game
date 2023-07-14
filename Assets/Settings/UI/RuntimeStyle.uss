@@ -1,0 +1,11 @@
+TextElement {
+    -unity-font-definition: resource('Fonts/Khronopix');
+}
+
+Label {
+    -unity-font-definition: resource('Fonts/Khronopix');
+}
+
+Button {
+    -unity-font-definition: resource('Fonts/Khronopix');
+}

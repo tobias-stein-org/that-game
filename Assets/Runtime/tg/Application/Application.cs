@@ -48,8 +48,8 @@ namespace tg.application
                 op3.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.defaultEnemyBehaviour = operation.Result; } };
                 var op4 = Addressables.LoadAssetAsync<InputActionAsset>("tg.input.actions");
                 op4.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.inputActions = operation.Result; } };
-                var op5 = Addressables.LoadAssetAsync<ThemeStyleSheet>("tg.ui.theme");
-                op5.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.uiTheme = operation.Result; } };
+                var op5 = Addressables.LoadAssetAsync<PanelSettings>("tg.ui.settings");
+                op5.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.uiSettings = operation.Result; } };
 
                 var loadOp = Addressables.ResourceManager.CreateGenericGroupOperation(new List<AsyncOperationHandle> { op1, op2, op3, op4, op5 }, true);
                 loadOp.Completed += operation =>
@@ -121,7 +121,7 @@ namespace tg.application
 
             public InputActionAsset inputActions;
 
-            public ThemeStyleSheet  uiTheme;
+            public PanelSettings    uiSettings;
         }
     }
 }

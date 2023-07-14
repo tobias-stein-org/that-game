@@ -219,7 +219,7 @@ namespace tg.ui
                 { 
                     view.userData           = data;
                     view.name               = FixedStringMethods.ConvertToString(ref data.name);
-                    view.pickingMode        = PickingMode.Ignore;
+                    view.pickingMode        = data.isMenu ? PickingMode.Position : PickingMode.Ignore;
                     view.style.position     = Position.Absolute;
 
                     if(data.matchViewport)
@@ -231,24 +231,27 @@ namespace tg.ui
                     // add view based on sort index
                     {
                         // first add view to main ui document
-                        ui.rootVisualElement.Add(view);
+                        ui.rootVisualElement.Insert(0, view);
 
-                        // by default place in in the back first
-                        view.SendToBack();
-
-                        // then compare its sort order with any other view in the ui and place it in front of the forst view with a lower sort index
-                        var views = ui.rootVisualElement.Children().ToList();
-
-                        // note: we must sort views first according their order. using the child list directly does not seem to guarantee correct sort order (highest sort index first)
-                        views.Sort((a, b) => (b.userData as UIViewData).sort - (a.userData as UIViewData).sort);
-
-                        foreach(var other in views)
+                        if(!data.isMenu)
                         {
-                            if(other != view && (view.userData as UIViewData).sort <= data.sort)
+                            // by default place in in the back first
+                            view.SendToBack();
+
+                            // then compare its sort order with any other view in the ui and place it in front of the forst view with a lower sort index
+                            var views = ui.rootVisualElement.Children().ToList();
+
+                            // note: we must sort views first according their order. using the child list directly does not seem to guarantee correct sort order (highest sort index first)
+                            views.Sort((a, b) => (b.userData as UIViewData).sort - (a.userData as UIViewData).sort);
+
+                            foreach(var other in views)
                             {
-                                Debug.Log($"Place view {view.name} [sort: {data.sort}] in front of {other.name} [sort: {(other.userData as UIViewData).sort}]");
-                                view.PlaceInFront(other);
-                                break;
+                                if(other != view && (view.userData as UIViewData).sort <= data.sort)
+                                {
+                                    Debug.Log($"Place view {view.name} [sort: {data.sort}] in front of {other.name} [sort: {(other.userData as UIViewData).sort}]");
+                                    view.PlaceInFront(other);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -302,15 +305,14 @@ namespace tg.ui
                         uiInput.cancel          = InputActionReference.Create(inputUI.FindAction("cancel"));
                     }
 
-                    var ps  = ScriptableObject.CreateInstance<PanelSettings>();
+                    var ps                      = appData.uiSettings;
                     {
                         ps.name                 = "tg";
-                        ps.themeStyleSheet      = appData.uiTheme;
 
 #if UNITY_STANDALONE
                         ps.screenMatchMode      = PanelScreenMatchMode.MatchWidthOrHeight;
                         ps.referenceResolution  = new Vector2Int { x = 1920, y = 1080 };
-                        ps.match                = 0.0f;
+                        ps.match                = 1.0f;
 #else
                         ps.screenMatchMode      = PanelScreenMatchMode.MatchWidthOrHeight;
                         // portait
