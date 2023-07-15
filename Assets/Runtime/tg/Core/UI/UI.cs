@@ -21,6 +21,7 @@ namespace tg.ui
     namespace entities
     {
         using tg.application.entities;
+        using Unity.Entities.UniversalDelegates;
 
         public class UIDocumentData : IComponentData
         {
@@ -37,7 +38,7 @@ namespace tg.ui
             public view.IViewController controller;
         }
 
-        public struct UIViewSpawn : IComponentData {}
+        public struct UIViewSpawned : IComponentData, IEnableableComponent {}
 
         public struct UIViewShow : IComponentData, IEnableableComponent {}
         public struct UIViewActive : IComponentData, IEnableableComponent {}
@@ -48,14 +49,14 @@ namespace tg.ui
             public enum Direction { In, Out }
 
             public float            fade;
-            public float            t;
+            public float            time;
             public Direction        direction;
         }
 
         [UpdateInGroup(typeof(PresentationSystemGroup))]
         public partial class UISystemGroup : ComponentSystemGroup
         {
-            internal const uint UPDATE_RATE_MS = (uint)(15.0f / 60.0f * 1000.0f);
+            internal const uint UPDATE_RATE_MS = (uint)(1.0f / 60.0f * 1000.0f);
 
             protected override void OnCreate()
             {
@@ -66,72 +67,165 @@ namespace tg.ui
 
         [CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(UISystemGroup), OrderFirst = true)]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenInGame, false)]
-        public partial struct UI : ISystem, IEventListener<UI>
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInitializing | ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenInGame, false)]
+        public partial class UI : SystemBase, IEventListener<UI>
         {
+            private const float                                 viewFadeTime = 0.2f;
+
             private NativeHashMap<FixedString64Bytes, Entity>   views;
 
-            private EntityQuery                                 manageViewData;
+            private EntityQuery                                 spawnViews;
+            private EntityQuery                                 fadeViews;
             private EntityQuery                                 showViews;
             private EntityQuery                                 hideViews;
             private EntityQuery                                 activateViews;
             private EntityQuery                                 deactivateViews;
 
-            public void OnCreate(ref SystemState state)
+            protected override void OnCreate()
             {
-                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<UI>(state.SystemHandle)));
-                
-                this.manageViewData     = state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIViewData) } });
-                this.manageViewData.SetChangedVersionFilter(typeof(UIViewData));
+                this.spawnViews         = this.GetEntityQuery(new EntityQueryDesc { Disabled = new ComponentType[] { typeof(UIViewSpawned) } });
 
-                this.showViews          = state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView), typeof(UIViewShow) }});
+                this.fadeViews          = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView), typeof(UIViewFade) } });
+
+                this.showViews          = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView), typeof(UIViewShow) } });
                 this.showViews.SetChangedVersionFilter(typeof(UIViewShow));
 
-                this.hideViews          = state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView) }, Disabled = new ComponentType[] { typeof(UIViewShow) } });
+                this.hideViews          = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView) }, Disabled = new ComponentType[] { typeof(UIViewShow) } });
                 this.hideViews.SetChangedVersionFilter(typeof(UIViewShow));
 
-                this.activateViews      = state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIController), typeof(UIViewActive) } });
+                this.activateViews      = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIController), typeof(UIViewActive) } });
                 this.activateViews.SetChangedVersionFilter(typeof(UIViewActive));
 
-                this.deactivateViews    = state.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIController) }, Disabled = new ComponentType[] { typeof(UIViewActive) } });
+                this.deactivateViews    = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIController) }, Disabled = new ComponentType[] { typeof(UIViewActive) } });
                 this.deactivateViews.SetChangedVersionFilter(typeof(UIViewActive));
 
-                state.RequireAnyForUpdate(new EntityQuery[] {
-                    this.manageViewData,
+                this.RequireAnyForUpdate(new EntityQuery[] {
+                    StateManager.state(this),
+                    this.spawnViews,
+                    this.fadeViews,
                     this.showViews,
                     this.hideViews,
                     this.activateViews,
-                    this.deactivateViews
+                    this.deactivateViews,
                 });
 
                 this.views  = new NativeHashMap<FixedString64Bytes, Entity>(16, Allocator.Persistent);
 
-                EventQueue.subscribe(state.WorldUnmanaged.GetUnsafeSystemRef<UI>(state.SystemHandle));      
+                EventQueue.subscribe(this);      
             }
 
-            public void OnDestroy(ref SystemState state)
+            protected override void OnDestroy()
             {
                 if(this.views.IsCreated) { this.views.Dispose(); }
             }
 
-            public void OnUpdate(ref SystemState state)
+            protected override void OnUpdate()
             {
-                if(!this.manageViewData.IsEmpty)
+                UIDocument ui  = null;
+                if(SystemAPI.ManagedAPI.TryGetSingleton<UIDocumentData>(out UIDocumentData doc))
                 {
-                    var ui  = SystemAPI.ManagedAPI.GetSingleton<UIDocumentData>().ui;
+                    ui = doc.ui;
+                }
 
-                    foreach(var data in this.manageViewData.ToComponentArray<UIViewData>())
+                if(!this.spawnViews.IsEmpty)
+                {
+                    var entities    = this.spawnViews.ToEntityArray(Allocator.Temp);
+                    var data        = this.spawnViews.ToComponentArray<UIViewData>();
+
+                    for(int i = 0; i < data.Length; i++)
                     {
-                        this.spawnView(ref state, data, ui);
+                        var entity = this.EntityManager.CreateEntity();
+#if UNITY_EDITOR
+                        this.EntityManager.SetName(entity, $"view-{data[i].name}");
+#endif
+                        try
+                        {
+                            this.spawnView(data[i], ui, entity);
+                            this.views.Add(new FixedString64Bytes(data[i].name), entity);
+                            this.EntityManager.SetComponentEnabled<UIViewSpawned>(entities[i], true);
+                        }
+                        catch
+                        {
+                            this.EntityManager.DestroyEntity(entity);
+                        }
+                    }
+                }
+
+                // note: we have to process fading before checking de/active hide/show queries, since fade might change the state of
+                // these queries. Since these queries are based on the "changed" filter, those changes wouldn't trigger these queries anymore.
+                if(!this.fadeViews.IsEmpty)
+                {
+                    var entities    = this.fadeViews.ToEntityArray(Allocator.Temp);
+                    var views       = this.fadeViews.ToComponentArray<UIView>();
+                    var fades       = this.fadeViews.ToComponentDataArray<UIViewFade>(Allocator.Temp);
+
+                    for(int i = 0; i < entities.Length; i++)
+                    {
+                        var entity  = entities[i];
+                        var view    = views[i];
+                        var fade    = fades[i];
+
+                        fade.time  += (float)SystemAPI.Time.DeltaTime;
+
+                        var t       = fade.time / fade.fade;
+
+                        if(t >= 1.0f)
+                        {
+                            this.EntityManager.SetComponentEnabled<UIViewFade>(entity, false);
+
+                            switch(fade.direction)
+                            {
+                                case UIViewFade.Direction.In:
+                                {
+                                    if(!this.EntityManager.HasComponent<UIViewActive>(entity))
+                                    {
+                                        this.EntityManager.AddComponent<UIViewActive>(entity);
+                                    }
+                                    this.EntityManager.SetComponentEnabled<UIViewActive>(entity, true);
+                                    break;
+                                }
+                                case UIViewFade.Direction.Out:
+                                {
+                                    view.view.visible = false;
+                                    view.view.style.display = DisplayStyle.None;
+                                    this.EntityManager.SetComponentEnabled<UIViewActive>(entity, false);
+                                    break;
+                                }
+                            }
+                            continue;
+                        }
+
+                        view.view.style.opacity = Mathf.Clamp01(fade.direction == UIViewFade.Direction.In ? t : 1.0f - t);
+                        this.EntityManager.SetComponentData<UIViewFade>(entity, fade);
                     }
                 }
 
                 if(!this.showViews.IsEmpty)
                 {
                     var elem = this.showViews.ToComponentArray<UIView>();
+                    var enti = this.showViews.ToEntityArray(Allocator.Temp);
 
                     for(int i = 0; i < elem.Length; i++)
                     {
+                        if(this.EntityManager.HasComponent<UIViewFade>(enti[i]))
+                        {
+                            this.EntityManager.SetComponentData(enti[i], new UIViewFade
+                            {
+                                direction = UIViewFade.Direction.In,
+                                fade = viewFadeTime,
+                                time = 0.0f
+                            });
+                            this.EntityManager.SetComponentEnabled<UIViewFade>(enti[i], true);
+                        }
+                        else
+                        {
+                            if(!this.EntityManager.HasComponent<UIViewActive>(enti[i]))
+                            {
+                                this.EntityManager.AddComponent<UIViewActive>(enti[i]);
+                            }
+                            this.EntityManager.SetComponentEnabled<UIViewActive>(enti[i], true);
+                        }
+
                         elem[i].view.visible        = true;
                         elem[i].view.style.display  = DisplayStyle.Flex;
                     }
@@ -140,11 +234,25 @@ namespace tg.ui
                 if(!this.hideViews.IsEmpty)
                 {
                     var elem = this.hideViews.ToComponentArray<UIView>();
+                    var enti = this.hideViews.ToEntityArray(Allocator.Temp);
 
                     for(int i = 0; i < elem.Length; i++)
                     {
-                        elem[i].view.visible        = false;
-                        elem[i].view.style.display  = DisplayStyle.None;
+                        if(this.EntityManager.HasComponent<UIViewFade>(enti[i]))
+                        {
+                            this.EntityManager.SetComponentData(enti[i], new UIViewFade
+                            {
+                                direction = UIViewFade.Direction.Out,
+                                fade = viewFadeTime,
+                                time = 0.0f
+                            });
+                            this.EntityManager.SetComponentEnabled<UIViewFade>(enti[i], true);
+                        }
+                        else
+                        {
+                            elem[i].view.visible        = false;
+                            elem[i].view.style.display  = DisplayStyle.None;
+                        }
                     }
                 }
 
@@ -154,8 +262,8 @@ namespace tg.ui
                     
                     for(int i = 0; i < entities.Length; i++)
                     {
-                        var view = state.EntityManager.GetComponentObject<UIView>(entities[i]).view;
-                        var ctrl = state.EntityManager.GetComponentObject<UIController>(entities[i]).controller;
+                        var view = this.EntityManager.GetComponentObject<UIView>(entities[i]).view;
+                        var ctrl = this.EntityManager.GetComponentObject<UIController>(entities[i]).controller;
 
                         ctrl.activated(view);
                     }
@@ -167,10 +275,10 @@ namespace tg.ui
                     
                     for(int i = 0; i < entities.Length; i++)
                     {
-                        var view = state.EntityManager.GetComponentObject<UIView>(entities[i]).view;
-                        var ctrl = state.EntityManager.GetComponentObject<UIController>(entities[i]).controller;
+                        var view = this.EntityManager.GetComponentObject<UIView>(entities[i]).view;
+                        var ctrl = this.EntityManager.GetComponentObject<UIController>(entities[i]).controller;
 
-                        ctrl.deactivated();
+                        ctrl.deactivated(view);
                     }
                 }
             }
@@ -194,16 +302,19 @@ namespace tg.ui
                         return;
                     }
 
-                    var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-                    var viewEntity = entityManager.CreateEntity();
+                    var viewEntity = this.EntityManager.CreateEntity();
 #if UNITY_EDITOR
-                    entityManager.SetName(viewEntity, $"view-{name}-data");
-                    entityManager.AddComponentData<UIViewData>(viewEntity, operation.Result);
+                    this.EntityManager.SetName(viewEntity, $"view-{name}-data");
 #endif
+
+                    this.EntityManager.AddComponentData<UIViewData>(viewEntity, operation.Result);
+                    this.EntityManager.AddComponent<UIViewSpawned>(viewEntity);
+                    this.EntityManager.SetComponentEnabled<UIViewSpawned>(viewEntity, false);
+
                 };
             }
 
-            void spawnView(ref SystemState state, UIViewData data, UIDocument ui)
+            void spawnView(UIViewData data, UIDocument ui, Entity entity)
             {
                 if(this.views.ContainsKey(data.name))
                 {
@@ -260,26 +371,41 @@ namespace tg.ui
                 }
 
                 // create a new entity representing the VisualElement 
-                var entity = state.EntityManager.CreateEntity();
+                try
                 {
-                    state.EntityManager.SetName(entity, $"view-{data.name}");
-                    state.EntityManager.AddComponentObject(entity, new UIView { view = view });
-                    state.EntityManager.AddComponentObject(entity, new UIController { controller = controller });
-                    state.EntityManager.AddComponent<UIViewShow>(entity);
-                    state.EntityManager.AddComponent<UIViewActive>(entity);
+                    this.EntityManager.AddComponentObject(entity, new UIView { view = view });
+                    this.EntityManager.AddComponentObject(entity, new UIController { controller = controller });
+                    this.EntityManager.AddComponent<UIViewShow>(entity);
+
+                    if(data.fade)
+                    {
+                        this.EntityManager.AddComponent<UIViewFade>(entity);
+                        this.EntityManager.SetComponentData(entity, new UIViewFade
+                        {
+                            direction   = UIViewFade.Direction.In,
+                            fade        = viewFadeTime,
+                            time        = 0.0f
+                        });
+                    }
 
                     if(data.isMenu)
                     {
-                        state.EntityManager.AddComponent<UIViewMenu>(entity);
+                        this.EntityManager.AddComponent<UIViewMenu>(entity);
                     }
 
                     if(!data.show)
                     {
-                        state.EntityManager.SetComponentEnabled<UIViewShow>(entity, false);
-                        state.EntityManager.SetComponentEnabled<UIViewActive>(entity, false);
+                        this.EntityManager.SetComponentEnabled<UIViewShow>(entity, false);
+                        if(data.fade)
+                        {
+                            this.EntityManager.SetComponentEnabled<UIViewFade>(entity, false);
+                        }
                     }
-
-                    this.views.Add(new FixedString64Bytes(data.name), entity);
+                }
+                catch(Exception ex)
+                {
+                    ui.rootVisualElement.Remove(view);
+                    throw ex;
                 }
             }
 
@@ -333,8 +459,7 @@ namespace tg.ui
                         view.style.width        = view.style.height = Length.Percent(100.0f);
                     }
 
-                    World.DefaultGameObjectInjectionWorld.EntityManager
-                        .AddComponentObject(World.DefaultGameObjectInjectionWorld.Unmanaged.GetExistingUnmanagedSystem<UI>(), new UIDocumentData { ui = ui });
+                    this.EntityManager.AddComponentObject(this.SystemHandle, new UIDocumentData { ui = ui });
                 }
             }
 
@@ -342,19 +467,12 @@ namespace tg.ui
             {
                 if(this.views.TryGetValue(e.name, out Entity view))
                 {
-                    var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-                    if(!entityManager.IsComponentEnabled<UIViewShow>(view))
+                    if(!this.EntityManager.IsComponentEnabled<UIViewShow>(view))
                     {
-                        entityManager.SetComponentEnabled<UIViewShow>(view, true);
-                        entityManager.SetComponentEnabled<UIViewActive>(view, true);
+                        this.EntityManager.SetComponentEnabled<UIViewShow>(view, true);
                     }
-
-                    //if(e.activateController && !entityManager.IsComponentEnabled<UIViewActive>(view))
-                    //{
-                    //    entityManager.SetComponentEnabled<UIViewActive>(view, true);
-                    //}
                 }
-                // if view isn't spawned yet, spawn it
+                // if view isn't spawned yet, request to spawn it
                 else
                 {
                     this.requestView(e.name);
@@ -365,17 +483,10 @@ namespace tg.ui
             {
                 if(this.views.TryGetValue(e.name, out Entity view))
                 {
-                    var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-                    if(entityManager.IsComponentEnabled<UIViewShow>(view))
+                    if(this.EntityManager.IsComponentEnabled<UIViewShow>(view))
                     {
-                        entityManager.SetComponentEnabled<UIViewShow>(view, false);
-                        entityManager.SetComponentEnabled<UIViewActive>(view, false);
+                        this.EntityManager.SetComponentEnabled<UIViewShow>(view, false);
                     }
-
-                    //if(e.deactivateController && entityManager.IsComponentEnabled<UIViewActive>(view))
-                    //{
-                    //    entityManager.SetComponentEnabled<UIViewActive>(view, false);
-                    //}
                 }
             }
 
@@ -383,15 +494,8 @@ namespace tg.ui
             {
                 if(this.views.TryGetValue(e.name, out Entity view))
                 {
-                    var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-                    var state           = entityManager.IsComponentEnabled<UIViewShow>(view) ? false : true;
-                    entityManager.SetComponentEnabled<UIViewShow>(view, state);
-                    entityManager.SetComponentEnabled<UIViewActive>(view, state);
-
-                    //if(e.toggleController)
-                    //{
-                    //    entityManager.SetComponentEnabled<UIViewActive>(view, entityManager.IsComponentEnabled<UIViewActive>(view) ? false : true);
-                    //}
+                    var state           = this.EntityManager.IsComponentEnabled<UIViewShow>(view) ? false : true;
+                    this.EntityManager.SetComponentEnabled<UIViewShow>(view, state);
                 }
                 else
                 {

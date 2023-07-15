@@ -14,6 +14,7 @@ namespace tg.application
 {
     using tg.events;
     using tg.application.events;
+    using tg.ui.menu;
     using tg.enemy;
 
     namespace entities
@@ -61,6 +62,7 @@ namespace tg.application
                         // activate 'tg.input.actions' 
                         appData.inputActions.Enable();
                         EventQueue.publish(new ApplicationInitializedEvent {});
+                        Menu.show(menus.MAIN_MENU);
                     }
                 };
 

@@ -79,7 +79,7 @@ namespace tg.application
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
         [CreateBefore(typeof(Applicaiton))]
-        [UpdateInGroup(typeof(InitializationSystemGroup))]
+        [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
         public partial class StateManager : SystemBase, IEventListener<StateManager>
         {
             /// <summary>
@@ -207,9 +207,9 @@ namespace tg.application
             void onApplicationInitializedEvent(ApplicationInitializedEvent e)
             {
                 this.EntityManager.RemoveComponent<InitializingState>(this.SystemHandle);
-
-                // TODO: once we have UI, go into the menu state.
-                this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                // a little bit sloppy, but we need to ensure there is always a state attached to the StateManager class. So after initial
+                // game data has been loaded we will always transition into the "menu open" state.
+                this.EntityManager.AddComponent<MenuOpenState>(this.SystemHandle);
             }
 
             /// <summary>

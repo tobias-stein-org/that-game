@@ -5,6 +5,6 @@ namespace tg.ui.view
     public interface IViewController
     {
         void activated(VisualElement view);
-        void deactivated();
+        void deactivated(VisualElement view);
     }
 }

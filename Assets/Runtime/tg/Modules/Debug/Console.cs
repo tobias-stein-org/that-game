@@ -347,7 +347,7 @@ namespace tg.debug
             {
                 if(this.consoleAction.WasPerformedThisFrame())
                 {
-                    EventQueue.publish(new ToggleViewEvent { name = "console" });
+                    EventQueue.publish(new ToggleViewEvent { name = tg.ui.menu.menus.CONSOLE });
                 }
             }
         }

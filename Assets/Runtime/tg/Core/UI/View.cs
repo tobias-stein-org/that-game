@@ -25,6 +25,8 @@ namespace tg.ui
 
         public bool                     isMenu          = false;
 
+        public bool                     fade            = true;
+
         public int                      sort            = 0;
     }
 
@@ -39,6 +41,7 @@ namespace tg.ui
                 Show                        = 1 << 0,
                 MatchViewport               = 1 << 1,
                 IsMenu                      = 1 << 2,
+                Fade                        = 1 << 3,
             }
 
             public FixedString64Bytes   name;
@@ -72,6 +75,12 @@ namespace tg.ui
                 set { if(value) { set(ViewProperties.IsMenu); } else { clr(ViewProperties.IsMenu); } }
             }
 
+            public bool                 fade
+            {
+                get { return get(ViewProperties.Fade); }
+                set { if(value) { set(ViewProperties.Fade); } else { clr(ViewProperties.Fade); } }
+            }
+
             public int                  sort;
 
             public static implicit operator UIViewData(View view)
@@ -84,7 +93,8 @@ namespace tg.ui
                     show            = view.show,
                     matchViewport   = view.matchViewport,
                     isMenu          = view.isMenu,
-                    sort            = view.sort
+                    sort            = view.sort,
+                    fade            = view.fade,
                 };
             }
         }

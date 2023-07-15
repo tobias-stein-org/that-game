@@ -9,3 +9,37 @@ Label {
 Button {
     -unity-font-definition: resource('Fonts/Khronopix');
 }
+
+.tg-menu-button {
+    font-size: 32px;
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    color: rgb(229, 229, 229);
+}
+
+.tg-menu-button:hover {
+    scale: 1.1 1.1;
+    background-color: rgba(0, 0, 0, 0);
+    transition-property: scale;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out-elastic;
+}
+
+.tg-menu-button:active {
+    color: rgb(255, 255, 255);
+}
+
+.tg-menu-panel {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    background-color: rgba(0, 0, 0, 0.15);
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-top: 32px;
+    padding-bottom: 32px;
+}
