@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: RuntimeTextSettings
   m_EditorClassIdentifier: 
   m_Version: 
-  m_DefaultFontAsset: {fileID: 11400000, guid: df9dcc6e8dbab4b118b2ea9746103676, type: 2}
+  m_DefaultFontAsset: {fileID: 11400000, guid: 5ea8671da51484cdab8e761c1023af4f, type: 2}
   m_DefaultFontAssetPath: Fonts/
   m_FallbackFontAssets:
-  - {fileID: 11400000, guid: bf87aa9a8d37b4d0991fc2eeee1c170e, type: 2}
+  - {fileID: 11400000, guid: 742abea6e5a6a4a25af0189f83d7935b, type: 2}
   m_MatchMaterialPreset: 0
   m_MissingCharacterUnicode: 0
   m_ClearDynamicDataOnBuild: 1
