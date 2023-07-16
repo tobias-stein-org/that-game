@@ -7,9 +7,9 @@ namespace tg.ui
     {
         private const string LOADING_SCREEN = "LOADING_SCREEN";
 
-        public static void showLoadingScreen(string title = "Loading ...")
+        public static void showLoadingScreen()
         {
-            EventQueue.publish(new ShowLoadingScreenEvent { title = title });
+            EventQueue.publish(new ShowLoadingScreenEvent {});
             EventQueue.publish(new ShowViewEvent { name = LOADING_SCREEN });
         }
 

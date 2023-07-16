@@ -7,7 +7,7 @@
         </ui:VisualElement>
         <ui:VisualElement name="middle" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
         <ui:VisualElement name="bottom" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); align-items: center;">
-            <ui:ProgressBar value="0" name="progress" class="tg-loading-progressbar" style="width: 100%; scale: 1 1; visibility: hidden;" />
+            <ui:ProgressBar value="0" name="progress" high-value="1" class="tg-loading-progressbar" style="width: 100%; scale: 1 1; visibility: hidden;" />
             <ui:Label tabindex="-1" display-tooltip-when-elided="true" name="step" style="color: rgb(255, 255, 255); font-size: 28px;" />
         </ui:VisualElement>
     </ui:VisualElement>

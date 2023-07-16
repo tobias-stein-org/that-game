@@ -17,10 +17,7 @@ namespace tg.ui.events
         public string   name;
     }
 
-    public struct ShowLoadingScreenEvent : IEvent
-    {
-        public string   title;
-    }
+    public struct ShowLoadingScreenEvent : IEvent { }
 
     public struct UpdateLoadingScreenProgressEvent : IEvent
     {
