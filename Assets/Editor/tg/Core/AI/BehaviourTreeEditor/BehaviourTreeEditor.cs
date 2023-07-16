@@ -193,6 +193,8 @@ namespace tg.editor.ai.behaviour.tree
 
         internal void openTree(BehaviourTree tree)
         {
+            if(this.inspectorView == null) { return; }
+
             this.inspectorView.update(null);
             this.treeView.build(tree);
             this.blackboardController.build(tree);
