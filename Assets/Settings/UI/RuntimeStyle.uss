@@ -43,3 +43,32 @@ Button {
     padding-top: 32px;
     padding-bottom: 32px;
 }
+
+.tg-loading-progressbar {
+    background-color: rgba(0, 0, 0, 0);
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(255, 255, 255);
+    border-top-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+    border-left-width: 4px;
+    border-right-width: 4px;
+    border-top-width: 4px;
+    border-bottom-width: 4px;
+    color: rgba(255, 255, 255, 0);
+}
+
+.tg-loading-progressbar .unity-progress-bar__background {
+    background-color: rgba(255, 255, 255, 0);
+    -unity-background-image-tint-color: rgba(255, 255, 255, 0);
+}
+
+.tg-loading-progressbar Label {
+    -unity-font-style: bold;
+    -unity-font-definition: resource('Fonts/KhronopixMono SDF');
+    font-size: 22px;
+    color: rgb(255, 255, 255);
+    -unity-text-outline-color: rgb(0, 0, 0);
+    -unity-text-outline-width: 2px;
+    -unity-text-align: middle-left;
+    translate: 0 2px;
+}

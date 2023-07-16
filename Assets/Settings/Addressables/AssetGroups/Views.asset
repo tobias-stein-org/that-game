@@ -35,6 +35,18 @@ MonoBehaviour:
     m_SerializedLabels:
     - view
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7bae5dfe3693c434abbc7f1929f8331f
+    m_Address: tg.ui.view.LOADING_SCREEN
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 938c91947b96a4963bf36ed72dba24d6
+    m_Address: tg.ui.view.PAUSE_MENU
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:

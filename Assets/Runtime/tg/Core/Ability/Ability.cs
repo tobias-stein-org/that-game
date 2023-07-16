@@ -51,6 +51,7 @@ namespace tg.ability
     namespace entities
     {
         using tg.application.entities;
+        using Unity.Entities.UniversalDelegates;
 
         [Serializable]
         public struct AbilityMeta : IComponentData
@@ -115,7 +116,7 @@ namespace tg.ability
 
 
         [BurstCompile]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame, false)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial struct UpdateAbilityCooldown : ISystem
         {
             [BurstCompile]
@@ -216,7 +217,6 @@ namespace tg.ability
             private NativeList<UseAbilityEvent<Entity>>         usedAbilities;
 
 
-            private EntityQuery                                 abilityDataBecameAvialable;
             private NativeHashMap<FixedString64Bytes, Entity>   name2Ability;
 
             
@@ -255,13 +255,8 @@ namespace tg.ability
 
                 Addressables.LoadAssetsAsync<AbilityDescription>(AbilityDescription.label, this.instanciateAbility);
 
-
-                this.abilityDataBecameAvialable = this.GetEntityQuery(typeof(AbilityMeta));
-                this.abilityDataBecameAvialable.SetChangedVersionFilter(typeof(AbilityMeta));
-
                 this.RequireAnyForUpdate(new EntityQuery[]
                 {
-                    this.abilityDataBecameAvialable,
                     this.GetEntityQuery(typeof(Ability)),
                 });
 
@@ -307,8 +302,8 @@ namespace tg.ability
                     });
                     this.EntityManager.SetComponentData<AbilityMeta>(abilityEntity, description.meta);
                 }
+                if(!this.name2Ability.TryAdd(description.meta.name, abilityEntity)) { this.name2Ability[description.meta.name] = abilityEntity; }
             }
-
             protected override void OnDestroy()
             {
                 this.learnedEntityAbilities.Dispose();
@@ -322,18 +317,6 @@ namespace tg.ability
                 this.abilityMetaLookup.Update(this);
                 this.abilityCoolLookup.Update(this);
                 this.abilityReadyLookup.Update(this);
-
-                if(!this.abilityDataBecameAvialable.IsEmpty)
-                {
-                    var entity  = this.abilityDataBecameAvialable.ToEntityArray(Allocator.Temp);
-                    var meta    = this.abilityDataBecameAvialable.ToComponentDataArray<AbilityMeta>(Allocator.Temp);
-
-                    for(int i = 0; i < entity.Length; i++)
-                    {
-                        if(!this.name2Ability.TryAdd(meta[i].name, entity[i])) { this.name2Ability[meta[i].name] = entity[i]; }
-                        Debug.Log($"Ability '{meta[i].name}' found.");
-                    }
-                }
 
                 // active triggered abilities
                 if(!this.usedAbilities.IsEmpty)

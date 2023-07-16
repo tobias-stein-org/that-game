@@ -61,7 +61,7 @@ namespace tg.application
 
                         // activate 'tg.input.actions' 
                         appData.inputActions.Enable();
-                        EventQueue.publish(new ApplicationInitializedEvent {});
+                        EventQueue.publish(new ApplicationInitializedEvent { data = appData });
                         Menu.show(menus.MAIN_MENU);
                     }
                 };

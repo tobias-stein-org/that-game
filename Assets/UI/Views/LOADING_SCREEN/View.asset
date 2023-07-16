@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3991193fe2f4a4790895873390fdcd93, type: 3}
   m_Name: View
   m_EditorClassIdentifier: 
-  name: console
-  view: {fileID: 9197481963319205126, guid: ad52cefc7433d4998a8b233b49cf40f0, type: 3}
-  controller: tg.ui.view.consoleController
+  name: LOADING_SCREEN
+  view: {fileID: 9197481963319205126, guid: 8d882c144b1b44ff6ab06a55854485b9, type: 3}
+  controller: tg.ui.view.LOADING_SCREENController
   show: 1
   matchViewport: 1
-  isMenu: 1
+  isMenu: 0
   fade: 1
-  sort: 999
+  sort: 99

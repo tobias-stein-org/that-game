@@ -2,18 +2,16 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 using Unity.Entities;
-using Unity.Transforms;
 using Unity.Mathematics;
 
 namespace tg.player
 {
     using tg.application.entities;
 
-    using tg.ability;
-    using tg.ability.entities;
 
     using tg.ability.events;
     using tg.events;
+    using tg.ui.menu.events;
 
     namespace entities
     {
@@ -31,6 +29,22 @@ namespace tg.player
             protected override void OnStartRunning()
             {
                 this.playerActions = SystemAPI.ManagedAPI.GetSingleton<ApplicationData>().inputActions.FindActionMap("Player");
+
+                this.playerActions.FindAction("pause").performed += this.onPause;
+
+            }
+
+            protected override void OnStopRunning()
+            {
+                this.playerActions.FindAction("pause").performed -= this.onPause;
+            }
+
+            private void onPause(InputAction.CallbackContext ctx)
+            {
+                if(!ctx.action.IsPressed())
+                {
+                    EventQueue.publish(new OpenMenuEvent { name = ui.menu.menus.PAUSE_MENU, push = false });
+                }
             }
 
             protected override void OnUpdate()

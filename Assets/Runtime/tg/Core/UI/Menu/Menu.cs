@@ -1,50 +1,73 @@
-using System.Collections;
 using System.Collections.Generic;
+
+using UnityEngine.InputSystem;
 
 using Unity.Entities;
 
 namespace tg.ui.menu
 {
     using tg.events;
+    using tg.application.events;
     using tg.ui.events;
     using tg.ui.menu.events;
     using tg.ui.entities;
+
     using tg.application.entities;
 
     public static class menus
     {
         public const string CONSOLE     = "console";
         public const string MAIN_MENU   = "MAIN_MENU";
+        public const string PAUSE_MENU  = "PAUSE_MENU";
         public const string SETTINGS    = "SETTINGS";
     }
 
     [CreateAfter(typeof(EventQueue))]
     [UpdateInGroup(typeof(UISystemGroup))]
-    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInitializing | ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenInGame, false)]
+    [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenMenuOpen, false)]
     public partial class Menu : SystemBase, IEventListener<Menu>
     {
         private readonly Stack<string> menus = new Stack<string>(8);
 
         // active dialog handle
 
+        private InputAction back = null;
+
         protected override void OnCreate()
         {
-            //this.RequireForUpdate(StateManager.state(this));
+            this.RequireForUpdate(StateManager.state(this));
+            EventQueue.subscribe(this);
         }
 
         protected override void OnStartRunning()
         {
-            EventQueue.subscribe(this);
+            this.back.performed += this.onBackAction;
         }
 
         protected override void OnStopRunning()
         {
-            EventQueue.unsubscribe(this);
+            this.back.performed -= this.onBackAction;
             this.menus.Clear();
         }
 
         protected override void OnUpdate()
         {
+        }
+
+        void onApplicationInitializedEvent(ApplicationInitializedEvent e)
+        {
+            this.back = e.data.inputActions.FindActionMap("UI").FindAction("cancel");
+        }
+
+        void onBackAction(InputAction.CallbackContext ctx)
+        {
+            if(!ctx.action.IsPressed())
+            {
+                if(this.menus.Count > 0 && this.menus.Peek() != menu.menus.MAIN_MENU)
+                {
+                    Menu.close();
+                }
+            }
         }
 
         void onOpenMenuEvent(OpenMenuEvent e)

@@ -420,7 +420,7 @@ namespace tg.ui
 
             void onApplicationInitializedEvent(ApplicationInitializedEvent e)
             {
-                var appData                     = this.EntityManager.GetComponentData<ApplicationData>(World.DefaultGameObjectInjectionWorld.GetExistingSystem<Applicaiton>());
+                var appData                     = e.data;
                 var uiGO                        = new GameObject("UI");
                 {
                     uiGO.AddComponent<EventSystem>();

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3991193fe2f4a4790895873390fdcd93, type: 3}
   m_Name: View
   m_EditorClassIdentifier: 
-  name: console
-  view: {fileID: 9197481963319205126, guid: ad52cefc7433d4998a8b233b49cf40f0, type: 3}
-  controller: tg.ui.view.consoleController
+  name: PAUSE_MENU
+  view: {fileID: 9197481963319205126, guid: 9df07fa36cfd04b0d81d4677ebd1e992, type: 3}
+  controller: tg.ui.view.PAUSE_MENUController
   show: 1
   matchViewport: 1
   isMenu: 1
-  fade: 1
-  sort: 999
+  fade: 0
+  sort: 0

@@ -1,5 +1,6 @@
 namespace tg.application.events
 {
+    using tg.application.entities;
     using tg.events;
     
     /// <summary>
@@ -7,6 +8,7 @@ namespace tg.application.events
     /// </summary>
     public struct ApplicationInitializedEvent : IEvent
     {
+        public ApplicationData  data;
     }
 
     public struct RequestApplicationQuitEvent : IEvent {}

@@ -23,33 +23,30 @@ namespace tg.game
         /// 2. Spawns enemies
         /// 3. Spawns the player
         /// </summary>
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenGameOver, false)]
 		[CreateAfter(typeof(EventQueue))]
 		public partial class StartNew : SystemBase, IEventListener<StartNew>
 		{
-            protected override void OnCreate()
-			{
-				this.RequireForUpdate(StateManager.state(this));
-			}
-
-
             protected override void OnStartRunning()
 			{
                 EventQueue.subscribe(this);
-
-				EventQueue.publish(new NewGameStartedEvent {});
-				EventQueue.publish(new RequestNewLevelEvent {});
 			}
 
 
             protected override void OnStopRunning()
             {
-                //EventQueue.unsubscribe(this);
+				EventQueue.unsubscribe(this);
             }
 
             protected override void OnUpdate()
 			{
 			}
+
+			void onStartNewGameEvent(StartGameEvent e)
+			{
+				ui.transition.showLoadingScreen();
+				EventQueue.publish(new RequestNewLevelEvent {});
+			}
+
 
             void onNewLevelGeneratedEvent(NewLevelGeneratedEvent e)
 			{
@@ -121,8 +118,8 @@ namespace tg.game
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "FIREBALL_1" });
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "ICEBLAST_1" });
 
-                EventQueue.unsubscribe(this);
-                //this.Enabled = false;
+				EventQueue.publish(new NewGameStartedEvent {});
+				ui.transition.hideLoadingScreen();
             }
         }
 	}

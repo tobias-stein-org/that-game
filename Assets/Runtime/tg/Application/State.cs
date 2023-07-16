@@ -7,7 +7,8 @@ namespace tg.application
 {
     using tg.debug;
     using tg.events;
-    
+
+    using tg.ui.events;
     using tg.application.events;
     using tg.game.events;
 
@@ -128,7 +129,6 @@ namespace tg.application
                 });
             }
 
-
             private EntityQuery checkMenuOpened;
             private EntityQuery checkMenuClosed;
 
@@ -224,6 +224,16 @@ namespace tg.application
                 }
 
                 this.EntityManager.AddComponent<QuittingState>(this.SystemHandle);
+            }
+
+            void onShowLoadingScreenEvent(ShowLoadingScreenEvent e)
+            {
+                this.EntityManager.AddComponent<LoadingState>(this.SystemHandle);
+            }
+
+            void onHideLoadingScreenEvent(HideLoadingScreenEvent e)
+            {
+                this.EntityManager.RemoveComponent<LoadingState>(this.SystemHandle);
             }
 
             void onNewGameStartedEvent(NewGameStartedEvent e)

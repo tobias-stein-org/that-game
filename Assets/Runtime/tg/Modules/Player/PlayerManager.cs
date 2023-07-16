@@ -30,7 +30,7 @@ namespace tg.player
         /// Simple player spawn system. 
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>, ISystemStartStop
         {
             void OnCreate(ref SystemState state)

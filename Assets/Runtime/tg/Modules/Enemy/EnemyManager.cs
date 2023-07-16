@@ -29,7 +29,7 @@ namespace tg.enemy {
         {
         }
 
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial struct EnemyManager : ISystem, IEventListener<EnemyManager>, ISystemStartStop
         {
             void OnCreate(ref SystemState state)

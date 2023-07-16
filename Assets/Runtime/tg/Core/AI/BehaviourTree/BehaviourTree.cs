@@ -49,7 +49,6 @@ namespace tg.ai.behaviour.tree
 
         public Blackboard()
         {
-            UnityEngine.Debug.Log("Alloc new blackboard");
             this.board = new TBlackboard(8, Allocator.Persistent);
         }
 
@@ -95,8 +94,6 @@ namespace tg.ai.behaviour.tree
 
         public void Dispose()
         {
-            UnityEngine.Debug.Log("Free blackboard");
-
             if(this.board.IsCreated) { this.board.Dispose(); }
         }
     }

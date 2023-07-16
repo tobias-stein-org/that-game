@@ -5,6 +5,7 @@ namespace tg.ui.view
     using tg.events;
     using tg.application.events;
     using tg.ui.menu;
+    using tg.game.events;
 
     public class MAIN_MENUController : IViewController
     {
@@ -26,6 +27,8 @@ namespace tg.ui.view
 
         private void play()
         {
+            EventQueue.publish(new StartGameEvent { });
+            Menu.close();
         }
 
         private void settings()

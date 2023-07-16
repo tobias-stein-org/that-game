@@ -341,14 +341,16 @@ namespace tg.debug
             protected override void OnStartRunning()
             {
                 this.consoleAction = SystemAPI.ManagedAPI.GetSingleton<ApplicationData>().inputActions.FindActionMap("Debug").FindAction("console");
+                this.consoleAction.performed += this.onToggleConsole;
+            }
+
+            private void onToggleConsole(InputAction.CallbackContext ctx)
+            {
+                EventQueue.publish(new ToggleViewEvent { name = tg.ui.menu.menus.CONSOLE });
             }
 
             protected override void OnUpdate()
             {
-                if(this.consoleAction.WasPerformedThisFrame())
-                {
-                    EventQueue.publish(new ToggleViewEvent { name = tg.ui.menu.menus.CONSOLE });
-                }
             }
         }
     }

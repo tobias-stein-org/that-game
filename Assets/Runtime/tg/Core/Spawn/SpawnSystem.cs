@@ -28,7 +28,7 @@ namespace tg.spawn
         /// </summary>
         //[BurstCompile]
         [UpdateInGroup(typeof(InitializationSystemGroup))]
-		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
 		internal partial class SpawnSystem : SystemBase
 		{
 			/// <summary>
