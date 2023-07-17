@@ -7,12 +7,13 @@ namespace tg.game
 	using tg.player.events;
 	using tg.level.events;
 	using tg.game.events;
+	using tg.combat.events;
 
 	namespace entities
 	{
         using tg.application.entities;
 
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
 		[CreateAfter(typeof(EventQueue))]
 		public partial struct GameOver : ISystem, IEventListener<GameOver>, ISystemStartStop
 		{
@@ -45,10 +46,18 @@ namespace tg.game
 
 				if(e.enter == self.lastChunk)
 				{
-					EventQueue.publish(new KillPlayerEvent { player = e.player });
-					EventQueue.publish(new GameOverEvent {});
+					EventQueue.publish(new EntityDiedEvent { entity = e.player });
+					EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_DONE });
 				}
 			}
+
+			void onEntityDiedEvent(combat.events.EntityDiedEvent e)
+			{
+				if(World.DefaultGameObjectInjectionWorld.EntityManager.HasComponent<tg.player.entities.Player>(e.entity))
+				{
+                    EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_LOST });
+                }
+            }
 
 			public void OnStartRunning(ref SystemState state)
 			{

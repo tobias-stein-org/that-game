@@ -16,6 +16,7 @@ namespace tg.application
     namespace entities
     {
         using tg.ui.entities;
+        using tg.ui.menu;
 
         [Flags]
         public enum ApplicationStateMask
@@ -248,14 +249,16 @@ namespace tg.application
                 switch (e.reason)
                 {
                     case GameOverEvent.Reason.PLAYER_QUIT:
-                        EventQueue.publish(new OpenMenuEvent { name = ui.menu.menus.MAIN_MENU, push = false });
+                        Menu.show(menus.MAIN_MENU, false);
                         break;
 
                     case GameOverEvent.Reason.PLAYER_LOST:
+                        Menu.show(menus.GAME_OVER, false);
                         this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
                         break;
 
                     case GameOverEvent.Reason.PLAYER_DONE:
+                        Menu.show(menus.GAME_OVER, false);
                         this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
                         break;
                 }

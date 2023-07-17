@@ -11,7 +11,9 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace tg.spawn
 {
+    using tg.events;
     using tg.spawn.events;
+	using tg.combat.events;
 
     /// <summary>
     /// Signature for the post action callback performed on spawned GameObject instances.
@@ -27,14 +29,28 @@ namespace tg.spawn
         /// Spawn system will handle the playback of a all scheduled and ready spawn reqeusts command buffers.
         /// </summary>
         //[BurstCompile]
+		[CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(InitializationSystemGroup))]
-		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
-		internal partial class SpawnSystem : SystemBase
+		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenGameOver, false)]
+		internal partial class SpawnSystem : SystemBase, IEventListener<SpawnSystem>
 		{
 			/// <summary>
-			/// Processed by the SpawnSystem.
+			/// Internal used event to remove game objects and entites from the running game.
 			/// </summary>
-			private struct SpawnRequest : IComponentData, System.IEquatable<SpawnRequest>
+            struct DespawnEntityEvent : IEvent
+			{
+				public Entity entity;
+			}
+
+			/// <summary>
+			/// Marker component attached to any spawned entity.
+			/// </summary>
+			private struct Spawned : IComponentData {}
+
+            /// <summary>
+            /// Processed by the SpawnSystem.
+            /// </summary>
+            private struct SpawnRequest : IComponentData, System.IEquatable<SpawnRequest>
 			{
 				public Entity				id;
 
@@ -80,7 +96,6 @@ namespace tg.spawn
 			protected override void OnCreate()
 			{
 				this.RequireForUpdate(StateManager.state(this));
-				this.RequireForUpdate<SpawnRequest>();
 
 				this.postSpawnEntity	= SystemAPI.QueryBuilder().WithAll<SpawnRequest, SpawnRequestComplete, PostSpawnActionData<Entity>>().Build();
 				this.postSpawnObject	= SystemAPI.QueryBuilder().WithAll<SpawnRequest, SpawnRequestComplete, PostSpawnActionData<GameObject>>().Build();
@@ -89,13 +104,45 @@ namespace tg.spawn
 				this.pending			= new UnsafeHashMap<SpawnRequest, EntityCommandBuffer>(256, Allocator.Persistent);
 			}
 
-			protected override void OnDestroy()
+            protected override void OnStartRunning()
+            {
+                EventQueue.subscribe(this);
+            }
+
+            protected override void OnStopRunning()
+            {
+                EventQueue.unsubscribe(this);
+            }
+
+            protected override void OnDestroy()
 			{
 				this.pending.Dispose();
 			}
 
-			//[BurstCompile]
-			private partial struct CheckSpawnJob : IJobEntity
+			void onEntityDiedEvent(EntityDiedEvent e)
+			{
+				if(this.EntityManager.HasComponent<Spawned>(e.entity))
+				{
+					EventQueue.publish(new DespawnEntityEvent { entity = e.entity });
+				}
+			}
+
+			void onDespawnEntityDeferedEvent(DespawnEntityEvent e)
+			{
+				if(this.EntityManager.HasComponent<Transform>(e.entity))
+				{
+					var transform = this.EntityManager.GetComponentObject<Transform>(e.entity);
+					if(transform.gameObject)
+					{
+						GameObject.Destroy(transform.gameObject);
+					}
+                }
+
+				this.EntityManager.DestroyEntity(e.entity);
+            }
+
+            //[BurstCompile]
+            private partial struct CheckSpawnJob : IJobEntity
 			{
 				public double time;
 
@@ -222,9 +269,10 @@ namespace tg.spawn
 				{
 					// this will ensure the placeholder entity field gets updated
 					ECB.SetComponent<SpawnRequest>(spawnRequestEntity, spawnRequest);
-
 					// mark it completed
 					ECB.AddComponent<SpawnRequestComplete>(spawnRequestEntity);
+					// mark spawned entity
+					ECB.AddComponent<Spawned>(entity);
 				}
 
 				this.pending.Add(spawnRequest, ECB);
@@ -269,7 +317,9 @@ namespace tg.spawn
 					ECB.SetComponent<SpawnRequest>(spawnRequestEntity, spawnRequest);
 					// mark it completed
 					ECB.AddComponent<SpawnRequestComplete>(spawnRequestEntity);
-				}
+                    // mark spawned entity
+                    ECB.AddComponent<Spawned>(entity);
+                }
 
 				this.pending.Add(spawnRequest, ECB);
 
@@ -323,31 +373,37 @@ namespace tg.spawn
 
 		/// <summary>
 		/// Spawns a new entity. Also provides access to the new enities ECB for further changes.
+		/// note: Spawned entities will get automatically despawned (destroyed), if they "die". Any company GameObject that is linked through a Transfrom component
+		/// will also get destroyed automatically.
 		/// </summary>
 		/// <param name="location"></param>
 		/// <param name="delay"></param>
 		/// <returns></returns>
 		public static Entity create(out EntityCommandBuffer ECB, in float3 location = default, double delay = 0, PostSpawnAction<Entity> postSpawnAction = null) { return spawner.create(in location, out ECB, delay, postSpawnAction); }
 
-		/// <summary>
-		/// Spawns a new entity from a prefab. Optionally a spawn delay can be provded.
-		/// </summary>
-		/// <param name="prefab"></param>
-		/// <param name="location"></param>
-		/// <param name="delay"></param>
-		/// <returns></returns>
-		public static Entity create(in Entity prefab, in float3 location, double delay = 0, PostSpawnAction<Entity> postSpawnAction = null) { return create(in prefab, in location, out EntityCommandBuffer ECB, delay, postSpawnAction); }
+        /// <summary>
+        /// Spawns a new entity from a prefab. Optionally a spawn delay can be provded.
+        /// note: Spawned entities will get automatically despawned (destroyed), if they "die". Any company GameObject that is linked through a Transfrom component
+        /// will also get destroyed automatically.
+        /// </summary>
+        /// <param name="prefab"></param>
+        /// <param name="location"></param>
+        /// <param name="delay"></param>
+        /// <returns></returns>
+        public static Entity create(in Entity prefab, in float3 location, double delay = 0, PostSpawnAction<Entity> postSpawnAction = null) { return create(in prefab, in location, out EntityCommandBuffer ECB, delay, postSpawnAction); }
 
-		/// <summary>
-		/// Spawn a new entity from a prefab. Provides access to the used EntityCommandBuffer, which
-		/// allows access to add more commands. Optionally a spawn delay can be provided.
-		/// </summary>
-		/// <param name="prefab"></param>
-		/// <param name="location"></param>
-		/// <param name="ECB"></param>
-		/// <param name="delay"></param>
-		/// <returns></returns>
-		public static Entity create(in Entity prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0, PostSpawnAction<Entity> postSpawnAction = null) { return spawner.create(prefab, in location, out ECB, delay, postSpawnAction); }
+        /// <summary>
+        /// Spawn a new entity from a prefab. Provides access to the used EntityCommandBuffer, which
+        /// allows access to add more commands. Optionally a spawn delay can be provided.
+        /// note: Spawned entities will get automatically despawned (destroyed), if they "die". Any company GameObject that is linked through a Transfrom component
+        /// will also get destroyed automatically.
+        /// </summary>
+        /// <param name="prefab"></param>
+        /// <param name="location"></param>
+        /// <param name="ECB"></param>
+        /// <param name="delay"></param>
+        /// <returns></returns>
+        public static Entity create(in Entity prefab, in float3 location, out EntityCommandBuffer ECB, double delay = 0, PostSpawnAction<Entity> postSpawnAction = null) { return spawner.create(prefab, in location, out ECB, delay, postSpawnAction); }
 
 		/// <summary>
 		/// Spawn GameObject from a prefab.

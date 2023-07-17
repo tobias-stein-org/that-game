@@ -17,6 +17,8 @@ namespace tg.combat
     {
         using tg.application.entities;
 
+        public struct Dead : IComponentData {}
+
         public static class CombatDamage
         {
             private static Random rng           = new Random((uint)System.DateTime.UnixEpoch.Ticks.GetHashCode());
@@ -342,9 +344,9 @@ namespace tg.combat
 
             public void OnCreate(ref SystemState state)
             {
-                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<DamageSolver>(state.SystemHandle)));
+                state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<DiedEntities>(state.SystemHandle)));
 
-                this.diedEntities = state.EntityManager.CreateEntityQuery(new EntityQueryDesc { Disabled = new ComponentType[] { typeof(Health) } });
+                this.diedEntities = state.EntityManager.CreateEntityQuery(new EntityQueryDesc { None = new ComponentType[] { typeof(Dead) }, Disabled = new ComponentType[] { typeof(Health) } });
                 this.diedEntities.SetChangedVersionFilter(typeof(Health));
                 state.RequireForUpdate(this.diedEntities);
             }
@@ -352,9 +354,19 @@ namespace tg.combat
             [BurstCompile]
             public void OnUpdate(ref SystemState state)
             {
-                foreach(var entity in this.diedEntities.ToEntityArray(Allocator.Temp))
+                if(!this.diedEntities.IsEmpty)
                 {
-                    EventQueue.publish(new EntityDiedEvent { entity = entity });
+                    using(var ecb = new EntityCommandBuffer(Allocator.Temp, PlaybackPolicy.SinglePlayback))
+                    {
+
+                        foreach(var entity in this.diedEntities.ToEntityArray(Allocator.Temp))
+                        {
+                            EventQueue.publish(new EntityDiedEvent { entity = entity });
+                            ecb.AddComponent<Dead>(entity);
+                        }
+
+                        ecb.Playback(state.EntityManager);
+                    }
                 }
             }
         }

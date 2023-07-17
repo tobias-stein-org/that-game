@@ -15,13 +15,13 @@ namespace tg.ui.menu
     using tg.ui.entities;
 
     using tg.application.entities;
-    using UnityEngine.AddressableAssets;
 
     public static class menus
     {
         public const string CONSOLE     = "console";
         public const string MAIN_MENU   = "MAIN_MENU";
         public const string PAUSE_MENU  = "PAUSE_MENU";
+        public const string GAME_OVER   = "GAME_OVER";
         public const string SETTINGS    = "SETTINGS";
     }
 
