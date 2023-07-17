@@ -61,29 +61,12 @@ namespace tg.application
 
                         // activate 'tg.input.actions' 
                         appData.inputActions.Enable();
+
                         EventQueue.publish(new ApplicationInitializedEvent { data = appData });
-                        Menu.show(menus.MAIN_MENU);
+
+                        Menu.show(menus.MAIN_MENU, false);
                     }
                 };
-
-                //reqeust.load(new UntypedWeakReferenceId[]
-                //{
-                //    appData.playerPrefab,
-                //    appData.enemyPrefab,
-                //    //appData.abilities,
-                //    appData.defaultEnemyBehaviour,
-                //    appData.inputActions,
-                //    appData.uiTheme,
-                //},
-                //(hadErrors) =>
-                //{
-                //    if(hadErrors) { throw new System.Exception("Failed to load application data."); }
-
-                //    // activate 'tg.input.actions' 
-                //    appData.inputActions.result.Enable();
-
-                //    EventQueue.publish(new ApplicationInitializedEvent { appData = appData });
-                //});
             }
 
             public void OnStopRunning(ref SystemState state)
