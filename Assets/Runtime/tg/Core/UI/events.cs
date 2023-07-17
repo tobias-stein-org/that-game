@@ -29,13 +29,6 @@ namespace tg.ui.events
         public string   name;
     }
 
-    public struct ShowLoadingScreenEvent : IEvent { }
-
-    public struct UpdateLoadingScreenProgressEvent : IEvent
-    {
-        public float    progress;
-        public string   step;
-    }
-
+    public struct ShowLoadingScreenEvent : IEvent {}
     public struct HideLoadingScreenEvent : IEvent {}
 }

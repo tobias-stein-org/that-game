@@ -44,9 +44,8 @@ namespace tg.game
 
 			void onStartNewGameEvent(StartGameEvent e)
 			{
-				ui.transition.showLoadingScreen();
-
-                EventQueue.publish(new UpdateLoadingScreenProgressEvent { progress = 0f/3f, step = "Generate new level..." });
+				ui.Loading.showLoadingScreen("Starting new Game");
+				ui.Loading.updateLoadingProgress("Generate new level...", 0f/3f);
 
                 EventQueue.publish(new RequestNewLevelEvent {});
 			}
@@ -54,8 +53,7 @@ namespace tg.game
 
             void onNewLevelGeneratedEvent(NewLevelGeneratedEvent e)
 			{
-                EventQueue.publish(new UpdateLoadingScreenProgressEvent { progress = 1f/3f, step = "Spawn the bad guys..." });
-
+                ui.Loading.updateLoadingProgress("Spawn the bad guys...", 1f / 3f);
                 StartNew.spawnEnemies(in e.levelData);
 			}
 
@@ -108,7 +106,7 @@ namespace tg.game
 
 			private static void spawnPlayer(in LevelData levelData)
 			{
-                EventQueue.publish(new UpdateLoadingScreenProgressEvent { progress = 2f / 3f, step = "Spawn the good guy..." });
+                ui.Loading.updateLoadingProgress("Spawn the good guy...", 2f / 3f);
 
                 var chunk0 = levelData.getChunk(0);
 
@@ -126,10 +124,8 @@ namespace tg.game
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "FIREBALL_1" });
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "ICEBLAST_1" });
 
-                EventQueue.publish(new UpdateLoadingScreenProgressEvent { progress = 3f / 3f, step = "Good luck." });
-
+                ui.Loading.updateLoadingProgress("Good luck.", 3f / 3f);
                 EventQueue.publish(new NewGameStartedEvent {});
-				//ui.transition.hideLoadingScreen();
             }
         }
 	}
