@@ -12,7 +12,6 @@ namespace tg.game
 	using tg.enemy.events;
 	using tg.game.events;
 	using tg.ability.events;
-	using tg.ui.events;
 
 	namespace entities
 	{
@@ -45,7 +44,7 @@ namespace tg.game
 			void onStartNewGameEvent(StartGameEvent e)
 			{
 				ui.Loading.showLoadingScreen("Starting new Game");
-				ui.Loading.updateLoadingProgress("Generate new level...", 0f/3f);
+				ui.Loading.updateLoadingProgress("Generate new level...", 0f / 3f);
 
                 EventQueue.publish(new RequestNewLevelEvent {});
 			}
