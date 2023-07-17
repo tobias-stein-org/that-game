@@ -37,7 +37,11 @@ namespace tg.ui.view
             Menu.showDialog(
                 "Quit Game",
                 "Do you really want to quit?",
-                ("Yes", () => { EventQueue.publish(new RequestApplicationQuitEvent { }); }),
+                ("Yes", () =>
+                {
+                    EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_QUIT });
+                    Loading.transition();
+                }),
                 ("No", () => { })
             );
         }

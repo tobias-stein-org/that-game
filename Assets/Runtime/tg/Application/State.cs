@@ -9,6 +9,7 @@ namespace tg.application
     using tg.events;
 
     using tg.ui.events;
+    using tg.ui.menu.events;
     using tg.application.events;
     using tg.game.events;
 
@@ -244,7 +245,20 @@ namespace tg.application
 
             void onGameOverEvent(GameOverEvent e)
             {
-                this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                switch (e.reason)
+                {
+                    case GameOverEvent.Reason.PLAYER_QUIT:
+                        EventQueue.publish(new OpenMenuEvent { name = ui.menu.menus.MAIN_MENU, push = false });
+                        break;
+
+                    case GameOverEvent.Reason.PLAYER_LOST:
+                        this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                        break;
+
+                    case GameOverEvent.Reason.PLAYER_DONE:
+                        this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                        break;
+                }
             }
 
             #region Game States

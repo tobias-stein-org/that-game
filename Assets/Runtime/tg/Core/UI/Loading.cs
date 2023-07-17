@@ -7,7 +7,7 @@ namespace tg.ui
     using tg.events;
     using events;
 
-    [CreateBefore(typeof(EventQueue))]
+    [CreateAfter(typeof(EventQueue))]
     public partial class Loading : SystemBase, IEventListener<Loading>
     {
         private const string            LOADING_SCREEN  = "LOADING_SCREEN";
@@ -20,26 +20,41 @@ namespace tg.ui
 
         protected override void OnCreate()
         {
-            base.OnCreate();
-
+            EventQueue.subscribe(this);
+            EventQueue.publish(new SpawnViewEvent { name = Loading.LOADING_SCREEN });
         }
 
         protected override void OnUpdate()
         {
-            EventQueue.subscribe(this);
-            EventQueue.publish(new SpawnViewEvent { name = Loading.LOADING_SCREEN });
         }
 
         void onViewSpawnEvent(ViewSpawnEvent e)
         {
             if(e.view.name == Loading.LOADING_SCREEN)
             {
-                Loading.loadingScreen = e.view;
+                Loading.loadingScreen           = e.view;
 
-                Loading.title           = e.view.Q<Label>("title");
-                Loading.progress        = e.view.Q<ProgressBar>("progress");
-                Loading.step            = e.view.Q<Label>("step");
+                Loading.title                   = e.view.Q<Label>("title");
+                Loading.progress                = e.view.Q<ProgressBar>("progress");
+                Loading.step                    = e.view.Q<Label>("step");
             }
+        }
+
+        public static void transition(long timeMS = 500, System.Action onTranstionFinished = null)
+        {
+            Loading.title.text                  = "";
+            Loading.step.text                   = "";
+            Loading.progress.style.visibility   = Visibility.Hidden;
+
+            EventQueue.publish(new ShowViewEvent { name = LOADING_SCREEN });
+
+            Loading.loadingScreen.schedule
+                .Execute(() =>
+                {
+                    onTranstionFinished?.Invoke();
+                    EventQueue.publish(new HideViewEvent { name = LOADING_SCREEN });
+                })
+                .StartingIn(timeMS);
         }
 
         public static void showLoadingScreen(string title = "Loading ...")
