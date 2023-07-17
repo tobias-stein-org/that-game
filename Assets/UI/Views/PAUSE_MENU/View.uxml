@@ -2,5 +2,10 @@
     <Style src="project://database/Assets/Settings/UI/RuntimeStyle.uss?fileID=7433441132597879392&amp;guid=61ba2f276762743f3bb797f383c21847&amp;type=3#RuntimeStyle" />
     <ui:VisualElement name="panel" class="tg-menu-panel" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.3); align-items: center; justify-content: center; background-image: none;">
         <ui:Label tabindex="-1" text="PAUSED" display-tooltip-when-elided="true" style="font-size: 44px; color: rgb(255, 255, 255); -unity-font-style: bold; text-shadow: 2px 1px 0 rgb(0, 0, 0);" />
+        <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); justify-content: flex-end;">
+            <ui:Button text="Resume" display-tooltip-when-elided="true" name="resume" class="tg-menu-button" />
+            <ui:Button text="Settings" display-tooltip-when-elided="true" name="settings" class="tg-menu-button" />
+            <ui:Button text="Quit" display-tooltip-when-elided="true" name="quit" class="tg-menu-button" />
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 
 using Unity.Entities;
 
+using UnityEngine.UIElements;
+
 namespace tg.ui.menu
 {
     using tg.events;
@@ -13,6 +15,7 @@ namespace tg.ui.menu
     using tg.ui.entities;
 
     using tg.application.entities;
+    using UnityEngine.AddressableAssets;
 
     public static class menus
     {
@@ -27,16 +30,21 @@ namespace tg.ui.menu
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenMenuOpen, false)]
     public partial class Menu : SystemBase, IEventListener<Menu>
     {
-        private readonly Stack<string> menus = new Stack<string>(8);
+        private readonly Stack<string>  menus       = new Stack<string>(8);
 
-        // active dialog handle
+        public const string             DIALOG      = "DIALOG";
+        private static VisualElement    dialog      = null;
+        private static bool             dialogOpen  = false;
 
-        private InputAction back = null;
+        private InputAction             back        = null;
+
 
         protected override void OnCreate()
         {
             this.RequireForUpdate(StateManager.state(this));
+
             EventQueue.subscribe(this);
+            EventQueue.publish(new SpawnViewEvent { name = Menu.DIALOG });
         }
 
         protected override void OnStartRunning()
@@ -47,7 +55,7 @@ namespace tg.ui.menu
         protected override void OnStopRunning()
         {
             this.back.performed -= this.onBackAction;
-            this.menus.Clear();
+            //this.menus.Clear();
         }
 
         protected override void OnUpdate()
@@ -72,6 +80,10 @@ namespace tg.ui.menu
 
         void onOpenMenuEvent(OpenMenuEvent e)
         {
+            if(Menu.dialogOpen) { return; }
+
+            EventQueue.publish(new ShowViewEvent { name = e.name });
+
             if(this.menus.Count > 0)
             {
                 var current = this.menus.Peek();
@@ -85,7 +97,6 @@ namespace tg.ui.menu
 
                 EventQueue.publish(new HideViewEvent { name = current });
             }
-            EventQueue.publish(new ShowViewEvent { name = e.name });
 
             if(!e.push) { this.menus.Clear(); }
             this.menus.Push(e.name);
@@ -93,13 +104,29 @@ namespace tg.ui.menu
 
         void onCloseMenuEvent(CloseMenuEvent e)
         {
+            if(Menu.dialogOpen) { return; }
+
+            string hide = null;
+            string show = null;
+
             if(this.menus.Count > 0)
             {
-                EventQueue.publish(new HideViewEvent { name = this.menus.Pop() });
+                hide = this.menus.Pop();
                 if(this.menus.Count > 0)
                 {
-                    EventQueue.publish(new ShowViewEvent { name = this.menus.Peek() });
+                    show = this.menus.Peek();
                 }
+            }
+
+            if(show != null) { EventQueue.publish(new ShowViewEvent { name = show }); }
+            if(hide != null) { EventQueue.publish(new HideViewEvent { name = hide }); }
+        }
+
+        void onViewSpawnEvent(ViewSpawnEvent e)
+        {
+            if(e.view.name == Menu.DIALOG)
+            {
+                Menu.dialog = e.view;
             }
         }
 
@@ -113,8 +140,54 @@ namespace tg.ui.menu
             EventQueue.publish(new CloseMenuEvent { });
         }
 
-        public static void showDialog()
+        public static void showDialog(string title, string messge, params (string, System.Action)[] actions)
         {
+            if(Menu.dialog == null)
+            {
+                Unity.Assertions.Assert.IsNotNull(Menu.dialog, "Dialog resource not initialized!");
+            }
+
+            Menu.dialog.Q<Label>("title").text      = title;
+            Menu.dialog.Q<Label>("message").text    = messge;
+
+            var _actions = Menu.dialog.Q<VisualElement>("actions");
+            _actions.Clear();
+
+            void addDialogAction(string name, System.Action callback = null)
+            {
+                var action = new Button();
+                {
+                    action.text = name;
+                    action.clicked += () =>
+                    {
+                        Menu.hideDialog();
+                        callback?.Invoke();
+                    };
+                }
+                _actions.Add(action);
+            }
+
+            if(actions.Length > 0)
+            {
+                foreach(var action in actions)
+                {
+                    addDialogAction(action.Item1, action.Item2);
+                }
+            }
+            else // add "OK" action by default
+            {
+                addDialogAction("OK");
+            }
+
+            // show the dialog
+            EventQueue.publish(new ShowViewEvent { name = Menu.DIALOG });
+            Menu.dialogOpen = true;
+        }
+
+        private static void hideDialog()
+        {
+            Menu.dialogOpen = false;
+            EventQueue.publish(new HideViewEvent { name = Menu.DIALOG });
         }
     }
 }

@@ -19,8 +19,6 @@ namespace tg.ui
         [HideInInspector]
         public string                   controller;
 
-        public bool                     show            = true;
-
         public bool                     matchViewport   = true;
 
         public bool                     isMenu          = false;
@@ -38,10 +36,9 @@ namespace tg.ui
             public enum ViewProperties
             {
                 None                        = 0,
-                Show                        = 1 << 0,
-                MatchViewport               = 1 << 1,
-                IsMenu                      = 1 << 2,
-                Fade                        = 1 << 3,
+                MatchViewport               = 1,
+                IsMenu                      = 1 << 1,
+                Fade                        = 1 << 2,
             }
 
             public FixedString64Bytes   name;
@@ -56,12 +53,6 @@ namespace tg.ui
             private bool                get(ViewProperties property) { return (this.properties & property) != 0; }
             private void                set(ViewProperties property) { this.properties |= property; }
             private void                clr(ViewProperties property) { this.properties &= ~property; }
-
-            public bool                 show
-            {
-                get { return get(ViewProperties.Show); }
-                set { if(value) { set(ViewProperties.Show); } else { clr(ViewProperties.Show); } }
-            }
 
             public bool                 matchViewport
             {
@@ -90,7 +81,6 @@ namespace tg.ui
                     name            = view.name,
                     view            = view.view,
                     controller      = view.controller,
-                    show            = view.show,
                     matchViewport   = view.matchViewport,
                     isMenu          = view.isMenu,
                     sort            = view.sort,

@@ -47,6 +47,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - view
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f8fc05dd7fd364dc8a032fafcda99849
+    m_Address: tg.ui.view.DIALOG
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:

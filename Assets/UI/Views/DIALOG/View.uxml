@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Settings/UI/RuntimeStyle.uss?fileID=7433441132597879392&amp;guid=61ba2f276762743f3bb797f383c21847&amp;type=3#RuntimeStyle" />
+    <ui:VisualElement name="anchor" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); align-items: center; justify-content: center;">
+        <ui:VisualElement name="panel" class="tg-dialog-panel" style="flex-grow: 0; background-color: rgba(255, 255, 255, 0.5);">
+            <ui:VisualElement name="header" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); flex-direction: row; justify-content: space-between;">
+                <ui:Label tabindex="-1" text="Title" display-tooltip-when-elided="false" name="title" enable-rich-text="true" class="tg-dialog-title" />
+            </ui:VisualElement>
+            <ui:VisualElement name="content" class="tg-dialog-content" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+                <ui:Label text="In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document or a typeface without relying on meaningful content. Lorem ipsum may be used as a placeholder before final copy is available." name="message" class="tg-dialog-content-message" />
+            </ui:VisualElement>
+            <ui:VisualElement name="actions" class="tg-dialog-actions">
+                <ui:Button text="OK" display-tooltip-when-elided="true" />
+                <ui:Button text="Not OK" display-tooltip-when-elided="true" name="Button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

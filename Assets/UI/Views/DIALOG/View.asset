@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3991193fe2f4a4790895873390fdcd93, type: 3}
   m_Name: View
   m_EditorClassIdentifier: 
-  name: PAUSE_MENU
-  view: {fileID: 9197481963319205126, guid: 9df07fa36cfd04b0d81d4677ebd1e992, type: 3}
-  controller: tg.ui.view.PAUSE_MENUController
+  name: DIALOG
+  view: {fileID: 9197481963319205126, guid: 6d6e29a60300e4723b99ae35cc1824d9, type: 3}
+  controller: tg.ui.view.DIALOGController
   matchViewport: 1
   isMenu: 1
   fade: 0

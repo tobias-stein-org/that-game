@@ -1,6 +1,18 @@
+using UnityEngine.UIElements;
+
 namespace tg.ui.events
 {
     using tg.events;
+
+    public struct SpawnViewEvent : IEvent
+    {
+        public string name;
+    }
+
+    public struct ViewSpawnEvent : IEvent
+    {
+        public VisualElement    view;
+    }
 
     public struct ShowViewEvent : IEvent
     {

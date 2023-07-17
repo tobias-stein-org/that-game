@@ -40,7 +40,7 @@ namespace tg.ui.view
                     // auto hide loading screen, when 100% is reached.
                     if(this.progress.value >= 1f)
                     {
-                        ui.transition.hideLoadingScreen();
+                        ui.Loading.hideLoadingScreen();
                     }
                 })
                 .Until(() => this.progress.value >= e.progress);

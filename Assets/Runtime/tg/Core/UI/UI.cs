@@ -37,7 +37,11 @@ namespace tg.ui
             public view.IViewController controller;
         }
 
-        public struct UIViewRequested : IComponentData {}
+        public struct UIViewRequested : IComponentData
+        {
+            public bool                 show;
+        }
+
         public struct UIViewSpawned : IComponentData
         {
             public FixedString64Bytes   viewName;
@@ -75,7 +79,7 @@ namespace tg.ui
         {
             private const float                                 viewFadeTime = 0.2f;
 
-            private UIDocument                                  ui;
+            private UIDocument                                  ui = null;
 
             private NativeHashMap<FixedString64Bytes, Entity>   views;
 
@@ -88,6 +92,8 @@ namespace tg.ui
 
             protected override void OnCreate()
             {
+                this.createUI();
+
                 this.spawnViews         = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIViewData), typeof(UIViewRequested) } });
                 this.fadeViews          = this.GetEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(UIView), typeof(UIViewFade) } });
 
@@ -118,6 +124,22 @@ namespace tg.ui
                 EventQueue.subscribe(this);      
             }
 
+
+            private void createUI()
+            {
+                var uiGO = new GameObject("UI");
+                {
+                    uiGO.AddComponent<EventSystem>();
+
+                    this.ui = uiGO.AddComponent<UIDocument>();
+                    {
+                        var view            = ui.rootVisualElement;
+                        view.style.top      = view.style.left   = 0;
+                        view.style.width    = view.style.height = Length.Percent(100.0f);
+                    }
+                }
+            }
+
             protected override void OnDestroy()
             {
                 if(this.views.IsCreated) { this.views.Dispose(); }
@@ -129,9 +151,9 @@ namespace tg.ui
                 {
                     using(var ECB = new EntityCommandBuffer(Allocator.Temp, PlaybackPolicy.SinglePlayback))
                     {
-                        foreach(var (data, entity) in SystemAPI.Query<UIViewData>().WithAll<UIViewRequested>().WithEntityAccess())
+                        foreach(var (data, requested, entity) in SystemAPI.Query<UIViewData, UIViewRequested>().WithEntityAccess())
                         {
-                            this.spawnView(ECB, data);
+                            this.spawnView(ECB, data, requested.show);
                             ECB.RemoveComponent<UIViewRequested>(entity);
                         }
 
@@ -293,36 +315,53 @@ namespace tg.ui
                 }
             }
 
-            void requestView(string name)
+            void requestView(string name, bool show)
             {
                 const string prefix = "tg.ui.view.";
                 var withPrefix      = $"{prefix}{name}";
 
-                Addressables.LoadAssetAsync<View>(withPrefix).Completed += operation =>
+                // sync
+                var viewData = Addressables.LoadAssetAsync<View>(withPrefix).WaitForCompletion();
+                if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new ComponentType(typeof(UIViewData))).ToComponentArray<UIViewData>().Where(data => data.name == name).Count() > 0)
                 {
-                    if(operation.Status != UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                    {
-                        Debug.LogError($"Failed to load requested view '{name}'.");
-                        return;
-                    }
+                    UnityEngine.Debug.LogWarning($"View '{name}' spawn already requested.");
+                    return;
+                }
 
-                    if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new ComponentType(typeof(UIViewData))).ToComponentArray<UIViewData>().Where(data => data.name == name).Count() > 0)
-                    {
-                        UnityEngine.Debug.LogWarning($"View '{name}' spawn already requested.");
-                        return;
-                    }
-
-                    var viewEntity = this.EntityManager.CreateEntity();
+                var viewEntity = this.EntityManager.CreateEntity();
 #if UNITY_EDITOR
-                    this.EntityManager.SetName(viewEntity, $"view-{name}-data");
+                this.EntityManager.SetName(viewEntity, $"view-{name}-data");
 #endif
 
-                    this.EntityManager.AddComponentData<UIViewData>(viewEntity, operation.Result);
-                    this.EntityManager.AddComponent<UIViewRequested>(viewEntity);
-                };
+                this.EntityManager.AddComponentData<UIViewData>(viewEntity, viewData);
+                this.EntityManager.AddComponentData<UIViewRequested>(viewEntity, new UIViewRequested { show = show });
+
+                // async
+                //                Addressables.LoadAssetAsync<View>(withPrefix).Completed += operation =>
+                //                {
+                //                    if(operation.Status != UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
+                //                    {
+                //                        Debug.LogError($"Failed to load requested view '{name}'.");
+                //                        return;
+                //                    }
+
+                //                    if(World.DefaultGameObjectInjectionWorld.EntityManager.CreateEntityQuery(new ComponentType(typeof(UIViewData))).ToComponentArray<UIViewData>().Where(data => data.name == name).Count() > 0)
+                //                    {
+                //                        UnityEngine.Debug.LogWarning($"View '{name}' spawn already requested.");
+                //                        return;
+                //                    }
+
+                //                    var viewEntity = this.EntityManager.CreateEntity();
+                //#if UNITY_EDITOR
+                //                    this.EntityManager.SetName(viewEntity, $"view-{name}-data");
+                //#endif
+
+                //                    this.EntityManager.AddComponentData<UIViewData>(viewEntity, operation.Result);
+                //                    this.EntityManager.AddComponent<UIViewRequested>(viewEntity);
+                //                };
             }
 
-            void spawnView(EntityCommandBuffer ECB, UIViewData data)
+            void spawnView(EntityCommandBuffer ECB, UIViewData data, bool show)
             {
                 if(this.views.ContainsKey(data.name))
                 {
@@ -376,10 +415,12 @@ namespace tg.ui
                     }
 
                     this.ui.rootVisualElement.MarkDirtyRepaint();
+
+                    EventQueue.publish(new ViewSpawnEvent { view = view });
                 }
 
                 // create a new entity representing the VisualElement
-                
+
                 var entity = ECB.CreateEntity();
                 {
 #if UNITY_EDITOR
@@ -387,7 +428,9 @@ namespace tg.ui
 #endif
                     ECB.AddComponent(entity, new UIView { view = view });
                     ECB.AddComponent(entity, new UIController { controller = controller });
+
                     ECB.AddComponent<UIViewShow>(entity);
+                    ECB.SetComponentEnabled<UIViewShow>(entity, show);
 
                     if(data.fade)
                     {
@@ -405,15 +448,6 @@ namespace tg.ui
                         ECB.AddComponent<UIViewMenu>(entity);
                     }
 
-                    if(!data.show)
-                    {
-                        ECB.SetComponentEnabled<UIViewShow>(entity, false);
-                        if(data.fade)
-                        {
-                            ECB.SetComponentEnabled<UIViewFade>(entity, false);
-                        }
-                    }
-
                     ECB.AddComponent<UIViewSpawned>(entity, new UIViewSpawned { viewName = new FixedString64Bytes(data.name) });
                 }
             }
@@ -421,33 +455,31 @@ namespace tg.ui
             void onApplicationInitializedEvent(ApplicationInitializedEvent e)
             {
                 var appData                     = e.data;
-                var uiGO                        = new GameObject("UI");
+                var uiGO                        = GameObject.Find("UI");
                 {
-                    uiGO.AddComponent<EventSystem>();
-
                     var uiInput = uiGO.AddComponent<InputSystemUIInputModule>();
                     {
-                        var inputActions        = appData.inputActions;
-                        var inputUI             = inputActions.FindActionMap("UI");
+                        var inputActions = appData.inputActions;
+                        var inputUI = inputActions.FindActionMap("UI");
 
-                        uiInput.actionsAsset    = inputActions;
+                        uiInput.actionsAsset = inputActions;
 
-                        uiInput.leftClick       = InputActionReference.Create(inputUI.FindAction("click"));
-                        uiInput.point           = InputActionReference.Create(inputUI.FindAction("point"));
-                        uiInput.scrollWheel     = InputActionReference.Create(inputUI.FindAction("scroll"));
-                        uiInput.move            = InputActionReference.Create(inputUI.FindAction("move"));
-                        uiInput.submit          = InputActionReference.Create(inputUI.FindAction("submit"));
-                        uiInput.cancel          = InputActionReference.Create(inputUI.FindAction("cancel"));
+                        uiInput.leftClick = InputActionReference.Create(inputUI.FindAction("click"));
+                        uiInput.point = InputActionReference.Create(inputUI.FindAction("point"));
+                        uiInput.scrollWheel = InputActionReference.Create(inputUI.FindAction("scroll"));
+                        uiInput.move = InputActionReference.Create(inputUI.FindAction("move"));
+                        uiInput.submit = InputActionReference.Create(inputUI.FindAction("submit"));
+                        uiInput.cancel = InputActionReference.Create(inputUI.FindAction("cancel"));
                     }
 
-                    var ps                      = appData.uiSettings;
+                    var ps = appData.uiSettings;
                     {
-                        ps.name                 = "tg";
+                        ps.name = "tg";
 
 #if UNITY_STANDALONE
-                        ps.screenMatchMode      = PanelScreenMatchMode.MatchWidthOrHeight;
-                        ps.referenceResolution  = new Vector2Int { x = 1920, y = 1080 };
-                        ps.match                = 1.0f;
+                        ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+                        ps.referenceResolution = new Vector2Int { x = 1920, y = 1080 };
+                        ps.match = 1.0f;
 #else
                         ps.screenMatchMode      = PanelScreenMatchMode.MatchWidthOrHeight;
                         // portait
@@ -459,14 +491,15 @@ namespace tg.ui
 #endif
                     }
 
-                    this.ui  = uiGO.AddComponent<UIDocument>();
-                    {
-                        this.ui.panelSettings        = ps;
+                    this.ui.panelSettings = ps;
+                }
+            }
 
-                        var view                = ui.rootVisualElement;
-                        view.style.top          = view.style.left   = 0;
-                        view.style.width        = view.style.height = Length.Percent(100.0f);
-                    }
+            void onSpawnViewEvent(SpawnViewEvent e)
+            {
+                if(!this.views.TryGetValue(e.name, out Entity view))
+                {
+                    this.requestView(e.name, false);
                 }
             }
 
@@ -482,7 +515,7 @@ namespace tg.ui
                 // if view isn't spawned yet, request to spawn it
                 else
                 {
-                    this.requestView(e.name);
+                    this.requestView(e.name, true);
                 }
             }
 
@@ -506,7 +539,7 @@ namespace tg.ui
                 }
                 else
                 {
-                    this.requestView(e.name);
+                    this.requestView(e.name, true);
                 }
             }
         }
