@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Settings/UI/RuntimeStyle.uss?fileID=7433441132597879392&amp;guid=61ba2f276762743f3bb797f383c21847&amp;type=3#RuntimeStyle" />
+    <ui:VisualElement name="background" style="background-color: rgb(0, 0, 0); position: absolute; width: 100%; height: 100%;" />
+    <ui:VisualElement name="context" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); width: 100%; height: 100%; position: absolute; align-items: stretch; justify-content: flex-end; padding-left: 32px; padding-right: 32px; padding-top: 32px; padding-bottom: 32px;">
+        <ui:VisualElement name="top" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); align-items: center;">
+            <ui:Label tabindex="-1" text="Loading ..." display-tooltip-when-elided="true" name="title" style="color: rgb(255, 255, 255); font-size: 48px;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="middle" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
+        <ui:VisualElement name="bottom" style="flex-grow: 0; background-color: rgba(0, 0, 0, 0); align-items: center;">
+            <ui:ProgressBar value="0" name="progress" high-value="1" class="tg-loading-progressbar" style="width: 100%; scale: 1 1; visibility: hidden;" />
+            <ui:Label tabindex="-1" display-tooltip-when-elided="true" name="step" style="color: rgb(255, 255, 255); font-size: 28px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

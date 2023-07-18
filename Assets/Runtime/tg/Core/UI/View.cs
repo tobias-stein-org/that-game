@@ -19,11 +19,11 @@ namespace tg.ui
         [HideInInspector]
         public string                   controller;
 
-        public bool                     show            = true;
-
         public bool                     matchViewport   = true;
 
         public bool                     isMenu          = false;
+
+        public bool                     fade            = true;
 
         public int                      sort            = 0;
     }
@@ -36,9 +36,9 @@ namespace tg.ui
             public enum ViewProperties
             {
                 None                        = 0,
-                Show                        = 1 << 0,
-                MatchViewport               = 1 << 1,
-                IsMenu                      = 1 << 2,
+                MatchViewport               = 1,
+                IsMenu                      = 1 << 1,
+                Fade                        = 1 << 2,
             }
 
             public FixedString64Bytes   name;
@@ -54,12 +54,6 @@ namespace tg.ui
             private void                set(ViewProperties property) { this.properties |= property; }
             private void                clr(ViewProperties property) { this.properties &= ~property; }
 
-            public bool                 show
-            {
-                get { return get(ViewProperties.Show); }
-                set { if(value) { set(ViewProperties.Show); } else { clr(ViewProperties.Show); } }
-            }
-
             public bool                 matchViewport
             {
                 get { return get(ViewProperties.MatchViewport); }
@@ -72,6 +66,12 @@ namespace tg.ui
                 set { if(value) { set(ViewProperties.IsMenu); } else { clr(ViewProperties.IsMenu); } }
             }
 
+            public bool                 fade
+            {
+                get { return get(ViewProperties.Fade); }
+                set { if(value) { set(ViewProperties.Fade); } else { clr(ViewProperties.Fade); } }
+            }
+
             public int                  sort;
 
             public static implicit operator UIViewData(View view)
@@ -81,10 +81,10 @@ namespace tg.ui
                     name            = view.name,
                     view            = view.view,
                     controller      = view.controller,
-                    show            = view.show,
                     matchViewport   = view.matchViewport,
                     isMenu          = view.isMenu,
-                    sort            = view.sort
+                    sort            = view.sort,
+                    fade            = view.fade,
                 };
             }
         }

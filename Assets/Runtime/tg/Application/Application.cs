@@ -14,6 +14,7 @@ namespace tg.application
 {
     using tg.events;
     using tg.application.events;
+    using tg.ui.menu;
     using tg.enemy;
 
     namespace entities
@@ -48,8 +49,8 @@ namespace tg.application
                 op3.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.defaultEnemyBehaviour = operation.Result; } };
                 var op4 = Addressables.LoadAssetAsync<InputActionAsset>("tg.input.actions");
                 op4.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.inputActions = operation.Result; } };
-                var op5 = Addressables.LoadAssetAsync<ThemeStyleSheet>("tg.ui.theme");
-                op5.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.uiTheme = operation.Result; } };
+                var op5 = Addressables.LoadAssetAsync<PanelSettings>("tg.ui.settings");
+                op5.Completed += operation => { if(operation.Status == AsyncOperationStatus.Succeeded) { appData.uiSettings = operation.Result; } };
 
                 var loadOp = Addressables.ResourceManager.CreateGenericGroupOperation(new List<AsyncOperationHandle> { op1, op2, op3, op4, op5 }, true);
                 loadOp.Completed += operation =>
@@ -60,28 +61,12 @@ namespace tg.application
 
                         // activate 'tg.input.actions' 
                         appData.inputActions.Enable();
-                        EventQueue.publish(new ApplicationInitializedEvent {});
+
+                        EventQueue.publish(new ApplicationInitializedEvent { data = appData });
+
+                        Menu.show(menus.MAIN_MENU, false);
                     }
                 };
-
-                //reqeust.load(new UntypedWeakReferenceId[]
-                //{
-                //    appData.playerPrefab,
-                //    appData.enemyPrefab,
-                //    //appData.abilities,
-                //    appData.defaultEnemyBehaviour,
-                //    appData.inputActions,
-                //    appData.uiTheme,
-                //},
-                //(hadErrors) =>
-                //{
-                //    if(hadErrors) { throw new System.Exception("Failed to load application data."); }
-
-                //    // activate 'tg.input.actions' 
-                //    appData.inputActions.result.Enable();
-
-                //    EventQueue.publish(new ApplicationInitializedEvent { appData = appData });
-                //});
             }
 
             public void OnStopRunning(ref SystemState state)
@@ -121,7 +106,7 @@ namespace tg.application
 
             public InputActionAsset inputActions;
 
-            public ThemeStyleSheet  uiTheme;
+            public PanelSettings    uiSettings;
         }
     }
 }

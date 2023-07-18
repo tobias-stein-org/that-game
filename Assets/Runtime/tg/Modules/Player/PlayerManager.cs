@@ -30,7 +30,7 @@ namespace tg.player
         /// Simple player spawn system. 
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>, ISystemStartStop
         {
             void OnCreate(ref SystemState state)
@@ -57,30 +57,6 @@ namespace tg.player
                 {
                     EventQueue.publish(new PlayerSpawnedEvent { player = e.entity });
                 }
-            }
-
-            void onEntityDiedEvent(EntityDiedEvent e)
-            {
-                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-                if(entityManager.HasComponent<Player>(e.entity))
-                {
-                    var gameObject  = entityManager.GetComponentObject<Transform>(e.entity).gameObject;
-
-                    GameObject.Destroy(gameObject);
-                    entityManager.DestroyEntity(e.entity);
-                }
-            }
-
-            void onKillPlayerEvent(KillPlayerEvent e)
-            {
-                if(!World.DefaultGameObjectInjectionWorld.IsCreated) { return; }
-
-                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-
-                var playerGO        = entityManager.GetComponentObject<Transform>(e.player).gameObject;
-
-                GameObject.Destroy(playerGO);
-                entityManager.DestroyEntity(e.player);
             }
 
             public void OnStartRunning(ref SystemState state)

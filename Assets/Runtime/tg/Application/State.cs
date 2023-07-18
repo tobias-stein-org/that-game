@@ -7,13 +7,16 @@ namespace tg.application
 {
     using tg.debug;
     using tg.events;
-    
+
+    using tg.ui.events;
+    using tg.ui.menu.events;
     using tg.application.events;
     using tg.game.events;
 
     namespace entities
     {
         using tg.ui.entities;
+        using tg.ui.menu;
 
         [Flags]
         public enum ApplicationStateMask
@@ -79,7 +82,7 @@ namespace tg.application
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
         [CreateBefore(typeof(Applicaiton))]
-        [UpdateInGroup(typeof(InitializationSystemGroup))]
+        [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
         public partial class StateManager : SystemBase, IEventListener<StateManager>
         {
             /// <summary>
@@ -127,7 +130,6 @@ namespace tg.application
                     Options = EntityQueryOptions.IncludeSystems
                 });
             }
-
 
             private EntityQuery checkMenuOpened;
             private EntityQuery checkMenuClosed;
@@ -207,9 +209,9 @@ namespace tg.application
             void onApplicationInitializedEvent(ApplicationInitializedEvent e)
             {
                 this.EntityManager.RemoveComponent<InitializingState>(this.SystemHandle);
-
-                // TODO: once we have UI, go into the menu state.
-                this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                // a little bit sloppy, but we need to ensure there is always a state attached to the StateManager class. So after initial
+                // game data has been loaded we will always transition into the "menu open" state.
+                this.EntityManager.AddComponent<MenuOpenState>(this.SystemHandle);
             }
 
             /// <summary>
@@ -226,6 +228,16 @@ namespace tg.application
                 this.EntityManager.AddComponent<QuittingState>(this.SystemHandle);
             }
 
+            void onShowLoadingScreenEvent(ShowLoadingScreenEvent e)
+            {
+                this.EntityManager.AddComponent<LoadingState>(this.SystemHandle);
+            }
+
+            void onHideLoadingScreenEvent(HideLoadingScreenEvent e)
+            {
+                this.EntityManager.RemoveComponent<LoadingState>(this.SystemHandle);
+            }
+
             void onNewGameStartedEvent(NewGameStartedEvent e)
             {
                 this.EntityManager.RemoveComponent<GameOverState>(this.SystemHandle);
@@ -234,7 +246,22 @@ namespace tg.application
 
             void onGameOverEvent(GameOverEvent e)
             {
-                this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                switch (e.reason)
+                {
+                    case GameOverEvent.Reason.PLAYER_QUIT:
+                        Menu.show(menus.MAIN_MENU, false);
+                        break;
+
+                    case GameOverEvent.Reason.PLAYER_LOST:
+                        Menu.show(menus.GAME_OVER, false);
+                        this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                        break;
+
+                    case GameOverEvent.Reason.PLAYER_DONE:
+                        Menu.show(menus.GAME_OVER, false);
+                        this.EntityManager.AddComponent<GameOverState>(this.SystemHandle);
+                        break;
+                }
             }
 
             #region Game States

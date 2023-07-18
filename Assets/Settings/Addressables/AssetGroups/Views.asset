@@ -23,6 +23,42 @@ MonoBehaviour:
     m_SerializedLabels:
     - view
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8261d4238010d42c6b552bec0527934b
+    m_Address: tg.ui.view.MAIN_MENU
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6765f9c2267944e488577184bb6b08e5
+    m_Address: tg.ui.view.SETTINGS
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7bae5dfe3693c434abbc7f1929f8331f
+    m_Address: tg.ui.view.LOADING_SCREEN
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 938c91947b96a4963bf36ed72dba24d6
+    m_Address: tg.ui.view.PAUSE_MENU
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f8fc05dd7fd364dc8a032fafcda99849
+    m_Address: tg.ui.view.DIALOG
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aff4d0110a5c7490b939ade138997738
+    m_Address: tg.ui.view.GAME_OVER
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - view
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:

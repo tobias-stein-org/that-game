@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
-  m_Name: Default Local Group
+  m_Name: Default
   m_EditorClassIdentifier: 
   m_GroupName: Default Local Group
   m_Data:
@@ -41,8 +41,8 @@ MonoBehaviour:
     m_SerializedLabels:
     - enemy
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bc51b97163da94864a051095e58c39a0
-    m_Address: tg.ui.theme
+  - m_GUID: 436469e2e66744f67b601b56374a0f59
+    m_Address: tg.ui.settings
     m_ReadOnly: 0
     m_SerializedLabels:
     - ui

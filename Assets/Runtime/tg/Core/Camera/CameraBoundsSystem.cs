@@ -24,7 +24,7 @@ namespace tg.camera
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(TransformSystemGroup))]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial class CameraBoundsSystem : SystemBase, IEventListener<CameraBoundsSystem>
         {
             private GameObject                      cameraLevelBoundsGO     = null;

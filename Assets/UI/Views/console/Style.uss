@@ -18,4 +18,5 @@
     padding-right: 2px;
     padding-top: 2px;
     padding-bottom: 2px;
+    -unity-font-definition: resource('Fonts/KhronopixMono SDF');
 }

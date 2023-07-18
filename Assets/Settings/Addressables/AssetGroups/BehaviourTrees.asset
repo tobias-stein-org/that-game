@@ -23,12 +23,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - behaviour_tree
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 1c828edb621af43fbb140cd44117b9c1
-    m_Address: tg.ai.behaviour.tree.NEW_BEHAVIOUR_TREE
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - behaviour_tree
-    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:

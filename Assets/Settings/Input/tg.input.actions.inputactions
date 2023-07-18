@@ -7,7 +7,7 @@
             "actions": [
                 {
                     "name": "quit",
-                    "type": "Button",
+                    "type": "PassThrough",
                     "id": "0acd2a3e-26fc-465f-9bb9-98b2a5189a46",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -153,6 +153,15 @@
                     "name": "ability1",
                     "type": "Button",
                     "id": "160de6c5-54de-49d3-a1e3-5ad426aaf382",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "pause",
+                    "type": "PassThrough",
+                    "id": "a7cc4374-1bcd-4b42-b729-6615cacbc749",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -322,6 +331,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "44e736dc-22d4-4383-8f8b-5af57e7c70c0",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -23,37 +23,37 @@ namespace tg.game
         /// 2. Spawns enemies
         /// 3. Spawns the player
         /// </summary>
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenGameOver, false)]
 		[CreateAfter(typeof(EventQueue))]
 		public partial class StartNew : SystemBase, IEventListener<StartNew>
 		{
-            protected override void OnCreate()
-			{
-				this.RequireForUpdate(StateManager.state(this));
-			}
-
-
             protected override void OnStartRunning()
 			{
                 EventQueue.subscribe(this);
-
-				EventQueue.publish(new NewGameStartedEvent {});
-				EventQueue.publish(new RequestNewLevelEvent {});
 			}
 
 
             protected override void OnStopRunning()
             {
-                //EventQueue.unsubscribe(this);
+				EventQueue.unsubscribe(this);
             }
 
             protected override void OnUpdate()
 			{
 			}
 
+			void onStartNewGameEvent(StartGameEvent e)
+			{
+				ui.Loading.showLoadingScreen("Starting new Game");
+				ui.Loading.updateLoadingProgress("Generate new level...", 0f / 3f);
+
+                EventQueue.publish(new RequestNewLevelEvent {});
+			}
+
+
             void onNewLevelGeneratedEvent(NewLevelGeneratedEvent e)
 			{
-				StartNew.spawnEnemies(in e.levelData);
+                ui.Loading.updateLoadingProgress("Spawn the bad guys...", 1f / 3f);
+                StartNew.spawnEnemies(in e.levelData);
 			}
 
 			private static void spawnEnemies(in LevelData levelData)
@@ -105,7 +105,9 @@ namespace tg.game
 
 			private static void spawnPlayer(in LevelData levelData)
 			{
-				var chunk0 = levelData.getChunk(0);
+                ui.Loading.updateLoadingProgress("Spawn the good guy...", 2f / 3f);
+
+                var chunk0 = levelData.getChunk(0);
 
 				var spawnLocation = new float3(
 					chunk0.bounds.x + (chunk0.bounds.width  / 2),
@@ -121,8 +123,8 @@ namespace tg.game
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "FIREBALL_1" });
 				EventQueue.publish(new LearnAbilityEvent<Unity.Collections.FixedString64Bytes> { entity = e.player, ability = "ICEBLAST_1" });
 
-                EventQueue.unsubscribe(this);
-                //this.Enabled = false;
+                ui.Loading.updateLoadingProgress("Good luck.", 3f / 3f);
+                EventQueue.publish(new NewGameStartedEvent {});
             }
         }
 	}

@@ -29,7 +29,7 @@ namespace tg.enemy {
         {
         }
 
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
         public partial struct EnemyManager : ISystem, IEventListener<EnemyManager>, ISystemStartStop
         {
             void OnCreate(ref SystemState state)
@@ -94,8 +94,8 @@ namespace tg.enemy {
 
                     ECB.SetComponent<Health>(enemyEntity, new Health
                     {
-                        maxHealth       = 100f,
-                        health          = 100f
+                        maxHealth       = 1f,
+                        health          = 1f
                     });
 
                     ECB.SetComponent<EnemyInputData>(enemyEntity, new EnemyInputData
@@ -198,28 +198,6 @@ namespace tg.enemy {
                     EventQueue.publish(new EnemySpawnedEvent { enemy = e.entity });
                 }
             }
-
-            void onEntityDiedEvent(EntityDiedEvent e)
-            {
-                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-                if(entityManager.HasComponent<Enemy>(e.entity))
-                {
-                    var gameObject  = entityManager.GetComponentObject<Transform>(e.entity).gameObject;
-
-                    GameObject.Destroy(gameObject);
-                    entityManager.DestroyEntity(e.entity);
-                }
-            }
-
-            void onKillEnemyEvent(KillEnemyEvent e)
-            {
-                var entityManager   = World.DefaultGameObjectInjectionWorld.EntityManager;
-                var playerGO        = entityManager.GetComponentObject<Transform>(e.enemy).gameObject;
-
-                GameObject.Destroy(playerGO);
-                entityManager.DestroyEntity(e.enemy);
-            }
-
         
             private void killAllEnemies()
             {

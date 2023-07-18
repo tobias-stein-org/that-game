@@ -1,22 +1,34 @@
+using UnityEngine.UIElements;
+
 namespace tg.ui.events
 {
     using tg.events;
 
+    public struct SpawnViewEvent : IEvent
+    {
+        public string name;
+    }
+
+    public struct ViewSpawnEvent : IEvent
+    {
+        public VisualElement    view;
+    }
+
     public struct ShowViewEvent : IEvent
     {
         public string   name;
-        //public bool     activateController;
     }
 
     public struct HideViewEvent : IEvent
     {
         public string   name;
-        //public bool     deactivateController;
     }
 
     public struct ToggleViewEvent : IEvent
     {
         public string   name;
-        //public bool     toggleController;
     }
+
+    public struct ShowLoadingScreenEvent : IEvent {}
+    public struct HideLoadingScreenEvent : IEvent {}
 }

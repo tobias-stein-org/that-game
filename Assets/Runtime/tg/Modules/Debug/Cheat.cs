@@ -65,7 +65,7 @@ namespace tg.debug
             {
                 foreach(var (player, entity) in SystemAPI.Query<Player>().WithEntityAccess())
                 {
-                    EventQueue.publish(new KillPlayerEvent { player = entity });   
+                    EventQueue.publish(new tg.combat.events.EntityDiedEvent { entity = entity });   
                 }
             }
 

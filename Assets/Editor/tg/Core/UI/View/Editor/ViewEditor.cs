@@ -47,7 +47,7 @@ namespace tg.ui.view
         {{
         }}
 
-        public void deactivated()
+        public void deactivated(VisualElement view)
         {{
         }}
     }}
