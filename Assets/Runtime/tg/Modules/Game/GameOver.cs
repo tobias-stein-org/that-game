@@ -48,15 +48,22 @@ namespace tg.game
 				{
 					EventQueue.publish(new EntityDiedEvent { entity = e.player });
 					EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_DONE });
-				}
+
+					tg.data.access.GAME_GAMEOVER.upsert(GameOverEvent.Reason.PLAYER_DONE);
+                }
 			}
 
 			void onEntityDiedEvent(combat.events.EntityDiedEvent e)
 			{
-				if(World.DefaultGameObjectInjectionWorld.EntityManager.HasComponent<tg.player.entities.Player>(e.entity))
+				if(!tg.data.access.GAME_GAMEOVER.isValid)
 				{
-                    EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_LOST });
-                }
+					if(World.DefaultGameObjectInjectionWorld.EntityManager.HasComponent<tg.player.entities.Player>(e.entity))
+					{
+						EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_LOST });
+
+						tg.data.access.GAME_GAMEOVER.upsert(GameOverEvent.Reason.PLAYER_LOST);
+					}
+				}
             }
 
 			public void OnStartRunning(ref SystemState state)
