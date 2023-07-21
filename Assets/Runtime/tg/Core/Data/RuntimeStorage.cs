@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using Unity.Entities;
@@ -6,6 +7,8 @@ using Unity.Entities;
 namespace tg.data
 {
     using tg.events;
+    using tg.game.events;
+    using tg.application.events;
 
     public struct DataAccessKey : IEquatable<DataAccessKey>, IEquatable<int>
     {
@@ -118,6 +121,8 @@ namespace tg.data
 
         private static Dictionary<int, IRuntimeStorageObject> storage = new Dictionary<int, IRuntimeStorageObject>(64);
 
+        public static bool exists(IDataContext context) { return storage.ContainsKey(context.access); }
+
         public static void access(IDataContext context, DataContextInfo info)
         {
             lock(mutex)
@@ -165,13 +170,18 @@ namespace tg.data
 
         public static void delete(IDataContext context)
         {
+            RuntimeStorage.delete(context.access);
+        }
+
+        public static void delete(int key)
+        {
             lock(mutex)
             {
                 isBusy = true;
                 try
                 {
                     // TODO: more sophisticated resource clean up on persistent or local objects.
-                    storage.Remove(context.access);
+                    storage.Remove(key);
                 }
                 finally
                 {
@@ -188,15 +198,26 @@ namespace tg.data
         protected override void OnStopRunning()
         {
             EventQueue.unsubscribe(this);
+        }
 
+        protected override void OnUpdate()
+        {
+        }
+
+        void onRequestApplicationQuitEvent(RequestApplicationQuitEvent e)
+        {
             // sync storage
 
             // clean-up runtime storage
             storage.Clear();
         }
 
-        protected override void OnUpdate()
+        void onStartGameEvent(StartGameEvent e)
         {
+            foreach(var key in storage.Where(entry => entry.Value.scope == DataScope.Game).Select(entry => entry.Key))
+            {
+                RuntimeStorage.delete(key);
+            }
         }
     }
 }
