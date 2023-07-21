@@ -9,7 +9,6 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 
 using Unity.Entities;
 
-
 namespace tg.application
 {
     using tg.events;
@@ -26,7 +25,34 @@ namespace tg.application
             protected override void OnCreate()
 	        {
                 EventQueue.subscribe(this);
-	        }
+
+                UnityEngine.Application.wantsToQuit        -= this.wantsToQuit;
+                UnityEngine.Application.wantsToQuit        += this.wantsToQuit;
+
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.playModeStateChanged -= this.onPlaymodeChange;
+                UnityEditor.EditorApplication.playModeStateChanged += this.onPlaymodeChange;
+#endif
+            }
+
+            private bool wantsToQuit()
+            {
+                UnityEngine.Application.wantsToQuit -= this.wantsToQuit;
+                EventQueue.publish(new RequestApplicationQuitEvent { });
+
+                return true;
+            }
+
+#if UNITY_EDITOR
+            private void onPlaymodeChange(UnityEditor.PlayModeStateChange state)
+            {
+                if(state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+                {
+                    UnityEditor.EditorApplication.playModeStateChanged -= this.onPlaymodeChange;
+                    EventQueue.publish(new RequestApplicationQuitEvent { });
+                }
+            }
+#endif
 
             protected override void OnUpdate()
 	        {

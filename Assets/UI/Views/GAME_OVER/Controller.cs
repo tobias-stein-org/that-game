@@ -9,13 +9,25 @@ namespace tg.ui.view
     {
         public void activated(VisualElement view)
         {
-            view.Q<Button>("continue").clicked  += this.resume;
+            var resume                          = view.Q<Button>("resume");
+
+            switch (data.access.GAME_GAMEOVER.read())
+            {
+                case GameOverEvent.Reason.PLAYER_DONE:
+                    resume.text                 = "Next";
+                    break;
+                case GameOverEvent.Reason.PLAYER_LOST:
+                    resume.text                 = "Try again";
+                    break;
+            }
+
+            resume.clicked                      += this.resume;
             view.Q<Button>("quit").clicked      += this.quit;
         }
 
         public void deactivated(VisualElement view)
         {
-            view.Q<Button>("continue").clicked  -= this.resume;
+            view.Q<Button>("resume").clicked    -= this.resume;
             view.Q<Button>("quit").clicked      -= this.quit;
         }
 
