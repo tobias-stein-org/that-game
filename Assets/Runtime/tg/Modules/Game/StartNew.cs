@@ -46,7 +46,14 @@ namespace tg.game
 				ui.Loading.showLoadingScreen("Starting new Game");
 				ui.Loading.updateLoadingProgress("Generate new level...", 0f / 3f);
 
-                EventQueue.publish(new RequestNewLevelEvent {});
+				var levelGeneratorSettings = data.access.LEVEL_ACTIVE_GENERATOR_SETTINGS.isValid
+					? null
+					: data.access.LEVEL_ACTIVE_GENERATOR_SETTINGS.create(UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<tg.level.generator.GeneratorSettings>("tg.level.GeneratorSettings").WaitForCompletion());
+
+                EventQueue.publish(new RequestNewLevelEvent
+				{
+					settings = levelGeneratorSettings
+				});
 			}
 
 

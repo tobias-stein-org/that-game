@@ -14,45 +14,37 @@ namespace tg.level
     /// <summary>
     /// The Level behaviour acts as a manager to generate new levels and repaint the tilemap layers.
     /// </summary>
-    public class Level : MonoBehaviour, IEventListener<Level>
+    [CreateAfter(typeof(EventQueue))]
+    public partial class Level : SystemBase, IEventListener<Level>
     {
-        public GeneratorSettings                        initialSettings;
+        private Generator                                   generator;
+        private IEnumerator<LevelGeneratorStep.StateBase>   executor;
 
-        private Generator                               generator;
-        private Coroutine                               executor;
+        private Dictionary<LevelData.Layer, Tilemap>        layers;
 
-        private Dictionary<LevelData.Layer, Tilemap>    layers;
-
-        private EntityManager                           entityManager;
+        private EntityManager                               entityManager;
 
 
-        void Awake()
+        protected override void OnCreate()
         {
             this.entityManager      = World.DefaultGameObjectInjectionWorld.EntityManager;
             this.setupTilemap();
 
-        }
-
-        void Start()
-        {
-            this.initializeNewGenerator(this.initialSettings);
-        }
-
-        void OnEnable()
-        {
             EventQueue.subscribe(this);
         }
 
-        void OnDisable()
-        {
-            EventQueue.unsubscribe(this);
-        }
-
-        void OnDestroy()
+        protected override void OnDestroy()
         {
             this.disposeCurrentLevel();
         }
 
+        protected override void OnUpdate()
+        {
+            if(this.executor == null || !this.executor.MoveNext())
+            {
+                this.Enabled = false;
+            }
+        }
         private void setupTilemap()
         {
             this.layers = new Dictionary<LevelData.Layer, Tilemap>(LevelData.Layer.MAX_LAYERS);
@@ -117,7 +109,7 @@ namespace tg.level
 
             if(this.executor != null)
             {
-                this.StopCoroutine(this.executor);
+                this.executor.Dispose();
                 this.executor = null;
 
                 this.generator?.Dispose();
@@ -129,7 +121,10 @@ namespace tg.level
         private void startGenerator()
         {
             this.disposeCurrentLevel();
-            this.executor = this.StartCoroutine(this.generator.execute());
+
+            this.executor = this.generator.execute();
+
+            this.Enabled = true;
         }
 
         private void renderTilemap(in LevelData levelData)

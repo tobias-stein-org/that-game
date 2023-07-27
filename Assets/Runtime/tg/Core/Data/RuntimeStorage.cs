@@ -214,7 +214,7 @@ namespace tg.data
 
         void onStartGameEvent(StartGameEvent e)
         {
-            foreach(var key in storage.Where(entry => entry.Value.scope == DataScope.Game).Select(entry => entry.Key))
+            foreach(var key in storage.Where(entry => entry.Value.scope == DataScope.Game).Select(entry => entry.Key).ToArray())
             {
                 RuntimeStorage.delete(key);
             }
