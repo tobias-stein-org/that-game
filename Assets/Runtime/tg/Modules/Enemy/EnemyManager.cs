@@ -1,26 +1,27 @@
 using UnityEngine;
 using Unity.Entities; 
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace tg.enemy {
 
     using tg.debug;
     using tg.events;
     using tg.enemy.events;
-    using tg.combat.events;
     using tg.spawn.events;
     using tg.ai.steering.entities;
+    using tg.ai.behaviour.tree;
     using tg.ability.events;
 
     namespace entities
     {
         using tg.ai.entities;
         using tg.ai.steering.behaviour.entities;
-        using tg.ai.behaviour.tree;
 
         using tg.application.entities;
         using tg.physics.entities;
         using tg.combat.entities;
+        using tg.combat.events;
 
         /// <summary>
         /// Added to spawned enemy entities.
@@ -29,12 +30,13 @@ namespace tg.enemy {
         {
         }
 
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
+        //[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenGameOver | ApplicationStateMask.AllowRunWhenPaused, false)]
+        [CreateAfter(typeof(EventQueue))]
         public partial struct EnemyManager : ISystem, IEventListener<EnemyManager>, ISystemStartStop
         {
             void OnCreate(ref SystemState state)
 		    {
-                state.RequireForUpdate(StateManager.state(this));
+                //state.RequireForUpdate(StateManager.state(this));
 		    }
 
 		    void OnDestroy(ref SystemState state)
@@ -198,11 +200,19 @@ namespace tg.enemy {
                     EventQueue.publish(new EnemySpawnedEvent { enemy = e.entity });
                 }
             }
-        
+
+            void onKillAllEnemyEvent(KillAllEnemyEvent e)
+            {
+                this.killAllEnemies();
+            }
+
             private void killAllEnemies()
             {
                 var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-                entityManager.DestroyEntity(entityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Enemy) } }));
+                foreach(var enemy in entityManager.CreateEntityQuery(new EntityQueryDesc { All = new ComponentType[] { typeof(Enemy) } }).ToEntityArray(Allocator.Temp))
+                {
+                    EventQueue.publish(new EntityDiedEvent { entity = enemy });
+                }
             }
         }
     }

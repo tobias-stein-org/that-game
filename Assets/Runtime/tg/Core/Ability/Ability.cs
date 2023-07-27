@@ -15,6 +15,7 @@ namespace tg.ability
     using tg.events;
     using tg.combat;
 
+    using tg.game.events;
     using tg.ability.events;
     using tg.combat.events;
 
@@ -51,7 +52,6 @@ namespace tg.ability
     namespace entities
     {
         using tg.application.entities;
-        using Unity.Entities.UniversalDelegates;
 
         [Serializable]
         public struct AbilityMeta : IComponentData
@@ -181,7 +181,7 @@ namespace tg.ability
         }
 
         [CreateAfter(typeof(EventQueue))]
-        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame, false)]
+        [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenGameOver, false)]
         public partial class AbilitySystem : SystemBase, IEventListener<AbilitySystem>
         {
             private struct EntityAbilityBinding : IEquatable<EntityAbilityBinding>
@@ -304,6 +304,7 @@ namespace tg.ability
                 }
                 if(!this.name2Ability.TryAdd(description.meta.name, abilityEntity)) { this.name2Ability[description.meta.name] = abilityEntity; }
             }
+
             protected override void OnDestroy()
             {
                 this.learnedEntityAbilities.Dispose();
@@ -431,6 +432,16 @@ namespace tg.ability
                         this.learnedEntityAbilities.Remove(binding);
                     }
                 }
+            }
+
+            void onGameOverEvent(GameOverEvent e)
+            {
+                foreach(var binding in this.learnedEntityAbilities.GetKeyArray(Allocator.Temp))
+                {
+                    this.EntityManager.DestroyEntity(this.learnedEntityAbilities[binding]);
+                }
+
+                this.learnedEntityAbilities.Clear();
             }
         }
     }

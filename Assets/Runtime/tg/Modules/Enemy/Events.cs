@@ -14,4 +14,6 @@ namespace tg.enemy.events
     {
         public Entity enemy;
     }
+
+    public struct KillAllEnemyEvent : IEvent {}
 }

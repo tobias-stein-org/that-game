@@ -5,6 +5,7 @@ namespace tg.game
 	using tg.events;
 	using tg.level;
 	using tg.player.events;
+	using tg.enemy.events;
 	using tg.level.events;
 	using tg.game.events;
 	using tg.combat.events;
@@ -19,17 +20,17 @@ namespace tg.game
 		{
 			private int lastChunk;
 
-			void OnCreate (ref SystemState state)
+			void OnCreate(ref SystemState state)
 			{
 				state.RequireForUpdate(StateManager.state(state.WorldUnmanaged.GetUnsafeSystemRef<GameOver>(state.SystemHandle)));
 				lastChunk = LevelData.Chunk.INVALID.id;
 			}
 
-			void OnDestroy (ref SystemState state)
+			void OnDestroy(ref SystemState state)
 			{
 			}
 
-			void OnUpdate (ref SystemState state)
+			void OnUpdate(ref SystemState state)
 			{
 			}
 
@@ -46,8 +47,9 @@ namespace tg.game
 
 				if(e.enter == self.lastChunk)
 				{
-					EventQueue.publish(new EntityDiedEvent { entity = e.player });
-					EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_DONE });
+					EventQueue.publish(new EntityDiedEvent		{ entity = e.player });
+					EventQueue.publish(new GameOverEvent		{ reason = GameOverEvent.Reason.PLAYER_DONE });
+					EventQueue.publish(new KillAllEnemyEvent	{ });
 
 					tg.data.access.GAME_GAMEOVER.upsert(GameOverEvent.Reason.PLAYER_DONE);
                 }
@@ -59,9 +61,11 @@ namespace tg.game
 				{
 					if(World.DefaultGameObjectInjectionWorld.EntityManager.HasComponent<tg.player.entities.Player>(e.entity))
 					{
-						EventQueue.publish(new GameOverEvent { reason = GameOverEvent.Reason.PLAYER_LOST });
+                        EventQueue.publish(new EntityDiedEvent		{ entity = e.entity });
+                        EventQueue.publish(new GameOverEvent		{ reason = GameOverEvent.Reason.PLAYER_LOST });
+                        EventQueue.publish(new KillAllEnemyEvent	{ });
 
-						tg.data.access.GAME_GAMEOVER.upsert(GameOverEvent.Reason.PLAYER_LOST);
+                        tg.data.access.GAME_GAMEOVER.upsert(GameOverEvent.Reason.PLAYER_LOST);
 					}
 				}
             }
