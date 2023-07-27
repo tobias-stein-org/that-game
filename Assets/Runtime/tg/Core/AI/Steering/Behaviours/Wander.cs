@@ -16,7 +16,7 @@ namespace tg.ai.steering.behaviour
         [Serializable]
         public struct Wander : IBehaviourContext<Wander>
         {
-            public float            steeringOffset;
+            public float2           steeringOffset;
             public float2           steeringRadius;
 
             public float            maxWanderRange;
@@ -33,7 +33,7 @@ namespace tg.ai.steering.behaviour
                 {
                     return new Wander
                     {
-                        steeringOffset      = 3.5f,
+                        steeringOffset      = new float2(0.5f, 3.0f),
                         steeringRadius      = new float2(0.1f, 1.0f),
                         maxWanderRange      = 0.0f,
                         steeringForce       = float2.zero,
@@ -71,9 +71,10 @@ namespace tg.ai.steering.behaviour
                      [E]-> forward
                  
                      */
-                    var steeringForce                   = (forward * wander.ValueRO.steeringOffset) + (wanderShapeHeading * math.lerp(wander.ValueRO.steeringRadius.y, wander.ValueRO.steeringRadius.x, speed));
+                    var offset                          = math.lerp(wander.ValueRO.steeringOffset.x, wander.ValueRO.steeringOffset.y, math.clamp(speed, 0.0f, 2.0f));
+                    var steeringForce                   = (forward * offset) + (wanderShapeHeading * math.lerp(wander.ValueRO.steeringRadius.y, wander.ValueRO.steeringRadius.x, speed));
 
-                
+                    
 
                     wander.ValueRW.steeringForce        = steeringForce;
                     var wanderForceN                    = math.normalize(wander.ValueRO.steeringForce);

@@ -176,10 +176,10 @@ namespace tg.editor.debug
             Handles.DrawLine(position, position + (Vector3)forward, 1.5f);
 
             // draw wander steering shape
-            var steeringOffset              = (Vector3)forward * data.steeringOffset;
-            Handles.DrawDottedLine(position, position + steeringOffset, 4.0f);
-
-            Handles.DrawWireDisc(position + steeringOffset, Vector3.forward, math.lerp(data.steeringRadius.y, data.steeringRadius.x, speed));
+            //var steeringOffset              = (Vector3)forward * data.steeringOffset;
+            var offset = (Vector3)forward * math.lerp(data.steeringOffset.x, data.steeringOffset.y, math.clamp(speed, 0.0f, 2.0f));
+            Handles.DrawDottedLine(position, position + offset, 4.0f);
+            Handles.DrawWireDisc(position + offset, Vector3.forward, math.lerp(data.steeringRadius.y, data.steeringRadius.x, speed));
 
             // draw steering force
             var steeringForce               = position + new Vector3(data.steeringForce.x, data.steeringForce.y, 0.0f);
