@@ -325,7 +325,9 @@ namespace tg.ability
                     foreach(var used in this.usedAbilities)
                     {
                         var binding             = new EntityAbilityBinding(used.entity, used.ability);
-                        var ability             = this.learnedEntityAbilities[binding];
+
+                        if(!this.learnedEntityAbilities.TryGetValue(binding, out Entity ability)) { continue; }
+
                         var data                = this.abilityDataLookup[used.ability];
                         var meta                = this.abilityMetaLookup[used.ability];
 
