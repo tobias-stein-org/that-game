@@ -20,9 +20,9 @@ MonoBehaviour:
     steeringRadius:
       x: 0.2
       y: 1.5
-    maxWanderRange: 0
-  wanderWeight: 0.19999999
-  wanderBlend: 0.5
+    maxWanderRange: 3
+  wanderWeight: 0.049999997
+  wanderBlend: 0.95
   wanderEnabled: 1
   avoid:
     range: 2
@@ -37,7 +37,7 @@ MonoBehaviour:
   pursueWeight: 0.59999996
   pursueBlend: 0
   pursueEnabled: 0
-  frameBlending: 0.32999998
+  frameBlending: 0.5
   contextBlurring: 4
   perceptionRange: 5
   maxPerceptions: 16
