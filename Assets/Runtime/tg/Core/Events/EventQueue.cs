@@ -96,7 +96,7 @@ namespace tg.events
         #region Global EventQueue Methods
 
         public static void subscribe<T>(T listener)
-            where T : IEventListener<T>
+            where T : IEventListener
         {
             Type    TListener   = listener.GetType();
             int     instnaceId  = listener.GetHashCode();
@@ -109,7 +109,7 @@ namespace tg.events
                 return;
             }
 
-            var EventHandlers = Listener.registry[IEventListener<T>.ListenerID];
+            var EventHandlers = Listener.registry[TListener];
             if(EventHandlers.Count == 0)
             {
                 Debug.LogWarning($"EventListener {TListener.FullName} subscribed, but has no event handlers defined.");
@@ -139,7 +139,7 @@ namespace tg.events
         }
 
         public static void unsubscribe<T>(T listener)
-            where T : IEventListener<T>
+            where T : IEventListener
         {
             // note: it might happen that an event listner unsubscribes while handling an event. This would cause an exception, hence we will delay the
             // unsubscription until next frame.
@@ -150,14 +150,13 @@ namespace tg.events
 
                 if(Instance.subscriber.Contains(instnaceId))
                 {
-                    var EventHandlers = Listener.registry[IEventListener<T>.ListenerID];
+                    var EventHandlers = Listener.registry[TListener];
 
                     // remove all listeners event handlers
                     foreach(var Handlers in Instance.eventHandler.Values) { Handlers.RemoveAll(x => x.instance.GetHashCode() == listener.GetHashCode()); }
 
                     Instance.subscriber.Remove(instnaceId);
                     Debug.Log($"EventListener '{TListener.FullName}' instance [{instnaceId}] unsubscribed.");
-
                 }
             });
         }

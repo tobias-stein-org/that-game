@@ -24,7 +24,7 @@ namespace tg.game
         /// 3. Spawns the player
         /// </summary>
 		[CreateAfter(typeof(EventQueue))]
-		public partial class StartNew : SystemBase, IEventListener<StartNew>
+		public partial class StartNew : SystemBase, IEventListener
 		{
             protected override void OnStartRunning()
 			{

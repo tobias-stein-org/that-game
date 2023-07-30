@@ -64,7 +64,7 @@ namespace tg.assets
     namespace entities
     {
         [CreateAfter(typeof(EventQueue))]
-        partial class AssetManager : SystemBase, IEventListener<AssetManager>
+        partial class AssetManager : SystemBase, IEventListener
         {
             private interface ILoadingRequest
             {

@@ -32,7 +32,7 @@ namespace tg.spawn
 		[CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(InitializationSystemGroup))]
 		[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenGameOver, false)]
-		internal partial class SpawnSystem : SystemBase, IEventListener<SpawnSystem>
+		internal partial class SpawnSystem : SystemBase, IEventListener
 		{
 			/// <summary>
 			/// Internal used event to remove game objects and entites from the running game.

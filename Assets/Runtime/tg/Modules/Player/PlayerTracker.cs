@@ -27,7 +27,7 @@ namespace tg.player
         [UpdateAfter(typeof(TransformSystemGroup))]
         [CreateAfter(typeof(EventQueue))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-        public partial struct PlayerTracker : ISystem, IEventListener<PlayerTracker>, ISystemStartStop
+        public partial struct PlayerTracker : ISystem, IEventListener, ISystemStartStop
         {
             /// <summary>
             /// Utility spartial quadtree struct to accelerate queries.

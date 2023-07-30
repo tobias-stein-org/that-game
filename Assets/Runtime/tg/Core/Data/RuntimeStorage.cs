@@ -65,7 +65,7 @@ namespace tg.data
 
     [CreateAfter(typeof(EventQueue))]
     [UpdateInGroup(typeof(RuntimeStorageGroup))]
-    public partial class RuntimeStorage : SystemBase, IEventListener<RuntimeStorage>
+    public partial class RuntimeStorage : SystemBase, IEventListener
     {
         private class RuntimeStorageObject : IRuntimeStorageObject
         {

@@ -75,7 +75,7 @@ namespace tg.ui
         [CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(UISystemGroup), OrderFirst = true)]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInitializing | ApplicationStateMask.AllowRunWhenMenuOpen | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenInGame, false)]
-        public partial class UI : SystemBase, IEventListener<UI>
+        public partial class UI : SystemBase, IEventListener
         {
             private const float                                 viewFadeTime = 0.2f;
 

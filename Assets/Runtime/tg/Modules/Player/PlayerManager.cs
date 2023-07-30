@@ -31,7 +31,7 @@ namespace tg.player
         /// </summary>
         [CreateAfter(typeof(EventQueue))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
-        public partial struct PlayerManager : ISystem, IEventListener<PlayerManager>, ISystemStartStop
+        public partial struct PlayerManager : ISystem, IEventListener, ISystemStartStop
         {
             void OnCreate(ref SystemState state)
 		    {

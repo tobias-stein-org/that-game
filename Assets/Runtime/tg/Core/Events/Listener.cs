@@ -25,11 +25,6 @@ namespace tg.events
     /// </summary>
     public interface IEventListener { }
 
-    public interface IEventListener<T> : IEventListener
-    {
-        public static readonly ListenerType ListenerID = typeof(T);
-    }
-
     /// <summary>
     /// Static helper class for type look-up.
     /// </summary>
@@ -43,7 +38,7 @@ namespace tg.events
         static Listener()
         {
             Type        TEvent              = typeof(IEvent);
-            Type        TIEventListener     = typeof(IEventListener<>);
+            Type        TIEventListener     = typeof(IEventListener);
 
             List<Type>  EventListenerTypes  = new List<Type>();
 
@@ -54,7 +49,7 @@ namespace tg.events
                 List<Type> EventListeners = asm
                     .GetTypes()
                     // filter only sub-classes of IEventListener
-                    .Where(T => T.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == TIEventListener))
+                    .Where(T => TIEventListener.IsAssignableFrom(T) && T != TIEventListener)
                     .ToList();
 
                 // append found event types in the current assembly
@@ -64,12 +59,7 @@ namespace tg.events
 
             foreach(Type ThisClass in EventListenerTypes)
             {
-                var T = ThisClass
-                    .GetInterfaces()
-                    .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventListener<>))
-                    .GetGenericArguments().First();
-
-                ListenerType TListenerID = (ListenerType)TIEventListener.MakeGenericType(T).GetField("ListenerID", BindingFlags.Static | BindingFlags.Public).GetValue(null);
+                ListenerType TListenerID = ThisClass;
 
                 // Make sure we perform this process only once.
                 if(Listener.registry.ContainsKey(TListenerID)) { return; }

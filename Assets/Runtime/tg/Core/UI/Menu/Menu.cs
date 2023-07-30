@@ -28,7 +28,7 @@ namespace tg.ui.menu
     [CreateAfter(typeof(EventQueue))]
     [UpdateInGroup(typeof(UISystemGroup))]
     [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenMenuOpen, false)]
-    public partial class Menu : SystemBase, IEventListener<Menu>
+    public partial class Menu : SystemBase, IEventListener
     {
         private readonly Stack<string>  menus       = new Stack<string>(8);
 

@@ -16,7 +16,7 @@ namespace tg.game
 
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
 		[CreateAfter(typeof(EventQueue))]
-		public partial struct GameOver : ISystem, IEventListener<GameOver>, ISystemStartStop
+		public partial struct GameOver : ISystem, IEventListener, ISystemStartStop
 		{
 			private int lastChunk;
 

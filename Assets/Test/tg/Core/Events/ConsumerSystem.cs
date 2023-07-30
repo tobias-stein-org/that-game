@@ -7,7 +7,7 @@ namespace tg.test.events
     using tg.events;
 
     [CreateBefore(typeof(ProducerSystem))]
-    public partial class ConsumerSystem : SystemBase, IEventListener<ConsumerSystem>
+    public partial class ConsumerSystem : SystemBase, IEventListener
     {
         public int totalProduced;
 		public int recvEvents;

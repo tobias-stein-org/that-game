@@ -25,7 +25,7 @@ namespace tg.camera
         [CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(TransformSystemGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading, false)]
-        public partial class CameraBoundsSystem : SystemBase, IEventListener<CameraBoundsSystem>
+        public partial class CameraBoundsSystem : SystemBase, IEventListener
         {
             private GameObject                      cameraLevelBoundsGO     = null;
             private Dictionary<int, BoxCollider2D>  levelChunkBounds        = new Dictionary<int, BoxCollider2D>(16);

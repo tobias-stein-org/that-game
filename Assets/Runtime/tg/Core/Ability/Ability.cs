@@ -182,7 +182,7 @@ namespace tg.ability
 
         [CreateAfter(typeof(EventQueue))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenGameOver, false)]
-        public partial class AbilitySystem : SystemBase, IEventListener<AbilitySystem>
+        public partial class AbilitySystem : SystemBase, IEventListener
         {
             private struct EntityAbilityBinding : IEquatable<EntityAbilityBinding>
             {

@@ -8,7 +8,7 @@ namespace tg.ui
     using events;
 
     [CreateAfter(typeof(EventQueue))]
-    public partial class Loading : SystemBase, IEventListener<Loading>
+    public partial class Loading : SystemBase, IEventListener
     {
         private const string            LOADING_SCREEN  = "LOADING_SCREEN";
 

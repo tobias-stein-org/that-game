@@ -83,7 +83,7 @@ namespace tg.application
         [CreateAfter(typeof(EventQueue))]
         [CreateBefore(typeof(Applicaiton))]
         [UpdateInGroup(typeof(InitializationSystemGroup), OrderFirst = true)]
-        public partial class StateManager : SystemBase, IEventListener<StateManager>
+        public partial class StateManager : SystemBase, IEventListener
         {
             /// <summary>
             /// Called by ISystem application systems to derive the RequireForUpdate state based on their defined GameStateFilter.

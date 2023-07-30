@@ -113,7 +113,7 @@ namespace tg.combat
         [CreateAfter(typeof(EventQueue))]
         [UpdateInGroup(typeof(CombatSystemGroup))]
         [ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame)]
-        public partial class DamageListener : SystemBase, IEventListener<DamageListener>
+        public partial class DamageListener : SystemBase, IEventListener
         {
             private struct ProcessDamageFrameBuffer : IJobParallelFor
             {

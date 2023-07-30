@@ -20,7 +20,7 @@ namespace tg.application
     {
         [UpdateInGroup(typeof(InitializationSystemGroup))]
         [CreateAfter(typeof(EventQueue))]
-        public partial class Applicaiton : SystemBase, IEventListener<Applicaiton>
+        public partial class Applicaiton : SystemBase, IEventListener
         {
             protected override void OnCreate()
 	        {

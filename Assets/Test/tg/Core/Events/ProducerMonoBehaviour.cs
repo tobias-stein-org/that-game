@@ -5,7 +5,7 @@ namespace tg.test.events
 {
     using tg.events;
 
-    public class ProducerMonoBehaviour : MonoBehaviour, IEventListener<ProducerMonoBehaviour>
+    public class ProducerMonoBehaviour : MonoBehaviour, IEventListener
     {
         public	int		totalProduced;
 		public	int		sentEvents; 

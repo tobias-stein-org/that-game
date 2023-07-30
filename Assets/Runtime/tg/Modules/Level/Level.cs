@@ -15,7 +15,7 @@ namespace tg.level
     /// The Level behaviour acts as a manager to generate new levels and repaint the tilemap layers.
     /// </summary>
     [CreateAfter(typeof(EventQueue))]
-    public partial class Level : SystemBase, IEventListener<Level>
+    public partial class Level : SystemBase, IEventListener
     {
         private Generator                                   generator;
         private IEnumerator<LevelGeneratorStep.StateBase>   executor;

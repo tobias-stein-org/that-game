@@ -32,7 +32,7 @@ namespace tg.enemy {
 
         //[ApplicationStateFilter(ApplicationStateMask.AllowRunWhenInGame | ApplicationStateMask.AllowRunWhenLoading | ApplicationStateMask.AllowRunWhenGameOver | ApplicationStateMask.AllowRunWhenPaused, false)]
         [CreateAfter(typeof(EventQueue))]
-        public partial struct EnemyManager : ISystem, IEventListener<EnemyManager>, ISystemStartStop
+        public partial struct EnemyManager : ISystem, IEventListener, ISystemStartStop
         {
             void OnCreate(ref SystemState state)
 		    {
