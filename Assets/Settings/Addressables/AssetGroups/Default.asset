@@ -48,6 +48,11 @@ MonoBehaviour:
     - ui
     - application
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 57d8491f2a4aa438ebc866834987e22e
+    m_Address: tg.level.GeneratorSettings
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: b9f8d662fa9cd43a6841946bba532746, type: 2}
   m_SchemaSet:
